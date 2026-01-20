@@ -1,4 +1,5 @@
 use std::future::Future;
+use std::net::{Ipv4Addr, Ipv6Addr};
 use std::{net::SocketAddr, sync::Arc};
 
 use bytes::Bytes;
@@ -7,23 +8,23 @@ use http::{Request, Response};
 use http_body_util::Full;
 use hyper::service::service_fn;
 
-use gate::GateTask;
+use rt_gate::GateTask;
 
+use crate::server::config::ServerConfig;
 use crate::server::errors::{StartError::Tls, VetisError};
 use crate::server::udp::UdpServer;
-use crate::server::{Server, ServerConfig};
-use crate::utils::generate_port;
+use crate::server::{Server};
 
 pub struct HttpServer {
     port: u16,
     task: Option<GateTask>,
-    config: Option<ServerConfig>,
+    config: ServerConfig,
 }
 
 impl HttpServer {
-    pub fn new(config: Option<ServerConfig>) -> Self {
+    pub fn new(config: ServerConfig) -> Self {
         Self {
-            port: generate_port(),
+            port: config.port(),
             task: None,
             config,
         }
@@ -42,14 +43,14 @@ impl Server<Full<Bytes>, Full<Bytes>> for HttpServer {
         H: Fn(Request<Full<Bytes>>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<Response<Full<Bytes>>, VetisError>> + Send + 'static,
     {
-        if let Some(config) = &self.config {
-            if config.cert.is_none() || config.key.is_none() {
+        if let Some(config) = self.config.security() {
+            if config.cert().is_none() || config.key().is_none() {
                 return Err(VetisError::Start(Tls(
                     "Server certificate and key are required".to_string(),
                 )));
             }
 
-            let tls_config = self.setup_tls(config.clone(), b"h3".to_vec())?;
+            let tls_config = self.setup_tls(&config, b"h3".to_vec())?;
 
             let quic_config = QuicServerConfig::try_from(tls_config)
                 .map_err(|e| VetisError::Start(Tls(e.to_string())))?;

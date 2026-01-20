@@ -1,13 +1,8 @@
-#[cfg(all(feature = "smol-rt", feature = "smol-rust-tls"))]
-pub mod smol;
-#[cfg(all(feature = "tokio-rt", feature = "tokio-rust-tls"))]
-pub mod tokio;
-
 use std::sync::Arc;
 
-use gate::{spawn_server, spawn_worker, GateTask};
+use rt_gate::{spawn_server, spawn_worker, GateTask};
 
-use crate::server::{errors::EasyHttpMockError, Server};
+use crate::server::{errors::VetisError, Server};
 use bytes::Bytes;
 use h3::server::RequestResolver;
 use http::{Request, Response};
@@ -19,12 +14,12 @@ pub trait UdpServer: Server<Full<Bytes>, Full<Bytes>> {
         &mut self,
         endpoint: quinn::Endpoint,
         handler: Arc<S>,
-    ) -> Result<GateTask, EasyHttpMockError>
+    ) -> Result<GateTask, VetisError>
     where
         S: Service<
                 Request<Full<Bytes>>,
                 Response = Response<Full<Bytes>>,
-                Error = EasyHttpMockError,
+                Error = VetisError,
             > + Send
             + Sync
             + 'static,
@@ -84,7 +79,7 @@ struct ServerHandler<S> {
 
 impl<S> ServerHandler<S>
 where
-    S: Service<Request<Full<Bytes>>, Response = Response<Full<Bytes>>, Error = EasyHttpMockError>
+    S: Service<Request<Full<Bytes>>, Response = Response<Full<Bytes>>, Error = VetisError>
         + Send
         + Sync
         + 'static,
@@ -97,7 +92,7 @@ where
     pub fn handle(
         &self,
         resolver: RequestResolver<h3_quinn::Connection, Bytes>,
-    ) -> Result<(), EasyHttpMockError> {
+    ) -> Result<(), VetisError> {
         let handler = self.handler.clone();
         spawn_worker(async move {
             let result = resolver
@@ -111,7 +106,7 @@ where
                 let response = handler
                     .call(request)
                     .await
-                    .map_err(|e| EasyHttpMockError::Handler(e.to_string()));
+                    .map_err(|e| VetisError::Handler(e.to_string()));
 
                 if let Ok(response) = response {
                     let (parts, body) = response.into_parts();

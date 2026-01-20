@@ -1,13 +1,13 @@
-use std::{future::Future, sync::Arc};
+use std::future::Future;
 
 use bytes::Bytes;
 use http::{Request, Response};
 use http_body_util::Full;
+
+#[cfg(any(feature = "http1", feature = "http2"))]
 use hyper::body::Incoming;
 
-#[cfg(feature = "http2")]
-use crate::server::Server;
-use crate::server::{config::ServerConfig, errors::VetisError};
+use crate::server::{Server, config::ServerConfig, errors::VetisError};
 
 mod rt;
 pub mod server;
@@ -52,7 +52,12 @@ impl Vetis {
         F: Fn(RequestType) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<ResponseType, VetisError>> + Send + 'static,
     {
+        #[cfg(any(feature = "http1", feature = "http2"))]
         let mut server = server::http::HttpServer::new(self.config.clone());
+
+        #[cfg(feature = "http3")]
+        let mut server = server::quic::HttpServer::new(self.config.clone());
+
         server.start(handler).await?;
         self.instance = Some(server);
 

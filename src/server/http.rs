@@ -6,8 +6,25 @@ use std::future::Future;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::Arc;
 
+#[cfg(feature = "tokio-rt")]
 use tokio::net::TcpListener;
+#[cfg(feature = "tokio-rt")]
 use tokio_rustls::TlsAcceptor;
+
+#[cfg(feature = "smol-rt")]
+use smol::net::TcpListener;
+#[cfg(feature = "smol-rt")]
+use futures_rustls::TlsAcceptor;
+
+#[cfg(feature = "tokio-rt")]
+type VetisTcpListener = TcpListener;
+#[cfg(feature = "tokio-rt")]
+type VetisTlsAcceptor = TlsAcceptor;
+
+#[cfg(feature = "smol-rt")]
+type VetisTcpListener = TcpListener;
+#[cfg(feature = "smol-rt")]
+type VetisTlsAcceptor = TlsAcceptor;
 
 use rt_gate::GateTask;
 
@@ -47,7 +64,7 @@ impl Server<Incoming, Full<Bytes>> for HttpServer {
 
             let tls_config = self.setup_tls(config, alpn)?;
 
-            Some(TlsAcceptor::from(Arc::new(tls_config)))
+            Some(VetisTlsAcceptor::from(Arc::new(tls_config)))
         } else {
             None
         };
@@ -63,7 +80,7 @@ impl Server<Incoming, Full<Bytes>> for HttpServer {
             }
         };
 
-        let listener = TcpListener::bind(addr)
+        let listener = VetisTcpListener::bind(addr)
             .await
             .map_err(|e| VetisError::Bind(e.to_string()))?;
 
