@@ -1,0 +1,165 @@
+#[cfg(all(feature = "smol-rt", feature = "smol-rust-tls"))]
+pub mod smol;
+#[cfg(all(feature = "tokio-rt", feature = "tokio-rust-tls"))]
+pub mod tokio;
+
+use std::sync::Arc;
+
+use gate::{spawn_server, spawn_worker, GateTask};
+
+use crate::server::{errors::EasyHttpMockError, Server};
+use bytes::Bytes;
+use h3::server::RequestResolver;
+use http::{Request, Response};
+use http_body_util::{BodyExt, Full};
+use hyper::service::Service;
+
+pub trait UdpServer: Server<Full<Bytes>, Full<Bytes>> {
+    fn handle_connections<S>(
+        &mut self,
+        endpoint: quinn::Endpoint,
+        handler: Arc<S>,
+    ) -> Result<GateTask, EasyHttpMockError>
+    where
+        S: Service<
+                Request<Full<Bytes>>,
+                Response = Response<Full<Bytes>>,
+                Error = EasyHttpMockError,
+            > + Send
+            + Sync
+            + 'static,
+        S::Future: Send,
+    {
+        let task = spawn_server(async move {
+            while let Some(new_conn) = endpoint
+                .accept()
+                .await
+            {
+                let handler = handler.clone();
+                spawn_worker(async move {
+                    match new_conn.await {
+                        Ok(conn) => {
+                            let mut h3_conn: h3::server::Connection<h3_quinn::Connection, Bytes> =
+                                h3::server::Connection::new(h3_quinn::Connection::new(conn))
+                                    .await
+                                    .unwrap();
+                            let request_handler = ServerHandler::new(handler);
+                            loop {
+                                match h3_conn
+                                    .accept()
+                                    .await
+                                {
+                                    Ok(Some(resolver)) => {
+                                        let _ = request_handler.handle(resolver);
+                                    }
+                                    Ok(None) => {
+                                        break;
+                                    }
+                                    Err(err) => {
+                                        eprintln!("error on accept {}", err);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            eprintln!("accepting connection failed: {:?}", err);
+                        }
+                    }
+                });
+            }
+
+            endpoint
+                .wait_idle()
+                .await;
+        });
+
+        Ok(task)
+    }
+}
+
+struct ServerHandler<S> {
+    handler: Arc<S>,
+}
+
+impl<S> ServerHandler<S>
+where
+    S: Service<Request<Full<Bytes>>, Response = Response<Full<Bytes>>, Error = EasyHttpMockError>
+        + Send
+        + Sync
+        + 'static,
+    S::Future: Send,
+{
+    pub fn new(handler: Arc<S>) -> Self {
+        Self { handler }
+    }
+
+    pub fn handle(
+        &self,
+        resolver: RequestResolver<h3_quinn::Connection, Bytes>,
+    ) -> Result<(), EasyHttpMockError> {
+        let handler = self.handler.clone();
+        spawn_worker(async move {
+            let result = resolver
+                .resolve_request()
+                .await;
+            if let Ok((req, mut stream)) = result {
+                let (parts, _) = req.into_parts();
+
+                let request = http::Request::from_parts(parts, Full::new(Bytes::new()));
+
+                let response = handler
+                    .call(request)
+                    .await
+                    .map_err(|e| EasyHttpMockError::Handler(e.to_string()));
+
+                if let Ok(response) = response {
+                    let (parts, body) = response.into_parts();
+
+                    let mut resp = http::Response::builder()
+                        .status(parts.status)
+                        .version(parts.version)
+                        .extension(parts.extensions)
+                        .body(())
+                        .unwrap();
+
+                    resp.headers_mut()
+                        .extend(parts.headers);
+
+                    match stream
+                        .send_response(resp)
+                        .await
+                    {
+                        Ok(_) => {
+                            println!("successfully respond to connection");
+                        }
+                        Err(err) => {
+                            eprintln!("unable to send response to connection peer: {:?}", err);
+                        }
+                    }
+
+                    let collected = body.collect().await;
+
+                    let buf = Bytes::from(
+                        collected
+                            .expect("HttpServer - Failed to collect response")
+                            .to_bytes()
+                            .to_vec(),
+                    );
+
+                    let _ = stream
+                        .send_data(buf)
+                        .await;
+                } else {
+                    eprintln!("HttpServer - Error serving connection: {:?}", response.err());
+                }
+
+                let _ = stream
+                    .finish()
+                    .await;
+            }
+        });
+
+        Ok(())
+    }
+}

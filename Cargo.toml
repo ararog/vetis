@@ -1,0 +1,55 @@
+[package]
+name = "vetis"
+version = "0.1.0"
+edition = "2021"
+authors = ["Rogerio Araújo <rogerio.araujo@gmail.com>"]
+repository = "https://github.com/ararog/vetis"
+homepage = "https://github.com/ararog/vetis"
+description = "Very Tiny Server"
+readme = "README.md"
+license = "MIT"
+keywords = ["http", "networking", "server", "rest-server"]
+publish = true
+rust-version = "1.64.0"
+
+[features]
+default = ["tokio-rt", "http2", "tokio-rust-tls"]
+
+tokio-rt = ["tokio", "rt-gate/tokio-rt", "hyper-util/tokio"]
+smol-rt = ["smol", "smol-hyper", "smol-macros", "rt-gate/smol-rt"]
+
+tokio-rust-tls = ["tokio-rustls", "rustls"]
+smol-rust-tls = ["futures-rustls", "rustls"]
+
+http1 = ["hyper/http1", "hyper/server", "hyper-util/server", "hyper-util/http1"]
+http2 = ["hyper/http2", "hyper/server", "hyper-util/server", "hyper-util/http2"]
+http3 = ["hyper/server", "hyper-util/server", "h3", "h3-quinn", "quinn"]
+
+[dependencies]
+bytes = "1.11.0"
+futures-rustls = { version = "0.26.0", optional = true }
+rt-gate = { version = "0.1.1", optional = true, default-features = false }
+h3 = { version = "0.0.8", optional = true }
+h3-quinn = { version = "0.0.10", optional = true }
+http = "1.3.1"
+http-body-util = { version = "0.1.3" }
+hyper = { version = "1.8.1", default-features = false, optional = true }
+hyper-util = { version = "0.1.19", default-features = false, optional = true }
+mime = "0.3.17"
+quinn = { version = "0.11.7", optional = true }
+rand = "0.9.2"
+rustls = { version = "0.23.19", features = [
+  "aws-lc-rs",
+], default-features = false, optional = true }
+serde = "1.0.226"
+serde_json = "1.0.145"
+smol = { version = "2.0.2", optional = true }
+smol-hyper = { version = "0.1.1", optional = true }
+smol-macros = { version = "0.1.1", optional = true }
+thiserror = "2.0.17"
+tokio = { version = "1.49.0", features = [
+  "rt-multi-thread",
+  "net",
+], default-features = false, optional = true }
+tokio-rustls = { version = "0.26.0", optional = true }
+url = "2.5.7"
