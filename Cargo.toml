@@ -47,9 +47,10 @@ smol = { version = "2.0.2", optional = true }
 smol-hyper = { version = "0.1.1", optional = true }
 smol-macros = { version = "0.1.1", optional = true }
 thiserror = "2.0.17"
-tokio = { version = "1.49.0", features = [
+tokio = { version = "1.38.1", features = [
   "rt-multi-thread",
   "net",
+  "signal",
 ], default-features = false, optional = true }
 tokio-rustls = { version = "0.26.0", optional = true }
 url = "2.5.7"
