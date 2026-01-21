@@ -1,17 +1,24 @@
 use std::sync::Arc;
 
-#[cfg(feature = "smol-rt")]
+use crate::RequestType;
+use crate::ResponseType;
+
+#[cfg(all(feature = "smol-rt", feature = "http2"))]
 use crate::rt::smol::SmolExecutor;
+#[cfg(feature = "smol-rt")]
+use smol::io::{AsyncRead, AsyncWrite};
+#[cfg(all(feature = "tokio-rt", feature = "http2"))]
+use hyper_util::rt::TokioExecutor;
 #[cfg(feature = "tokio-rt")]
-use hyper_util::rt::{TokioExecutor, TokioIo};
+use tokio::io::{AsyncRead, AsyncWrite};
 
 use crate::{server::errors::VetisError, server::Server};
 use bytes::Bytes;
 use http::{Request, Response};
 use http_body_util::Full;
 use hyper::body::Incoming;
-use rt_gate::{spawn_server, spawn_worker, GateTask};
 use log::error;
+use rt_gate::{spawn_server, spawn_worker, GateTask};
 
 use hyper::service::Service;
 
@@ -21,20 +28,18 @@ use hyper::server::conn::http1;
 use hyper::server::conn::http2;
 
 #[cfg(feature = "tokio-rt")]
-use ::tokio::net::TcpListener;
+use tokio::net::TcpListener;
+#[cfg(all(feature = "tokio-rt", any(feature = "http1", feature = "http2")))]
+use hyper_util::rt::TokioIo;
 #[cfg(feature = "tokio-rt")]
-use ::tokio::net::TcpStream;
-#[cfg(feature = "smol-rt")]
-use smol_hyper::rt::FuturesIo;
-#[cfg(feature = "tokio-rt")]
-use tokio_rustls::{server::TlsStream, TlsAcceptor};
+use tokio_rustls::{TlsAcceptor};
 
 #[cfg(feature = "smol-rt")]
-use ::smol::net::TcpListener;
+use smol::net::TcpListener;
+#[cfg(all(feature = "smol-rt", any(feature = "http1", feature = "http2")))]
+use smol_hyper::rt::FuturesIo;
 #[cfg(feature = "smol-rt")]
-use ::smol::net::TcpStream;
-#[cfg(feature = "smol-rt")]
-use futures_rustls::{server::TlsStream, TlsAcceptor};
+use futures_rustls::{TlsAcceptor};
 
 #[cfg(feature = "tokio-rt")]
 type EasyTcpListener = TcpListener;
@@ -42,7 +47,7 @@ type EasyTcpListener = TcpListener;
 type EasyIo<T> = TokioIo<T>;
 #[cfg(feature = "tokio-rt")]
 type EasyTlsAcceptor = TlsAcceptor;
-#[cfg(feature = "tokio-rt")]
+#[cfg(all(feature = "tokio-rt", feature = "http2"))]
 type EasyExecutor = TokioExecutor;
 
 #[cfg(feature = "smol-rt")]
@@ -51,7 +56,7 @@ type EasyTcpListener = TcpListener;
 type EasyIo<T> = FuturesIo<T>;
 #[cfg(feature = "smol-rt")]
 type EasyTlsAcceptor = TlsAcceptor;
-#[cfg(feature = "smol-rt")]
+#[cfg(all(feature = "smol-rt", feature = "http2"))]
 type EasyExecutor = SmolExecutor;
 
 pub trait TcpServer: Server<Incoming, Full<Bytes>> {
@@ -70,9 +75,7 @@ pub trait TcpServer: Server<Incoming, Full<Bytes>> {
     {
         let task = spawn_server(async move {
             loop {
-                let result = listener
-                    .accept()
-                    .await;
+                let result = listener.accept().await;
 
                 if let Err(err) = result {
                     error!("Cannot accept connection: {:?}", err);
@@ -82,9 +85,7 @@ pub trait TcpServer: Server<Incoming, Full<Bytes>> {
                 let (stream, _) = result.unwrap();
 
                 if let Some(acceptor) = &tls_acceptor {
-                    let tls_stream = acceptor
-                        .accept(stream)
-                        .await;
+                    let tls_stream = acceptor.accept(stream).await;
 
                     if let Err(e) = tls_stream {
                         error!("Cannot accept connection: {:?}", e);
@@ -93,49 +94,57 @@ pub trait TcpServer: Server<Incoming, Full<Bytes>> {
 
                     let io = EasyIo::new(tls_stream.unwrap());
                     let handler = handler.clone();
-                    spawn_worker(async move {
-                        #[cfg(feature = "http1")]
-                        {
-                            let result = http1::Builder::new()
-                                .serve_connection(io, handler.clone())
-                                .await;
-                            if let Err(err) = result {
-                                error!("Error serving connection: {:?}", err);
-                            }
-                        }
-                        #[cfg(feature = "http2")]
-                        {
-                            let result = http2::Builder::new(EasyExecutor::new())
-                                .serve_connection(io, handler.clone())
-                                .await;
-                            if let Err(err) = result {
-                                error!("Error serving connection: {:?}", err);
-                            }
-                        }
-                    });
+                    let request_handler = ServerHandler::new(handler);
+                    let _ = request_handler.handle(io);
+
                 } else {
                     let io = EasyIo::new(stream);
                     let handler = handler.clone();
-                    spawn_worker(async move {
-                        #[cfg(feature = "http1")]
-                        if let Err(err) = http1::Builder::new()
-                            .serve_connection(io, handler.clone())
-                            .await
-                        {
-                            error!("Error serving connection: {:?}", err);
-                        }
-                        #[cfg(feature = "http2")]
-                        if let Err(err) = http2::Builder::new(EasyExecutor::new())
-                            .serve_connection(io, handler.clone())
-                            .await
-                        {
-                            error!("Error serving connection: {:?}", err);
-                        }
-                    });
+                    let request_handler = ServerHandler::new(handler);
+                    let _ = request_handler.handle(io);
                 }
             }
         });
 
         Ok(task)
+    }
+}
+
+struct ServerHandler<S> {
+    handler: Arc<S>,
+}
+
+impl<S> ServerHandler<S>
+where
+    S: Service<RequestType, Response = ResponseType, Error = VetisError> + Send + Sync + 'static,
+    S::Future: Send,
+{
+    pub fn new(handler: Arc<S>) -> Self {
+        Self { handler }
+    }
+
+    pub fn handle<T>(&self, io: EasyIo<T>) -> Result<(), VetisError>
+    where
+        T: AsyncRead + AsyncWrite + Unpin + Send + 'static,
+    {
+        let handler = self.handler.clone();
+        spawn_worker(async move {
+            #[cfg(feature = "http1")]
+            if let Err(err) = http1::Builder::new()
+                .serve_connection(io, handler.clone())
+                .await
+            {
+                error!("Error serving connection: {:?}", err);
+            }
+            #[cfg(feature = "http2")]
+            if let Err(err) = http2::Builder::new(EasyExecutor::new())
+                .serve_connection(io, handler.clone())
+                .await
+            {
+                error!("Error serving connection: {:?}", err);
+            }
+        });
+
+        Ok(())
     }
 }

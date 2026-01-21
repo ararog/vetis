@@ -8,6 +8,13 @@ use http_body_util::Full;
 use hyper::body::Incoming;
 use log::info;
 
+#[cfg(feature = "smol-rt")]
+use async_signal::Signals;
+#[cfg(feature = "smol-rt")]
+use futures_lite::prelude::*;
+#[cfg(feature = "smol-rt")]
+use signal_hook::low_level;
+
 use crate::server::{config::ServerConfig, errors::VetisError, Server};
 
 mod rt;
@@ -61,7 +68,18 @@ impl Vetis {
             self.config.port()
         );
 
-        tokio::signal::ctrl_c().await;
+        #[cfg(feature = "tokio-rt")]
+        let _ = tokio::signal::ctrl_c().await;
+
+        #[cfg(feature = "smol-rt")]
+        {
+            use async_signal::Signal;
+
+            let mut signals = Signals::new([Signal::Quit]).unwrap();
+            while let Some(signal) = signals.next().await {
+                low_level::emulate_default_handler(signal.unwrap() as i32).unwrap();
+            }
+        }
 
         info!("\nStopping server...");
 

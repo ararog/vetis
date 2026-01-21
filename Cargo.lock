@@ -1366,6 +1366,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
+name = "signal-hook"
+version = "0.3.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d881a16cf4426aa584979d30bd82cb33429027e42122b169753d6ef1085ed6e2"
+dependencies = [
+ "libc",
+ "signal-hook-registry",
+]
+
+[[package]]
 name = "signal-hook-registry"
 version = "1.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1637,8 +1647,10 @@ checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 name = "vetis"
 version = "0.1.1"
 dependencies = [
+ "async-signal",
  "bytes",
  "chan-signal",
+ "futures-lite",
  "futures-rustls",
  "h3",
  "h3-quinn",
@@ -1654,6 +1666,7 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
+ "signal-hook",
  "smol",
  "smol-hyper",
  "smol-macros",

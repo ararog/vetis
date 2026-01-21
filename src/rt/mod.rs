@@ -1,4 +1,4 @@
-#[cfg(feature = "smol-rt")]
+#[cfg(all(feature = "smol-rt", feature = "http2"))]
 pub(crate) mod smol;
-#[cfg(feature = "tokio-rt")]
+#[cfg(all(feature = "tokio-rt", feature = "http2"))]
 pub(crate) mod tokio;
