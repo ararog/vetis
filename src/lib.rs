@@ -7,7 +7,7 @@ use http_body_util::Full;
 #[cfg(any(feature = "http1", feature = "http2"))]
 use hyper::body::Incoming;
 
-use crate::server::{Server, config::ServerConfig, errors::VetisError};
+use crate::server::{config::ServerConfig, errors::VetisError, Server};
 
 mod rt;
 pub mod server;
@@ -45,6 +45,28 @@ impl Vetis {
 
     pub fn config(&self) -> &ServerConfig {
         &self.config
+    }
+
+    pub async fn run<F, Fut>(&mut self, handler: F) -> Result<(), VetisError>
+    where
+        F: Fn(RequestType) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = Result<ResponseType, VetisError>> + Send + 'static,
+    {
+        self.start(handler).await?;
+
+        println!(
+            "Server listening on port {}:{}",
+            self.config.interface(),
+            self.config.port()
+        );
+
+        tokio::signal::ctrl_c().await;
+
+        println!("\nStopping server...");
+
+        self.stop().await?;
+
+        Ok(())
     }
 
     pub async fn start<F, Fut>(&mut self, handler: F) -> Result<(), VetisError>

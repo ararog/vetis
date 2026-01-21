@@ -16,15 +16,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut server = Vetis::new(config);
 
-    server.start(|_| async move {
+    server.run(|_| async move {
         Ok(Response::new(Full::new(Bytes::from("Hello World"))))
     }).await?;
-
-    println!("Server listening on port {}:{}", server.config().interface(), server.config().port());
-
-    loop {
-      
-    }
 
     Ok(())
 }
