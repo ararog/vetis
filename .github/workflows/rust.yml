@@ -1,0 +1,176 @@
+name: Rust
+
+permissions:
+  contents: read
+  
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: Swatinem/rust-cache@v2
+
+    - name: Run all tests on all crates
+      run: |
+        cargo test --features "deboa-extras/serialization_all deboa-extras/compression_all"
+
+    - name: Run all HTTP1 tests with native TLS
+      run: |
+        cd deboa
+        cargo test --features "http1 tokio-rt tokio-native-tls" --no-default-features
+        cargo test --features "http1 smol-rt smol-native-tls" --no-default-features
+
+    - name: Run all HTTP2 tests with native TLS
+      run: |
+        cd deboa
+        cargo test --features "http2 tokio-rt tokio-native-tls" --no-default-features
+        cargo test --features "http2 smol-rt smol-native-tls" --no-default-features
+
+    - name: Run all HTTP1 tests with rust TLS
+      run: |
+        cd deboa
+        cargo test --features "http1 tokio-rt tokio-rust-tls" --no-default-features
+        cargo test --features "http1 smol-rt smol-rust-tls" --no-default-features
+
+    - name: Run all HTTP2 tests with rust TLS
+      run: |
+        cd deboa
+        cargo test --features "http2 tokio-rt tokio-rust-tls" --no-default-features
+        cargo test --features "http2 smol-rt smol-rust-tls" --no-default-features
+
+    # - name: Run all HTTP3 tests with rust TLS
+    #   run: |
+    #     cd deboa
+    #     cargo test --features "http3 tokio-rt tokio-rust-tls" --no-default-features
+    #     cargo test --features "http3 smol-rt smol-rust-tls" --no-default-features
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install Rust toolchains
+      run: rustup target add aarch64-linux-android armv7-linux-androideabi
+
+    - uses: Swatinem/rust-cache@v2
+
+    - name: Install Android NDK
+      uses: android-actions/setup-android@v3
+      with:
+        ndk-version: r25c # Use a compatible NDK version
+
+    - name: Install cargo-ndk and other build dependencies
+      run: |
+        cargo install cargo-ndk
+        sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev gcc
+
+    - name: Build for aarch64-linux-android with cargo-ndk
+      run: cargo ndk -t aarch64-linux-android build --release
+      env:
+        ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}
+        CC_aarch64_linux_android: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
+        CXX_aarch64_linux_android: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: Swatinem/rust-cache@v2
+
+    - name: Install Rust toolchains
+      run: rustup target add x86_64-pc-windows-msvc
+
+    - name: Build for x86_64-pc-windows-msvc
+      run: cargo build --target x86_64-pc-windows-msvc --release
+    
+    - name: Run all tests on all crates
+      run: |
+        cargo test --features "deboa-extras/serialization_all deboa-extras/compression_all"
+              
+    # - name: Run all HTTP1 tests with native TLS
+    #   run: |
+    #     cd deboa
+    #     cargo test --features "http1 tokio-rt tokio-native-tls" --no-default-features
+    #     cargo test --features "http1 smol-rt smol-native-tls" --no-default-features
+
+    # - name: Run all HTTP2 tests with native TLS
+    #   run: |
+    #     cd deboa
+    #     cargo test --features "http2 tokio-rt tokio-native-tls" --no-default-features
+    #     cargo test --features "http2 smol-rt smol-native-tls" --no-default-features
+
+    - name: Run all HTTP1 tests with rust TLS
+      run: |
+        cd deboa
+        cargo test --features "http1 tokio-rt tokio-rust-tls" --no-default-features
+        cargo test --features "http1 smol-rt smol-rust-tls" --no-default-features
+
+    - name: Run all HTTP2 tests with rust TLS
+      run: |
+        cd deboa
+        cargo test --features "http2 tokio-rt tokio-rust-tls" --no-default-features
+        cargo test --features "http2 smol-rt smol-rust-tls" --no-default-features
+
+    # - name: Run all HTTP3 tests with rust TLS
+    #   run: |
+    #     cd deboa
+    #     cargo test --features "http3 tokio-rt tokio-rust-tls" --no-default-features
+    #     cargo test --features "http3 smol-rt smol-rust-tls" --no-default-features
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install Rust toolchains
+      run: rustup target add x86_64-apple-darwin
+
+    - uses: Swatinem/rust-cache@v2
+
+    - name: Build for x86_64-apple-darwin
+      run: cargo build --target x86_64-apple-darwin --release
+    
+    - name: Run all tests on all crates
+      run: |
+        cargo test --features "deboa-extras/serialization_all deboa-extras/compression_all"
+              
+    # - name: Run all HTTP1 tests with native TLS
+    #   run: |
+    #     cd deboa
+    #     cargo test --features "http1 tokio-rt tokio-native-tls" --no-default-features
+    #     cargo test --features "http1 smol-rt smol-native-tls" --no-default-features
+
+    # - name: Run all HTTP2 tests with native TLS
+    #   run: |
+    #     cd deboa
+    #     cargo test --features "http2 tokio-rt tokio-native-tls" --no-default-features
+    #     cargo test --features "http2 smol-rt smol-native-tls" --no-default-features
+
+    - name: Run all HTTP1 tests with rust TLS
+      run: |
+        cd deboa
+        cargo test --features "http1 tokio-rt tokio-rust-tls" --no-default-features
+        cargo test --features "http1 smol-rt smol-rust-tls" --no-default-features
+
+    - name: Run all HTTP2 tests with rust TLS
+      run: |
+        cd deboa
+        cargo test --features "http2 tokio-rt tokio-rust-tls" --no-default-features
+        cargo test --features "http2 smol-rt smol-rust-tls" --no-default-features
+
+    # - name: Run all HTTP3 tests with rust TLS
+    #   run: |
+    #     cd deboa
+    #     cargo test --features "http3 tokio-rt tokio-rust-tls" --no-default-features
+    #     cargo test --features "http3 smol-rt smol-rust-tls" --no-default-features

@@ -1,0 +1,6 @@
+name: "🐛 Bug Report"
+description: Create a new ticket for a bug.
+title: "🐛 [DEBOA|BORA|VAMO] [BUG] - <title>"
+labels: [
+  "bug"
+]
