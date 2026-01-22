@@ -84,6 +84,10 @@ pub trait TcpServer: Server<Incoming, Full<Bytes>> {
 
                 let (stream, _) = result.unwrap();
 
+                // TODO: Check if connection is secure first, then handle virtual host, 
+                //       path and request, note that virtual host and path are not
+                //       implemented yet
+
                 if let Some(acceptor) = &tls_acceptor {
                     let tls_stream = acceptor.accept(stream).await;
 
@@ -128,6 +132,8 @@ where
         T: AsyncRead + AsyncWrite + Unpin + Send + 'static,
     {
         let handler = self.handler.clone();
+
+        // TODO: Inspect request by checking HOST header to find virtual host, then path
         spawn_worker(async move {
             #[cfg(feature = "http1")]
             if let Err(err) = http1::Builder::new()

@@ -1,3 +1,9 @@
+#[cfg(all(any(feature = "http2", feature = "http3"), not(any(feature = "tokio-rust-tls", feature = "smol-rust-tls"))))]
+compile_error!("http2 and http3 requires tokio-rust-tls or smol-rust-tls!");
+
+#[cfg(all(feature = "tokio-rt", feature = "smol-rt"))]
+compile_error!("Only one runtime feature can be enabled at a time.");
+
 use std::future::Future;
 
 use bytes::Bytes;

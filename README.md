@@ -4,7 +4,9 @@ Very tiny server.
 
 ## Description
 
-**Vetis** is a small webserver.
+**Vetis** is a small webserver with HTTP/1, HTTP/2 and HTTP/3 support.
+
+Please note that HTTP/2 and HTTP/3 requires tokio-rust-tls or smol-rust-tls.
 
 ## Install
 

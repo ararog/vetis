@@ -22,6 +22,7 @@ pub mod tcp;
 #[cfg(feature = "http3")]
 pub mod udp;
 
+pub mod virtual_host;
 pub mod config;
 pub mod errors;
 

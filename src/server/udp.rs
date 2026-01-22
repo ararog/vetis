@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use log::{error, info};
 use rt_gate::{spawn_server, spawn_worker, GateTask};
 
 use crate::server::{errors::VetisError, Server};

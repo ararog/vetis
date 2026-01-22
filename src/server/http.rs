@@ -55,6 +55,8 @@ impl Server<Incoming, Full<Bytes>> for HttpServer {
         F: Fn(Request<Incoming>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<Response<Full<Bytes>>, VetisError>> + Send + 'static,
     {
+
+        // TODO: Move this into block after check if connection is secure, use SNI for this
         let tls_acceptor = if let Some(config) = self.config.security() {
             let alpn = if cfg!(feature = "http1") {
                 "http/1.1".into()
