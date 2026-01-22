@@ -1,8 +1,12 @@
+
+// TODO: add support for virtual hosts and paths
+
 #[derive(Clone)]
 pub struct ServerConfigBuilder {
     port: u16,
     interface: String,
     security: Option<SecurityConfig>,
+    // TODO: virtual_hosts: Option<Vec<VirtualHostConfig>>,
 }
 
 impl ServerConfigBuilder {
