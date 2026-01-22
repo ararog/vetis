@@ -1166,9 +1166,9 @@ dependencies = [
 
 [[package]]
 name = "rt-gate"
-version = "0.1.1"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fdeac5c073ff256da6c4366443b5746c71b2d73b5be757849d2a041aa7e85e7"
+checksum = "55077df4d19e50d09bf521fcea498ad9aea0fed6419f3552d16eff42e005ff6e"
 dependencies = [
  "smol",
  "tokio",

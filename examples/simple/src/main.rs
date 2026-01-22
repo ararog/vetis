@@ -31,6 +31,28 @@ struct Args {
         help = "Set bearer auth token on Authorization header."
     )]
     interface: String,
+
+    #[arg(
+        short = 'c',
+        long,
+        required = false,
+        num_args = 0..=1,
+        require_equals = true,
+        default_value = "../certs/server.der",
+        help = "Set server certificate file (DER encoded)."
+    )]
+    cert: String,
+
+    #[arg(
+        short = 'k',
+        long,
+        required = false,
+        num_args = 0..=1,
+        require_equals = true,
+        default_value = "../certs/server.key.der",
+        help = "Set server certificate file (DER encoded)."
+    )]
+    key: String,
 }
 
 #[tokio::main]
@@ -41,8 +63,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let port = args.port;
 
     let security = SecurityConfig::builder()
-        .cert(SERVER_CERT.to_vec())
-        .key(SERVER_KEY.to_vec())
+        .cert_from_file(&args.cert)
+        .key_from_file(&args.key)
         .build();
 
     let config = ServerConfig::builder()
