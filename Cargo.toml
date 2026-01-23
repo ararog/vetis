@@ -28,7 +28,6 @@ http3 = ["hyper/server", "hyper-util/server", "h3", "h3-quinn", "quinn"]
 [dependencies]
 async-signal = { version = "0.2.12", optional = true }
 bytes = "1.11.0"
-chan-signal = "0.3.3"
 futures-lite = "2.6.1"
 futures-rustls = { version = "0.26.0", optional = true }
 h3 = { version = "0.0.8", optional = true }
