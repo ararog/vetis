@@ -88,8 +88,9 @@ pub struct SecurityConfigBuilder {
 
 impl SecurityConfigBuilder {
     #[deprecated(note = "Use cert_from_bytes or cert_from_file instead")]
-    pub fn cert(self, cert: Vec<u8>) -> Self {
-        self.ca_cert_from_bytes(cert)
+    pub fn cert(mut self, cert: Vec<u8>) -> Self {
+        self.cert = Some(cert);
+        self
     }
 
     pub fn cert_from_bytes(mut self, cert: Vec<u8>) -> Self {
@@ -103,8 +104,9 @@ impl SecurityConfigBuilder {
     }
 
     #[deprecated(note = "Use key_from_bytes or key_from_file instead")]
-    pub fn key(self, key: Vec<u8>) -> Self {
-        self.key_from_bytes(key)
+    pub fn key(mut self, key: Vec<u8>) -> Self {
+        self.key = Some(key);
+        self
     }
 
     pub fn key_from_bytes(mut self, key: Vec<u8>) -> Self {
@@ -118,8 +120,9 @@ impl SecurityConfigBuilder {
     }
 
     #[deprecated(note = "Use ca_cert_from_bytes or ca_cert_from_file instead")]
-    pub fn ca_cert(self, ca_cert: Vec<u8>) -> Self {
-        self.ca_cert_from_bytes(ca_cert)
+    pub fn ca_cert(mut self, ca_cert: Vec<u8>) -> Self {
+        self.ca_cert = Some(ca_cert);
+        self
     }
 
     pub fn ca_cert_from_bytes(mut self, ca_cert: Vec<u8>) -> Self {
