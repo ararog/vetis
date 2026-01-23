@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+# Add your pre-commit checks here. For example:
+# echo "Running Samoyed sample pre-commit"
+# exit 0
+cargo fmt --check
+
+cargo test 

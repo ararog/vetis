@@ -5,10 +5,10 @@ use crate::ResponseType;
 
 #[cfg(all(feature = "smol-rt", feature = "http2"))]
 use crate::rt::smol::SmolExecutor;
-#[cfg(feature = "smol-rt")]
-use smol::io::{AsyncRead, AsyncWrite};
 #[cfg(all(feature = "tokio-rt", feature = "http2"))]
 use hyper_util::rt::TokioExecutor;
+#[cfg(feature = "smol-rt")]
+use smol::io::{AsyncRead, AsyncWrite};
 #[cfg(feature = "tokio-rt")]
 use tokio::io::{AsyncRead, AsyncWrite};
 
@@ -27,19 +27,19 @@ use hyper::server::conn::http1;
 #[cfg(feature = "http2")]
 use hyper::server::conn::http2;
 
-#[cfg(feature = "tokio-rt")]
-use tokio::net::TcpListener;
 #[cfg(all(feature = "tokio-rt", any(feature = "http1", feature = "http2")))]
 use hyper_util::rt::TokioIo;
 #[cfg(feature = "tokio-rt")]
-use tokio_rustls::{TlsAcceptor};
+use tokio::net::TcpListener;
+#[cfg(feature = "tokio-rt")]
+use tokio_rustls::TlsAcceptor;
 
+#[cfg(feature = "smol-rt")]
+use futures_rustls::TlsAcceptor;
 #[cfg(feature = "smol-rt")]
 use smol::net::TcpListener;
 #[cfg(all(feature = "smol-rt", any(feature = "http1", feature = "http2")))]
 use smol_hyper::rt::FuturesIo;
-#[cfg(feature = "smol-rt")]
-use futures_rustls::{TlsAcceptor};
 
 #[cfg(feature = "tokio-rt")]
 type EasyTcpListener = TcpListener;
@@ -84,7 +84,7 @@ pub trait TcpServer: Server<Incoming, Full<Bytes>> {
 
                 let (stream, _) = result.unwrap();
 
-                // TODO: Check if connection is secure first, then handle virtual host, 
+                // TODO: Check if connection is secure first, then handle virtual host,
                 //       path and request, note that virtual host and path are not
                 //       implemented yet
 
@@ -100,7 +100,6 @@ pub trait TcpServer: Server<Incoming, Full<Bytes>> {
                     let handler = handler.clone();
                     let request_handler = ServerHandler::new(handler);
                     let _ = request_handler.handle(io);
-
                 } else {
                     let io = EasyIo::new(stream);
                     let handler = handler.clone();

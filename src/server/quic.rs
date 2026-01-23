@@ -13,7 +13,7 @@ use rt_gate::GateTask;
 use crate::server::config::ServerConfig;
 use crate::server::errors::{StartError::Tls, VetisError};
 use crate::server::udp::UdpServer;
-use crate::server::{Server};
+use crate::server::Server;
 
 pub struct HttpServer {
     port: u16,
@@ -68,11 +68,8 @@ impl Server<Full<Bytes>, Full<Bytes>> for HttpServer {
                 }
             };
 
-            let endpoint = quinn::Endpoint::server(
-                server_config,
-                addr,
-            )
-            .map_err(|e| VetisError::Bind(e.to_string()))?;
+            let endpoint = quinn::Endpoint::server(server_config, addr)
+                .map_err(|e| VetisError::Bind(e.to_string()))?;
 
             let handler = Arc::new(service_fn(handler));
 

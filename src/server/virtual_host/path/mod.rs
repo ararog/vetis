@@ -1,5 +1,3 @@
 pub mod file;
 
-pub trait Path {
-
-}
+pub trait Path {}

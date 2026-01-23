@@ -8,8 +8,8 @@ use rustls::{
 };
 
 use crate::{
-    server::config::{SecurityConfig},
-    server::errors::{VetisError, StartError::Tls},
+    server::config::SecurityConfig,
+    server::errors::{StartError::Tls, VetisError},
 };
 
 #[cfg(any(feature = "http1", feature = "http2"))]
@@ -22,9 +22,9 @@ pub mod tcp;
 #[cfg(feature = "http3")]
 pub mod udp;
 
-pub mod virtual_host;
 pub mod config;
 pub mod errors;
+pub mod virtual_host;
 
 pub trait Server<RequestBody, ResponseBody> {
     fn port(&self) -> u16;

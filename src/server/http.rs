@@ -12,9 +12,9 @@ use tokio::net::TcpListener;
 use tokio_rustls::TlsAcceptor;
 
 #[cfg(feature = "smol-rt")]
-use smol::net::TcpListener;
-#[cfg(feature = "smol-rt")]
 use futures_rustls::TlsAcceptor;
+#[cfg(feature = "smol-rt")]
+use smol::net::TcpListener;
 
 #[cfg(feature = "tokio-rt")]
 type VetisTcpListener = TcpListener;
@@ -28,7 +28,7 @@ type VetisTlsAcceptor = TlsAcceptor;
 
 use rt_gate::GateTask;
 
-use crate::server::errors::{VetisError};
+use crate::server::errors::VetisError;
 use crate::server::tcp::TcpServer;
 use crate::server::{config::ServerConfig, Server};
 
@@ -55,7 +55,6 @@ impl Server<Incoming, Full<Bytes>> for HttpServer {
         F: Fn(Request<Incoming>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<Response<Full<Bytes>>, VetisError>> + Send + 'static,
     {
-
         // TODO: Move this into block after check if connection is secure, use SNI for this
         let tls_acceptor = if let Some(config) = self.config.security() {
             let alpn = if cfg!(feature = "http1") {
