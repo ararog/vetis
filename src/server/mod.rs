@@ -37,9 +37,7 @@ pub trait Server<RequestBody, ResponseBody> {
         let cert = if let Some(cert) = config.cert() {
             cert.clone()
         } else {
-            return Err(VetisError::Start(
-                Tls("No certificate provided".to_string()),
-            ));
+            return Err(VetisError::Start(Tls("No certificate provided".to_string())));
         };
 
         let key = if let Some(key) = config.key() {
@@ -62,14 +60,14 @@ pub trait Server<RequestBody, ResponseBody> {
             let ca_cert = if let Some(ca_cert) = config.ca_cert() {
                 ca_cert.clone()
             } else {
-                return Err(VetisError::Start(Tls(
-                    "No CA certificate provided".to_string()
-                )));
+                return Err(VetisError::Start(Tls("No CA certificate provided".to_string())));
             };
 
             let mut store = RootCertStore::empty();
             let cert = CertificateDer::from(ca_cert);
-            store.add(cert).unwrap();
+            store
+                .add(cert)
+                .unwrap();
 
             let client_verifier = WebPkiClientVerifier::builder(Arc::new(store))
                 .build()

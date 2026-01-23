@@ -25,16 +25,24 @@ pub trait UdpServer: Server<Full<Bytes>, Full<Bytes>> {
         S::Future: Send,
     {
         let task = spawn_server(async move {
-            while let Some(new_conn) = endpoint.accept().await {
+            while let Some(new_conn) = endpoint
+                .accept()
+                .await
+            {
                 let handler = handler.clone();
                 spawn_worker(async move {
                     match new_conn.await {
                         Ok(conn) => {
                             let mut h3_conn: Connection<QuinnConnection, Bytes> =
-                                Connection::new(QuinnConnection::new(conn)).await.unwrap();
+                                Connection::new(QuinnConnection::new(conn))
+                                    .await
+                                    .unwrap();
                             let request_handler = ServerHandler::new(handler);
                             loop {
-                                match h3_conn.accept().await {
+                                match h3_conn
+                                    .accept()
+                                    .await
+                                {
                                     Ok(Some(resolver)) => {
                                         let _ = request_handler.handle(resolver);
                                     }
@@ -55,7 +63,9 @@ pub trait UdpServer: Server<Full<Bytes>, Full<Bytes>> {
                 });
             }
 
-            endpoint.wait_idle().await;
+            endpoint
+                .wait_idle()
+                .await;
         });
 
         Ok(task)
@@ -84,7 +94,9 @@ where
     ) -> Result<(), VetisError> {
         let handler = self.handler.clone();
         spawn_worker(async move {
-            let result = resolver.resolve_request().await;
+            let result = resolver
+                .resolve_request()
+                .await;
             if let Ok((req, mut stream)) = result {
                 let (parts, _) = req.into_parts();
 
@@ -105,9 +117,13 @@ where
                         .body(())
                         .unwrap();
 
-                    resp.headers_mut().extend(parts.headers);
+                    resp.headers_mut()
+                        .extend(parts.headers);
 
-                    match stream.send_response(resp).await {
+                    match stream
+                        .send_response(resp)
+                        .await
+                    {
                         Ok(_) => {
                             info!("Successfully respond to connection");
                         }
@@ -125,15 +141,16 @@ where
                             .to_vec(),
                     );
 
-                    let _ = stream.send_data(buf).await;
+                    let _ = stream
+                        .send_data(buf)
+                        .await;
                 } else {
-                    error!(
-                        "HttpServer - Error serving connection: {:?}",
-                        response.err()
-                    );
+                    error!("HttpServer - Error serving connection: {:?}", response.err());
                 }
 
-                let _ = stream.finish().await;
+                let _ = stream
+                    .finish()
+                    .await;
             }
         });
 

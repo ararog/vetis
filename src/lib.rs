@@ -54,10 +54,7 @@ pub struct Vetis {
 
 impl Vetis {
     pub fn new(config: ServerConfig) -> Vetis {
-        Vetis {
-            config,
-            instance: None,
-        }
+        Vetis { config, instance: None }
     }
 
     pub fn config(&self) -> &ServerConfig {
@@ -69,11 +66,13 @@ impl Vetis {
         F: Fn(RequestType) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<ResponseType, VetisError>> + Send + 'static,
     {
-        self.start(handler).await?;
+        self.start(handler)
+            .await?;
 
         info!(
             "Server listening on port {}:{}",
-            self.config.interface(),
+            self.config
+                .interface(),
             self.config.port()
         );
 
@@ -108,7 +107,9 @@ impl Vetis {
         #[cfg(feature = "http3")]
         let mut server = server::quic::HttpServer::new(self.config.clone());
 
-        server.start(handler).await?;
+        server
+            .start(handler)
+            .await?;
         self.instance = Some(server);
 
         Ok(())
@@ -116,7 +117,9 @@ impl Vetis {
 
     pub async fn stop(&mut self) -> Result<(), VetisError> {
         if let Some(instance) = &mut self.instance {
-            instance.stop().await?;
+            instance
+                .stop()
+                .await?;
         } else {
             return Err(VetisError::NoInstances);
         }

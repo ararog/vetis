@@ -56,12 +56,11 @@ impl Server<Incoming, Full<Bytes>> for HttpServer {
         Fut: Future<Output = Result<Response<Full<Bytes>>, VetisError>> + Send + 'static,
     {
         // TODO: Move this into block after check if connection is secure, use SNI for this
-        let tls_acceptor = if let Some(config) = self.config.security() {
-            let alpn = if cfg!(feature = "http1") {
-                "http/1.1".into()
-            } else {
-                "h2".into()
-            };
+        let tls_acceptor = if let Some(config) = self
+            .config
+            .security()
+        {
+            let alpn = if cfg!(feature = "http1") { "http/1.1".into() } else { "h2".into() };
 
             let tls_config = self.setup_tls(config, alpn)?;
 
@@ -70,10 +69,17 @@ impl Server<Incoming, Full<Bytes>> for HttpServer {
             None
         };
 
-        let addr = if let Ok(ip) = self.config.interface().parse::<Ipv4Addr>() {
+        let addr = if let Ok(ip) = self
+            .config
+            .interface()
+            .parse::<Ipv4Addr>()
+        {
             SocketAddr::from((ip, self.config.port()))
         } else {
-            let addr = self.config.interface().parse::<Ipv6Addr>();
+            let addr = self
+                .config
+                .interface()
+                .parse::<Ipv6Addr>();
             if let Ok(addr) = addr {
                 SocketAddr::from((addr, self.config.port()))
             } else {

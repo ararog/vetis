@@ -27,11 +27,7 @@ impl ServerConfigBuilder {
     }
 
     pub fn build(self) -> ServerConfig {
-        ServerConfig {
-            port: self.port,
-            interface: self.interface,
-            security: self.security,
-        }
+        ServerConfig { port: self.port, interface: self.interface, security: self.security }
     }
 }
 
@@ -44,21 +40,13 @@ pub struct ServerConfig {
 
 impl Default for ServerConfig {
     fn default() -> Self {
-        ServerConfig {
-            port: 80,
-            interface: "0.0.0.0".to_string(),
-            security: None,
-        }
+        ServerConfig { port: 80, interface: "0.0.0.0".to_string(), security: None }
     }
 }
 
 impl ServerConfig {
     pub fn builder() -> ServerConfigBuilder {
-        ServerConfigBuilder {
-            port: 0,
-            interface: "0.0.0.0".to_string(),
-            security: None,
-        }
+        ServerConfigBuilder { port: 0, interface: "0.0.0.0".to_string(), security: None }
     }
 
     pub fn port(&self) -> u16 {
@@ -70,7 +58,8 @@ impl ServerConfig {
     }
 
     pub fn security(&self) -> Option<&SecurityConfig> {
-        self.security.as_ref()
+        self.security
+            .as_ref()
     }
 
     pub fn interface(&self) -> &String {
@@ -160,12 +149,7 @@ pub struct SecurityConfig {
 
 impl SecurityConfig {
     pub fn builder() -> SecurityConfigBuilder {
-        SecurityConfigBuilder {
-            cert: None,
-            key: None,
-            ca_cert: None,
-            client_auth: false,
-        }
+        SecurityConfigBuilder { cert: None, key: None, ca_cert: None, client_auth: false }
     }
 
     pub fn cert(&self) -> &Option<Vec<u8>> {

@@ -1,5 +1,5 @@
-title: Deboa
-baseurl: "/deboa" # the subpath of your site, e.g. /blog
+title: VeTiS
+baseurl: "/vetis" # the subpath of your site, e.g. /blog
 url: "https://ararog.github.io" # the base hostname & protocol for your site
 
 theme: jekyll-theme-cayman

@@ -75,7 +75,9 @@ pub trait TcpServer: Server<Incoming, Full<Bytes>> {
     {
         let task = spawn_server(async move {
             loop {
-                let result = listener.accept().await;
+                let result = listener
+                    .accept()
+                    .await;
 
                 if let Err(err) = result {
                     error!("Cannot accept connection: {:?}", err);
@@ -89,7 +91,9 @@ pub trait TcpServer: Server<Incoming, Full<Bytes>> {
                 //       implemented yet
 
                 if let Some(acceptor) = &tls_acceptor {
-                    let tls_stream = acceptor.accept(stream).await;
+                    let tls_stream = acceptor
+                        .accept(stream)
+                        .await;
 
                     if let Err(e) = tls_stream {
                         error!("Cannot accept connection: {:?}", e);

@@ -23,11 +23,7 @@ pub struct HttpServer {
 
 impl HttpServer {
     pub fn new(config: ServerConfig) -> Self {
-        Self {
-            port: config.port(),
-            task: None,
-            config,
-        }
+        Self { port: config.port(), task: None, config }
     }
 }
 
@@ -43,10 +39,19 @@ impl Server<Full<Bytes>, Full<Bytes>> for HttpServer {
         H: Fn(Request<Full<Bytes>>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<Response<Full<Bytes>>, VetisError>> + Send + 'static,
     {
-        if let Some(config) = self.config.security() {
-            if config.cert().is_none() || config.key().is_none() {
+        if let Some(config) = self
+            .config
+            .security()
+        {
+            if config
+                .cert()
+                .is_none()
+                || config
+                    .key()
+                    .is_none()
+            {
                 return Err(VetisError::Start(Tls(
-                    "Server certificate and key are required".to_string(),
+                    "Server certificate and key are required".to_string()
                 )));
             }
 
@@ -57,10 +62,17 @@ impl Server<Full<Bytes>, Full<Bytes>> for HttpServer {
 
             let server_config = quinn::ServerConfig::with_crypto(Arc::new(quic_config));
 
-            let addr = if let Ok(ip) = self.config.interface().parse::<Ipv4Addr>() {
+            let addr = if let Ok(ip) = self
+                .config
+                .interface()
+                .parse::<Ipv4Addr>()
+            {
                 SocketAddr::from((ip, self.config.port()))
             } else {
-                let addr = self.config.interface().parse::<Ipv6Addr>();
+                let addr = self
+                    .config
+                    .interface()
+                    .parse::<Ipv6Addr>();
                 if let Ok(addr) = addr {
                     SocketAddr::from((addr, self.config.port()))
                 } else {
