@@ -1,8 +1,15 @@
 use bytes::Bytes;
 use clap::Parser;
 use http_body_util::Full;
-use hyper::Response;
-use vetis::{server::config::{SecurityConfig, ServerConfig}, Vetis};
+use hyper::{Response, body::Incoming};
+use vetis::{
+    Vetis,
+    server::{
+        config::{SecurityConfig, ServerConfig, VirtualHostConfig},
+        errors::VetisError,
+        virtual_host::{DefaultVirtualHost, VirtualHost},
+    },
+};
 
 pub const SERVER_CERT: &[u8] = include_bytes!("../certs/server.der");
 pub const SERVER_KEY: &[u8] = include_bytes!("../certs/server.key.der");
@@ -16,7 +23,7 @@ struct Args {
         required = false,
         num_args = 0..=1,
         require_equals = true,
-        default_value = "8443",
+        default_value = "8080",
         help = "Set bearer auth token on Authorization header."
     )]
     port: u16,
@@ -57,29 +64,44 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    std_logger::Config::logfmt().init();
+
     let args = Args::parse();
 
     let interface = args.interface;
     let port = args.port;
 
-    let security = SecurityConfig::builder()
-        .cert_from_file(&args.cert)
-        .key_from_file(&args.key)
-        .build();
-
     let config = ServerConfig::builder()
         .port(port)
         .interface(interface)
-        .security(security)
         .build();
 
+
+    let localhost_config = VirtualHostConfig::builder()
+        .hostname("localhost:8080".to_string())
+        .build();
+
+    let server_config = VirtualHostConfig::builder()
+        .hostname("server:8080".to_string())
+        .build();
+
+    let localhost_virtual_host = DefaultVirtualHost::new(localhost_config, Box::new(|request| Box::pin(async move {
+        Ok(Response::new(Full::new(Bytes::from("Hello from localhost"))))
+    })));
+
+    let server_virtual_host = DefaultVirtualHost::new(server_config, Box::new(|request| Box::pin(async move {
+        Ok(Response::new(Full::new(Bytes::from("Hello from server"))))
+    })));
+
     let mut server = Vetis::new(config);
+    server.add_virtual_host(Box::new(localhost_virtual_host)).await;
+    server.add_virtual_host(Box::new(server_virtual_host)).await;
+
+    server.run().await?;
 
     server
-        .run(|_| async move { Ok(Response::new(Full::new(Bytes::from("Hello World")))) })
+        .stop()
         .await?;
-
-    server.stop().await?;
 
     Ok(())
 }

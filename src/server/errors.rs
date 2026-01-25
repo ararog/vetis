@@ -16,6 +16,9 @@ pub enum VetisError {
 
     #[error("No instances")]
     NoInstances,
+
+    #[error("No virtual hosts")]
+    NoVirtualHosts,
 }
 
 #[derive(Debug, Clone, Error, PartialEq)]

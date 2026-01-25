@@ -9,9 +9,6 @@ mod server_config_tests {
         let config = ServerConfig::default();
         assert_eq!(config.port(), 80);
         assert_eq!(config.interface(), "0.0.0.0");
-        assert!(config
-            .security()
-            .is_none());
     }
 
     #[test]
@@ -19,9 +16,6 @@ mod server_config_tests {
         let config = ServerConfig::builder().build();
         assert_eq!(config.port(), 0);
         assert_eq!(config.interface(), "0.0.0.0");
-        assert!(config
-            .security()
-            .is_none());
     }
 
     #[test]
@@ -31,9 +25,6 @@ mod server_config_tests {
             .build();
         assert_eq!(config.port(), 8080);
         assert_eq!(config.interface(), "0.0.0.0");
-        assert!(config
-            .security()
-            .is_none());
     }
 
     #[test]
@@ -43,43 +34,6 @@ mod server_config_tests {
             .build();
         assert_eq!(config.port(), 0);
         assert_eq!(config.interface(), "127.0.0.1");
-        assert!(config
-            .security()
-            .is_none());
-    }
-
-    #[test]
-    fn test_server_config_builder_with_security() {
-        let security_config = SecurityConfig::builder()
-            .cert_from_bytes(vec![1, 2, 3])
-            .key_from_bytes(vec![4, 5, 6])
-            .build();
-
-        let config = ServerConfig::builder()
-            .port(3000)
-            .interface("localhost".to_string())
-            .security(security_config.clone())
-            .build();
-
-        assert_eq!(config.port(), 3000);
-        assert_eq!(config.interface(), "localhost");
-        assert!(config
-            .security()
-            .is_some());
-        assert_eq!(
-            config
-                .security()
-                .unwrap()
-                .cert(),
-            &Some(vec![1, 2, 3])
-        );
-        assert_eq!(
-            config
-                .security()
-                .unwrap()
-                .key(),
-            &Some(vec![4, 5, 6])
-        );
     }
 
     #[test]
@@ -92,29 +46,6 @@ mod server_config_tests {
     }
 
     #[test]
-    fn test_server_config_builder_chaining() {
-        let security_config = SecurityConfig::builder()
-            .client_auth(true)
-            .build();
-
-        let config = ServerConfig::builder()
-            .port(8443)
-            .interface("0.0.0.0".to_string())
-            .security(security_config)
-            .build();
-
-        assert_eq!(config.port(), 8443);
-        assert_eq!(config.interface(), "0.0.0.0");
-        assert!(config
-            .security()
-            .is_some());
-        assert!(config
-            .security()
-            .unwrap()
-            .client_auth());
-    }
-
-    #[test]
     fn test_server_config_clone() {
         let original = ServerConfig::builder()
             .port(1234)
@@ -124,14 +55,6 @@ mod server_config_tests {
         let cloned = original.clone();
         assert_eq!(original.port(), cloned.port());
         assert_eq!(original.interface(), cloned.interface());
-        assert_eq!(
-            original
-                .security()
-                .is_some(),
-            cloned
-                .security()
-                .is_some()
-        );
     }
 }
 
@@ -140,31 +63,13 @@ mod security_config_tests {
     use super::*;
 
     #[test]
-    fn test_security_config_builder_default() {
-        let config = SecurityConfig::builder().build();
-        assert!(config
-            .cert()
-            .is_none());
-        assert!(config
-            .key()
-            .is_none());
-        assert!(config
-            .ca_cert()
-            .is_none());
-        assert!(!config.client_auth());
-    }
-
-    #[test]
     fn test_security_config_builder_with_cert_bytes() {
         let cert_data = vec![10, 20, 30, 40];
         let config = SecurityConfig::builder()
             .cert_from_bytes(cert_data.clone())
             .build();
 
-        assert_eq!(config.cert(), &Some(cert_data));
-        assert!(config
-            .key()
-            .is_none());
+        assert_eq!(config.cert(), &cert_data);
         assert!(config
             .ca_cert()
             .is_none());
@@ -178,10 +83,7 @@ mod security_config_tests {
             .key_from_bytes(key_data.clone())
             .build();
 
-        assert!(config
-            .cert()
-            .is_none());
-        assert_eq!(config.key(), &Some(key_data));
+        assert_eq!(config.key(), &key_data);
         assert!(config
             .ca_cert()
             .is_none());
@@ -194,13 +96,6 @@ mod security_config_tests {
         let config = SecurityConfig::builder()
             .ca_cert_from_bytes(ca_cert_data.clone())
             .build();
-
-        assert!(config
-            .cert()
-            .is_none());
-        assert!(config
-            .key()
-            .is_none());
         assert_eq!(config.ca_cert(), &Some(ca_cert_data));
         assert!(!config.client_auth());
     }
@@ -211,15 +106,6 @@ mod security_config_tests {
             .client_auth(true)
             .build();
 
-        assert!(config
-            .cert()
-            .is_none());
-        assert!(config
-            .key()
-            .is_none());
-        assert!(config
-            .ca_cert()
-            .is_none());
         assert!(config.client_auth());
     }
 
@@ -236,8 +122,8 @@ mod security_config_tests {
             .client_auth(true)
             .build();
 
-        assert_eq!(config.cert(), &Some(cert_data));
-        assert_eq!(config.key(), &Some(key_data));
+        assert_eq!(config.cert(), &cert_data);
+        assert_eq!(config.key(), &key_data);
         assert_eq!(config.ca_cert(), &Some(ca_cert_data));
         assert!(config.client_auth());
     }
@@ -251,8 +137,8 @@ mod security_config_tests {
             .client_auth(false)
             .build();
 
-        assert_eq!(config.cert(), &Some(vec![1, 2, 3]));
-        assert_eq!(config.key(), &Some(vec![4, 5, 6]));
+        assert_eq!(config.cert(), &vec![1, 2, 3]);
+        assert_eq!(config.key(), &vec![4, 5, 6]);
         assert_eq!(config.ca_cert(), &Some(vec![7, 8, 9]));
         assert!(!config.client_auth());
     }
@@ -280,8 +166,8 @@ mod security_config_tests {
             .ca_cert_from_bytes(vec![])
             .build();
 
-        assert_eq!(config.cert(), &Some(vec![]));
-        assert_eq!(config.key(), &Some(vec![]));
+        assert_eq!(config.cert(), &vec![]);
+        assert_eq!(config.key(), &vec![]);
         assert_eq!(config.ca_cert(), &Some(vec![]));
         assert!(!config.client_auth());
     }
@@ -299,8 +185,8 @@ mod security_config_tests {
             .client_auth(true)
             .build();
 
-        assert_eq!(config.cert(), &Some(large_cert));
-        assert_eq!(config.key(), &Some(large_key));
+        assert_eq!(config.cert(), &large_cert);
+        assert_eq!(config.key(), &large_key);
         assert_eq!(config.ca_cert(), &Some(large_ca_cert));
         assert!(config.client_auth());
     }
@@ -325,28 +211,7 @@ mod integration_tests {
             .client_auth(true)
             .build();
 
-        let server_config = ServerConfig::builder()
-            .port(443)
-            .interface("0.0.0.0".to_string())
-            .security(security_config)
-            .build();
-
-        assert_eq!(server_config.port(), 443);
-        assert_eq!(server_config.interface(), "0.0.0.0");
-
-        let security = server_config
-            .security()
-            .unwrap();
-        assert!(security
-            .cert()
-            .is_some());
-        assert!(security
-            .key()
-            .is_some());
-        assert!(security
-            .ca_cert()
-            .is_some());
-        assert!(security.client_auth());
+        assert!(security_config.client_auth());
     }
 
     #[test]

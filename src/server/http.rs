@@ -1,45 +1,41 @@
 use http_body_util::Full;
 use hyper::body::{Bytes, Incoming};
-use hyper::service::service_fn;
-use hyper::{Request, Response};
+use std::collections::HashMap;
 use std::future::Future;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::Arc;
 
 #[cfg(feature = "tokio-rt")]
 use tokio::net::TcpListener;
-#[cfg(feature = "tokio-rt")]
-use tokio_rustls::TlsAcceptor;
 
-#[cfg(feature = "smol-rt")]
-use futures_rustls::TlsAcceptor;
 #[cfg(feature = "smol-rt")]
 use smol::net::TcpListener;
 
 #[cfg(feature = "tokio-rt")]
 type VetisTcpListener = TcpListener;
-#[cfg(feature = "tokio-rt")]
-type VetisTlsAcceptor = TlsAcceptor;
 
 #[cfg(feature = "smol-rt")]
 type VetisTcpListener = TcpListener;
-#[cfg(feature = "smol-rt")]
-type VetisTlsAcceptor = TlsAcceptor;
 
 use rt_gate::GateTask;
 
-use crate::server::errors::VetisError;
-use crate::server::tcp::TcpServer;
-use crate::server::{config::ServerConfig, Server};
+use crate::server::virtual_host::VirtualHost;
+use crate::server::{config::ServerConfig, errors::VetisError, tcp::TcpServer, Server};
+use crate::VetisRwLock;
 
 pub struct HttpServer {
     config: ServerConfig,
     task: Option<GateTask>,
+    virtual_hosts: Arc<VetisRwLock<HashMap<String, Box<dyn VirtualHost + Send + Sync + 'static>>>>,
 }
 
 impl HttpServer {
     pub fn new(config: ServerConfig) -> Self {
-        Self { task: None, config }
+        Self {
+            config,
+            task: None,
+            virtual_hosts: Arc::new(VetisRwLock::new(HashMap::new().into())),
+        }
     }
 }
 
@@ -50,25 +46,16 @@ impl Server<Incoming, Full<Bytes>> for HttpServer {
         self.config.port()
     }
 
-    async fn start<F, Fut>(&mut self, handler: F) -> Result<(), VetisError>
-    where
-        F: Fn(Request<Incoming>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = Result<Response<Full<Bytes>>, VetisError>> + Send + 'static,
-    {
-        // TODO: Move this into block after check if connection is secure, use SNI for this
-        let tls_acceptor = if let Some(config) = self
-            .config
-            .security()
-        {
-            let alpn = if cfg!(feature = "http1") { "http/1.1".into() } else { "h2".into() };
+    fn set_virtual_hosts(
+        &mut self,
+        virtual_hosts: Arc<
+            VetisRwLock<HashMap<String, Box<dyn VirtualHost + Send + Sync + 'static>>>,
+        >,
+    ) {
+        self.virtual_hosts = virtual_hosts;
+    }
 
-            let tls_config = self.setup_tls(config, alpn)?;
-
-            Some(VetisTlsAcceptor::from(Arc::new(tls_config)))
-        } else {
-            None
-        };
-
+    async fn start(&mut self) -> Result<(), VetisError> {
         let addr = if let Ok(ip) = self
             .config
             .interface()
@@ -91,9 +78,11 @@ impl Server<Incoming, Full<Bytes>> for HttpServer {
             .await
             .map_err(|e| VetisError::Bind(e.to_string()))?;
 
-        let handler = Arc::new(service_fn(handler));
-
-        let task = self.handle_connections(listener, tls_acceptor, handler)?;
+        let task = self.handle_connections(
+            listener,
+            self.virtual_hosts
+                .clone(),
+        )?;
 
         self.task = Some(task);
 

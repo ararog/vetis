@@ -13,7 +13,7 @@ publish = true
 rust-version = "1.64.0"
 
 [features]
-default = ["tokio-rt", "http2", "tokio-rust-tls"]
+default = ["tokio-rt", "http1", "tokio-rust-tls"]
 
 tokio-rt = ["tokio", "rt-gate/tokio-rt", "hyper-util/tokio", "tokio/rt-multi-thread", "tokio/net", "tokio/signal"]
 smol-rt = ["smol", "smol-hyper", "smol-macros", "rt-gate/smol-rt", "dep:async-signal", "dep:signal-hook"]
