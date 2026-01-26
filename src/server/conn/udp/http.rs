@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    future::Future,
     net::{Ipv4Addr, Ipv6Addr, SocketAddr},
     sync::Arc,
 };
@@ -20,12 +19,7 @@ use rt_gate::{spawn_server, spawn_worker, GateTask};
 use crate::{
     config::ServerConfig,
     errors::{StartError::Tls, VetisError},
-    server::{
-        conn::udp::UdpServer,
-        tls::{self, TlsFactory},
-        virtual_host::{self, VirtualHost},
-        Server,
-    },
+    server::{conn::udp::UdpServer, tls::TlsFactory, Server},
     VetisRwLock, VetisVirtualHosts,
 };
 

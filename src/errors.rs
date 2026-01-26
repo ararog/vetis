@@ -14,6 +14,9 @@ pub enum VetisError {
     #[error("Handler error: {0}")]
     Handler(String),
 
+    #[error("Tls error: {0}")]
+    Tls(String),
+
     #[error("No instances")]
     NoInstances,
 

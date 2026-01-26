@@ -1,6 +1,8 @@
-use std::collections::HashMap;
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    net::{Ipv4Addr, Ipv6Addr, SocketAddr},
+    sync::Arc,
+};
 
 use http_body_util::Full;
 use hyper::{
@@ -9,11 +11,15 @@ use hyper::{
 };
 
 use log::{error, info};
-use peekable::tokio::AsyncPeekable;
-use peekable::Peekable;
 use rt_gate::{spawn_server, spawn_worker, GateTask};
 
 use ::http::Response;
+
+#[cfg(feature = "smol-rt")]
+use peekable::futures::AsyncPeekable;
+
+#[cfg(feature = "tokio-rt")]
+use peekable::tokio::AsyncPeekable;
 
 #[cfg(feature = "http1")]
 use hyper::server::conn::http1;
@@ -22,7 +28,6 @@ use hyper::server::conn::http2;
 
 #[cfg(all(feature = "smol-rt", feature = "http2"))]
 use crate::rt::smol::SmolExecutor;
-use crate::server::tls::TlsFactory;
 #[cfg(all(feature = "tokio-rt", feature = "http2"))]
 use hyper_util::rt::TokioExecutor;
 
@@ -35,14 +40,27 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use hyper_util::rt::TokioIo;
 #[cfg(feature = "tokio-rt")]
 use tokio::net::TcpListener;
+#[cfg(feature = "tokio-rt")]
+use tokio_rustls::TlsAcceptor;
 
+#[cfg(feature = "smol-rt")]
+use futures_rustls::TlsAcceptor;
 #[cfg(feature = "smol-rt")]
 use smol::net::TcpListener;
 #[cfg(all(feature = "smol-rt", any(feature = "http1", feature = "http2")))]
 use smol_hyper::rt::FuturesIo;
 
+use crate::{
+    config::ServerConfig,
+    errors::{StartError, VetisError},
+    server::{conn::tcp::TcpServer, tls::TlsFactory, virtual_host::VirtualHost, Server},
+    VetisRwLock, VetisVirtualHosts,
+};
+
 #[cfg(feature = "tokio-rt")]
 type VetisTcpListener = TcpListener;
+#[cfg(feature = "tokio-rt")]
+type VetisTlsAcceptor = TlsAcceptor;
 #[cfg(feature = "tokio-rt")]
 type VetisIo<T> = TokioIo<T>;
 #[cfg(all(feature = "tokio-rt", feature = "http2"))]
@@ -51,16 +69,11 @@ type VetisExecutor = TokioExecutor;
 #[cfg(feature = "smol-rt")]
 type VetisTcpListener = TcpListener;
 #[cfg(feature = "smol-rt")]
+type VetisTlsAcceptor = TlsAcceptor;
+#[cfg(feature = "smol-rt")]
 type VetisIo<T> = FuturesIo<T>;
 #[cfg(all(feature = "smol-rt", feature = "http2"))]
 type VetisExecutor = SmolExecutor;
-
-use crate::{
-    config::ServerConfig,
-    errors::VetisError,
-    server::{conn::tcp::TcpServer, virtual_host::VirtualHost, Server},
-    VetisRwLock, VetisVirtualHosts,
-};
 
 pub struct HttpServer {
     config: ServerConfig,
@@ -145,6 +158,13 @@ impl TcpServer for HttpServer {
             b"h3".to_vec(),
         ];
         let tls_config = TlsFactory::create_tls_config(virtual_host.clone(), alpn).await?;
+        if tls_config.is_none() {
+            return Err(VetisError::Start(StartError::Tls(
+                "Failed to create TLS acceptor".to_string(),
+            )));
+        }
+
+        let tls_config = tls_config.unwrap();
         let tls_acceptor = VetisTlsAcceptor::from(Arc::new(tls_config));
         let task = spawn_server(async move {
             loop {
@@ -174,21 +194,19 @@ impl TcpServer for HttpServer {
                 let is_tls = peeked.starts_with(&[0x16, 0x03]);
 
                 if is_tls {
-                    if let Some(acceptor) = &tls_acceptor {
-                        let tls_stream = acceptor
-                            .accept(peekable)
-                            .await;
+                    let tls_stream = tls_acceptor
+                        .accept(peekable)
+                        .await;
 
-                        if let Err(e) = tls_stream {
-                            error!("Cannot accept connection: {:?}", e);
-                            continue;
-                        }
-
-                        let tls_stream = tls_stream.unwrap();
-                        let io = VetisIo::new(tls_stream);
-                        let request_handler = ServerHandler {};
-                        let _ = request_handler.handle(io, virtual_host.clone());
+                    if let Err(e) = tls_stream {
+                        error!("Cannot accept connection: {:?}", e);
+                        continue;
                     }
+
+                    let tls_stream = tls_stream.unwrap();
+                    let io = VetisIo::new(tls_stream);
+                    let request_handler = ServerHandler {};
+                    let _ = request_handler.handle(io, virtual_host.clone());
                 } else {
                     let io = VetisIo::new(peekable);
                     let request_handler = ServerHandler {};
@@ -218,31 +236,20 @@ impl ServerHandler {
             let value = virtual_hosts.clone();
             async move {
                 let host = req
-                    .headers()
-                    .get(::http::header::HOST);
+                    .uri()
+                    .authority();
                 if let Some(host) = host {
-                    info!(
-                        "Serving request for host: {}",
-                        host.to_str()
-                            .unwrap()
-                    );
-                    let virtual_host = value.read().await;
+                    info!("Serving request for host: {}", host);
+                    let virtual_hosts = value.read().await;
 
-                    let virtual_host = virtual_host.get(
-                        host.to_str()
-                            .unwrap(),
-                    );
+                    let virtual_host = virtual_hosts.get(&host.to_string());
 
                     if let Some(virtual_host) = virtual_host {
                         (virtual_host)
                             .execute(req)
                             .await
                     } else {
-                        error!(
-                            "Virtual host not found for host: {}",
-                            host.to_str()
-                                .unwrap()
-                        );
+                        error!("Virtual host not found for host: {}", host);
                         let response = Response::builder()
                             .status(404)
                             .body(Full::new(Bytes::from_static(b"Virtual host not found")))
