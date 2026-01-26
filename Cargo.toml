@@ -13,7 +13,7 @@ publish = true
 rust-version = "1.64.0"
 
 [features]
-default = ["tokio-rt", "http3", "tokio-rust-tls"]
+default = ["tokio-rt", "http2", "tokio-rust-tls"]
 
 tokio-rt = [
   "tokio",

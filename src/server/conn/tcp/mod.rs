@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-use std::future::Future;
-use std::sync::Arc;
-
-use crate::VetisRwLock;
+use std::{collections::HashMap, future::Future, sync::Arc};
 
 use crate::{
     errors::VetisError,
     server::{virtual_host::VirtualHost, Server},
+    VetisRwLock,
 };
+
 use bytes::Bytes;
 use http_body_util::Full;
 use hyper::body::Incoming;

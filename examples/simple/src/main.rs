@@ -1,10 +1,8 @@
 use bytes::Bytes;
-use clap::Parser;
 use http_body_util::Full;
-use hyper::{body::Incoming, Response};
+use hyper::{Response};
 use vetis::{
     config::{SecurityConfig, ServerConfig, VirtualHostConfig},
-    errors::VetisError,
     server::virtual_host::{handler_fn, DefaultVirtualHost, VirtualHost},
     Vetis,
 };
@@ -13,77 +11,9 @@ pub const CA_CERT: &[u8] = include_bytes!("../certs/ca.der");
 pub const SERVER_CERT: &[u8] = include_bytes!("../certs/server.der");
 pub const SERVER_KEY: &[u8] = include_bytes!("../certs/server.key.der");
 
-/*
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-struct Args {
-    #[arg(
-        short = 'p',
-        long,
-        required = false,
-        num_args = 0..=1,
-        require_equals = true,
-        default_value = "8443",
-        help = "Set bearer auth token on Authorization header."
-    )]
-    port: u16,
-
-    #[arg(
-        short = 'i',
-        long,
-        required = false,
-        num_args = 0..=1,
-        require_equals = true,
-        default_value = "0.0.0.0",
-        help = "Set bearer auth token on Authorization header."
-    )]
-    interface: String,
-
-    #[arg(
-        short = 'c',
-        long,
-        required = false,
-        num_args = 0..=1,
-        require_equals = true,
-        default_value = "../certs/server.der",
-        help = "Set server certificate file (DER encoded)."
-    )]
-    cert: String,
-
-    #[arg(
-        short = 'k',
-        long,
-        required = false,
-        num_args = 0..=1,
-        require_equals = true,
-        default_value = "../certs/server.key.der",
-        help = "Set server certificate file (DER encoded)."
-    )]
-    key: String,
-
-    #[arg(
-        short = 'a',
-        long,
-        required = false,
-        num_args = 0..=1,
-        require_equals = true,
-        default_value = "../certs/ca.der",
-        help = "Set server certificate file (DER encoded)."
-    )]
-    ca: String,
-}
-*/
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std_logger::Config::logfmt().init();
-
-    /*
-    let args = Args::parse();
-
-    let interface = args.interface;
-    let port = args.port;
-    */
 
     let config = ServerConfig::builder()
         .port(8443)

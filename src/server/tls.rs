@@ -11,17 +11,6 @@ use rustls::{
     sign::CertifiedKey,
     ServerConfig,
 };
-#[cfg(feature = "tokio-rt")]
-use tokio_rustls::TlsAcceptor;
-
-#[cfg(feature = "smol-rt")]
-use futures_rustls::TlsAcceptor;
-
-#[cfg(feature = "tokio-rt")]
-type VetisTlsAcceptor = TlsAcceptor;
-
-#[cfg(feature = "smol-rt")]
-type VetisTlsAcceptor = TlsAcceptor;
 
 pub struct TlsFactory {}
 
