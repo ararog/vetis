@@ -1,21 +1,19 @@
 use bytes::Bytes;
 use clap::Parser;
 use http_body_util::Full;
-use hyper::{Response, body::Incoming};
+use hyper::{body::Incoming, Response};
 use vetis::{
-    Vetis,
+    config::{SecurityConfig, ServerConfig, VirtualHostConfig},
     errors::VetisError,
-    server::{
-        config::{SecurityConfig, ServerConfig, VirtualHostConfig},
-        virtual_host::{DefaultVirtualHost, VirtualHost, handler_fn},
-    },
+    server::virtual_host::{handler_fn, DefaultVirtualHost, VirtualHost},
+    Vetis,
 };
 
 pub const CA_CERT: &[u8] = include_bytes!("../certs/ca.der");
 pub const SERVER_CERT: &[u8] = include_bytes!("../certs/server.der");
 pub const SERVER_KEY: &[u8] = include_bytes!("../certs/server.key.der");
 
-/* 
+/*
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -73,14 +71,14 @@ struct Args {
         help = "Set server certificate file (DER encoded)."
     )]
     ca: String,
-}    
+}
 */
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std_logger::Config::logfmt().init();
 
-    /* 
+    /*
     let args = Args::parse();
 
     let interface = args.interface;
@@ -97,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .cert_from_bytes(SERVER_CERT.to_vec())
         .key_from_bytes(SERVER_KEY.to_vec())
         .build();
-        
+
     let localhost_config = VirtualHostConfig::builder()
         .hostname("localhost".to_string())
         .security(security_config)

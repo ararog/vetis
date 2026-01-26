@@ -1,6 +1,6 @@
 use std::{future::Future, pin::Pin};
 
-use crate::{errors::VetisError, server::config::VirtualHostConfig, RequestType, ResponseType};
+use crate::{config::VirtualHostConfig, errors::VetisError, RequestType, ResponseType};
 
 pub mod directory;
 

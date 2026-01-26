@@ -3,6 +3,59 @@
 use std::fs;
 
 #[derive(Clone)]
+pub struct ListenerConfigBuilder {
+    port: u16,
+    ssl: bool,
+    interface: String,
+}
+
+impl ListenerConfigBuilder {
+    pub fn port(mut self, port: u16) -> Self {
+        self.port = port;
+        self
+    }
+
+    pub fn ssl(mut self, ssl: bool) -> Self {
+        self.ssl = ssl;
+        self
+    }
+
+    pub fn interface(mut self, interface: String) -> Self {
+        self.interface = interface;
+        self
+    }
+
+    pub fn build(self) -> ListenerConfig {
+        ListenerConfig { port: self.port, ssl: self.ssl, interface: self.interface }
+    }
+}
+
+#[derive(Clone)]
+pub struct ListenerConfig {
+    port: u16,
+    ssl: bool,
+    interface: String,
+}
+
+impl ListenerConfig {
+    pub fn builder() -> ListenerConfigBuilder {
+        ListenerConfigBuilder { port: 0, ssl: false, interface: "0.0.0.0".to_string() }
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port
+    }
+
+    pub fn ssl(&self) -> bool {
+        self.ssl
+    }
+
+    pub fn interface(&self) -> &String {
+        &self.interface
+    }
+}
+
+#[derive(Clone)]
 pub struct ServerConfigBuilder {
     port: u16,
     interface: String,
@@ -56,6 +109,7 @@ impl ServerConfig {
 
 pub struct VirtualHostConfigBuilder {
     hostname: String,
+    port: u16,
     security: Option<SecurityConfig>,
 }
 
@@ -65,28 +119,38 @@ impl VirtualHostConfigBuilder {
         self
     }
 
+    pub fn port(mut self, port: u16) -> Self {
+        self.port = port;
+        self
+    }
+
     pub fn security(mut self, security: SecurityConfig) -> Self {
         self.security = Some(security);
         self
     }
 
     pub fn build(self) -> VirtualHostConfig {
-        VirtualHostConfig { hostname: self.hostname, security: self.security }
+        VirtualHostConfig { hostname: self.hostname, port: self.port, security: self.security }
     }
 }
 
 pub struct VirtualHostConfig {
     hostname: String,
+    port: u16,
     security: Option<SecurityConfig>,
 }
 
 impl VirtualHostConfig {
     pub fn builder() -> VirtualHostConfigBuilder {
-        VirtualHostConfigBuilder { hostname: String::new(), security: None }
+        VirtualHostConfigBuilder { hostname: String::new(), port: 0, security: None }
     }
 
     pub fn hostname(&self) -> &String {
         &self.hostname
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port
     }
 
     pub fn security(&self) -> &Option<SecurityConfig> {

@@ -1,8 +1,6 @@
-use crate::server::config::{SecurityConfig, ServerConfig};
-
 #[cfg(test)]
 mod server_config_tests {
-    use super::*;
+    use crate::config::ServerConfig;
 
     #[test]
     fn test_server_config_default() {
@@ -60,7 +58,7 @@ mod server_config_tests {
 
 #[cfg(test)]
 mod security_config_tests {
-    use super::*;
+    use crate::config::SecurityConfig;
 
     #[test]
     fn test_security_config_builder_with_cert_bytes() {
@@ -194,7 +192,7 @@ mod security_config_tests {
 
 #[cfg(test)]
 mod integration_tests {
-    use super::*;
+    use crate::config::{SecurityConfig, ServerConfig};
 
     #[test]
     fn test_server_config_with_security_integration() {

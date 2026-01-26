@@ -1,8 +1,7 @@
-use std::{collections::HashMap, future::Future, sync::Arc};
+use std::future::Future;
 
-use crate::{errors::VetisError, server::virtual_host::VirtualHost, VetisRwLock};
+use crate::{errors::VetisError, VetisVirtualHosts};
 
-pub mod config;
 pub mod conn;
 pub mod tls;
 pub mod virtual_host;
@@ -10,10 +9,7 @@ pub mod virtual_host;
 pub trait Server<RequestBody, ResponseBody> {
     fn port(&self) -> u16;
 
-    fn set_virtual_hosts(
-        &mut self,
-        virtual_hosts: Arc<VetisRwLock<HashMap<String, Box<dyn VirtualHost>>>>,
-    );
+    fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts);
 
     fn start(&mut self) -> impl Future<Output = Result<(), VetisError>>;
 

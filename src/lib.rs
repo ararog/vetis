@@ -35,10 +35,12 @@ pub(crate) type VetisRwLock<T> = RwLock<T>;
 pub(crate) type VetisVirtualHosts = Arc<VetisRwLock<HashMap<String, Box<dyn VirtualHost>>>>;
 
 use crate::{
+    config::ServerConfig,
     errors::VetisError,
-    server::{config::ServerConfig, virtual_host::VirtualHost, Server},
+    server::{virtual_host::VirtualHost, Server},
 };
 
+pub mod config;
 pub mod errors;
 mod rt;
 pub mod server;

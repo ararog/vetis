@@ -56,8 +56,9 @@ type VetisIo<T> = FuturesIo<T>;
 type VetisExecutor = SmolExecutor;
 
 use crate::{
+    config::ServerConfig,
     errors::VetisError,
-    server::{config::ServerConfig, conn::tcp::TcpServer, virtual_host::VirtualHost, Server},
+    server::{conn::tcp::TcpServer, virtual_host::VirtualHost, Server},
     VetisRwLock, VetisVirtualHosts,
 };
 
@@ -135,8 +136,16 @@ impl TcpServer for HttpServer {
         listener: VetisTcpListener,
         virtual_host: VetisVirtualHosts,
     ) -> Result<GateTask, VetisError> {
-        let alpn = if cfg!(feature = "http1") { "http/1.1".into() } else { "h2".into() };
-        let tls_acceptor = TlsFactory::create_tls_acceptor(virtual_host.clone(), alpn).await?;
+        let alpn = vec![
+            #[cfg(feature = "http1")]
+            b"http/1.1".to_vec(),
+            #[cfg(feature = "http2")]
+            b"h2".to_vec(),
+            #[cfg(feature = "http3")]
+            b"h3".to_vec(),
+        ];
+        let tls_config = TlsFactory::create_tls_config(virtual_host.clone(), alpn).await?;
+        let tls_acceptor = VetisTlsAcceptor::from(Arc::new(tls_config));
         let task = spawn_server(async move {
             loop {
                 let result = listener
@@ -198,7 +207,7 @@ impl ServerHandler {
     pub fn handle<T>(
         &self,
         io: VetisIo<T>,
-        virtual_hosts: Arc<VetisRwLock<HashMap<String, Box<dyn VirtualHost>>>>,
+        virtual_hosts: VetisVirtualHosts,
     ) -> Result<(), VetisError>
     where
         T: AsyncRead + AsyncWrite + Unpin + Send + 'static,

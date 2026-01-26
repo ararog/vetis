@@ -9,6 +9,7 @@ use rustls::{
     pki_types::{CertificateDer, PrivateKeyDer},
     server::ResolvesServerCertUsingSni,
     sign::CertifiedKey,
+    ServerConfig,
 };
 #[cfg(feature = "tokio-rt")]
 use tokio_rustls::TlsAcceptor;
@@ -25,10 +26,10 @@ type VetisTlsAcceptor = TlsAcceptor;
 pub struct TlsFactory {}
 
 impl TlsFactory {
-    pub async fn create_tls_acceptor(
+    pub async fn create_tls_config(
         virtual_hosts: VetisVirtualHosts,
-        alpn_protocols: Vec<u8>,
-    ) -> Result<Option<VetisTlsAcceptor>, VetisError> {
+        alpn_protocols: Vec<Vec<u8>>,
+    ) -> Result<Option<ServerConfig>, VetisError> {
         let virtual_hosts = virtual_hosts.clone();
         let provider = rustls::crypto::aws_lc_rs::default_provider();
         let mut resolver = ResolvesServerCertUsingSni::new();
@@ -77,8 +78,8 @@ impl TlsFactory {
             .with_cert_resolver(Arc::new(resolver));
 
         tls_config.max_early_data_size = u32::MAX;
-        tls_config.alpn_protocols = vec![alpn_protocols];
+        tls_config.alpn_protocols = alpn_protocols;
 
-        Ok(Some(VetisTlsAcceptor::from(Arc::new(tls_config))))
+        Ok(Some(tls_config))
     }
 }
