@@ -1,13 +1,14 @@
 use std::future::Future;
 
-use crate::{errors::VetisError, VetisVirtualHosts};
+use crate::{config::ServerConfig, errors::VetisError, VetisVirtualHosts};
 
 pub mod conn;
+pub mod http;
 pub mod tls;
 pub mod virtual_host;
 
-pub trait Server<RequestBody, ResponseBody> {
-    fn port(&self) -> u16;
+pub trait Server {
+    fn new(config: ServerConfig) -> Self;
 
     fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts);
 

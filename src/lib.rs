@@ -10,7 +10,6 @@ compile_error!("Only one runtime feature can be enabled at a time.");
 use std::{collections::HashMap, sync::Arc};
 
 use bytes::Bytes;
-use http::{Request, Response};
 use http_body_util::Full;
 
 #[cfg(any(feature = "http1", feature = "http2"))]
@@ -32,7 +31,7 @@ use tokio::sync::RwLock;
 
 pub(crate) type VetisRwLock<T> = RwLock<T>;
 
-pub(crate) type VetisVirtualHosts = Arc<VetisRwLock<HashMap<String, Box<dyn VirtualHost>>>>;
+pub(crate) type VetisVirtualHosts = Arc<VetisRwLock<HashMap<(String, u16), Box<dyn VirtualHost>>>>;
 
 use crate::{
     config::ServerConfig,
@@ -46,28 +45,10 @@ mod rt;
 pub mod server;
 mod tests;
 
-#[cfg(any(feature = "http1", feature = "http2"))]
-pub type RequestType = Request<Incoming>;
-
-#[cfg(feature = "http3")]
-pub type RequestType = Request<Full<Bytes>>;
-
-#[cfg(any(feature = "http1", feature = "http2"))]
-pub type ResponseType = Response<Full<Bytes>>;
-
-#[cfg(feature = "http3")]
-pub type ResponseType = Response<Full<Bytes>>;
-
 pub struct Vetis {
     config: ServerConfig,
     virtual_hosts: VetisVirtualHosts,
-
-    #[cfg(feature = "http1")]
-    instance: Option<server::conn::tcp::http::HttpServer>,
-    #[cfg(feature = "http2")]
-    instance: Option<server::conn::tcp::http::HttpServer>,
-    #[cfg(feature = "http3")]
-    instance: Option<server::conn::udp::http::HttpServer>,
+    instance: Option<server::http::HttpServer>,
 }
 
 impl Vetis {
@@ -79,16 +60,12 @@ impl Vetis {
     where
         V: VirtualHost,
     {
-        let hostname = if self.config.port() == 80 || self.config.port() == 443 {
-            virtual_host.hostname()
-        } else {
-            format!("{}:{}", virtual_host.hostname(), self.config.port())
-        };
+        let key = (virtual_host.hostname(), virtual_host.port());
 
         self.virtual_hosts
             .write()
             .await
-            .insert(hostname, Box::new(virtual_host));
+            .insert(key, Box::new(virtual_host));
     }
 
     pub fn config(&self) -> &ServerConfig {
@@ -98,12 +75,12 @@ impl Vetis {
     pub async fn run(&mut self) -> Result<(), VetisError> {
         self.start().await?;
 
-        info!(
-            "Server listening on port {}:{}",
-            self.config
-                .interface(),
-            self.config.port()
-        );
+        for listener in self
+            .config
+            .listeners()
+        {
+            info!("Server listening on port {}:{}", listener.interface(), listener.port());
+        }
 
         #[cfg(feature = "tokio-rt")]
         let _ = tokio::signal::ctrl_c().await;
@@ -136,11 +113,7 @@ impl Vetis {
             return Err(VetisError::NoVirtualHosts);
         }
 
-        #[cfg(any(feature = "http1", feature = "http2"))]
-        let mut server = server::conn::tcp::http::HttpServer::new(self.config.clone());
-
-        #[cfg(feature = "http3")]
-        let mut server = server::conn::udp::http::HttpServer::new(self.config.clone());
+        let mut server = server::http::HttpServer::new(self.config.clone());
 
         server.set_virtual_hosts(
             self.virtual_hosts
@@ -164,5 +137,103 @@ impl Vetis {
             return Err(VetisError::NoInstances);
         }
         Ok(())
+    }
+}
+
+pub struct Request {
+    pub(crate) inner_http: Option<http::Request<Incoming>>,
+    pub(crate) inner_quic: Option<http::Request<Full<Bytes>>>,
+}
+
+impl Request {
+    pub fn from_http(req: http::Request<Incoming>) -> Self {
+        Self { inner_http: Some(req), inner_quic: None }
+    }
+
+    pub fn from_quic(req: http::Request<Full<Bytes>>) -> Self {
+        Self { inner_http: None, inner_quic: Some(req) }
+    }
+
+    pub fn uri(&self) -> &http::Uri {
+        match &self.inner_http {
+            Some(req) => req.uri(),
+            None => match &self.inner_quic {
+                Some(req) => req.uri(),
+                None => panic!("No request"),
+            },
+        }
+    }
+
+    pub fn headers(&self) -> &http::HeaderMap {
+        match &self.inner_http {
+            Some(req) => req.headers(),
+            None => match &self.inner_quic {
+                Some(req) => req.headers(),
+                None => panic!("No request"),
+            },
+        }
+    }
+
+    pub fn method(&self) -> &http::Method {
+        match &self.inner_http {
+            Some(req) => req.method(),
+            None => match &self.inner_quic {
+                Some(req) => req.method(),
+                None => panic!("No request"),
+            },
+        }
+    }
+}
+
+pub struct ResponseBuilder {
+    status: http::StatusCode,
+    version: http::Version,
+    headers: http::HeaderMap,
+}
+
+impl ResponseBuilder {
+    pub fn status(mut self, status: http::StatusCode) -> Self {
+        self.status = status;
+        self
+    }
+
+    pub fn version(mut self, version: http::Version) -> Self {
+        self.version = version;
+        self
+    }
+
+    pub fn headers(mut self, headers: http::HeaderMap) -> Self {
+        self.headers = headers;
+        self
+    }
+
+    pub fn body(self, body: Full<Bytes>) -> Response {
+        let response = http::Response::builder()
+            .status(self.status)
+            .version(self.version);
+
+        Response {
+            inner: response
+                .body(body)
+                .unwrap(),
+        }
+    }
+}
+
+pub struct Response {
+    pub(crate) inner: http::Response<Full<Bytes>>,
+}
+
+impl Response {
+    pub fn builder() -> ResponseBuilder {
+        ResponseBuilder {
+            status: http::StatusCode::OK,
+            version: http::Version::HTTP_11,
+            headers: http::HeaderMap::new(),
+        }
+    }
+
+    pub fn into_inner(self) -> http::Response<Full<Bytes>> {
+        self.inner
     }
 }

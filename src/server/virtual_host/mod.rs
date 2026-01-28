@@ -1,19 +1,19 @@
 use std::{future::Future, pin::Pin};
 
-use crate::{config::VirtualHostConfig, errors::VetisError, RequestType, ResponseType};
+use crate::{config::VirtualHostConfig, errors::VetisError, Request, Response};
 
 pub mod directory;
 
 pub type BoxedHandlerClosure = Box<
-    dyn Fn(RequestType) -> Pin<Box<dyn Future<Output = Result<ResponseType, VetisError>> + Send>>
+    dyn Fn(Request) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send>>
         + Send
         + Sync,
 >;
 
 pub fn handler_fn<F, Fut>(f: F) -> BoxedHandlerClosure
 where
-    F: Fn(RequestType) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = Result<ResponseType, VetisError>> + Send + Sync + 'static,
+    F: Fn(Request) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = Result<Response, VetisError>> + Send + Sync + 'static,
 {
     Box::new(move |req| Box::pin(f(req)))
 }
@@ -24,12 +24,13 @@ pub trait VirtualHost: Send + Sync + 'static {
         Self: Sized;
     fn config(&self) -> &VirtualHostConfig;
     fn hostname(&self) -> String;
+    fn port(&self) -> u16;
     fn is_secure(&self) -> bool;
     fn set_handler(&mut self, handler: BoxedHandlerClosure);
     fn execute(
         &self,
-        request: RequestType,
-    ) -> Pin<Box<dyn Future<Output = Result<ResponseType, VetisError>> + Send>>;
+        request: Request,
+    ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send>>;
 }
 
 // All of them should have a handler to process requests
@@ -53,6 +54,10 @@ impl VirtualHost for DefaultVirtualHost {
             .clone()
     }
 
+    fn port(&self) -> u16 {
+        self.config.port()
+    }
+
     fn is_secure(&self) -> bool {
         self.config
             .security()
@@ -65,8 +70,8 @@ impl VirtualHost for DefaultVirtualHost {
 
     fn execute(
         &self,
-        request: RequestType,
-    ) -> Pin<Box<dyn Future<Output = Result<ResponseType, VetisError>> + Send>> {
+        request: Request,
+    ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send>> {
         if let Some(handler) = &self.handler {
             handler(request)
         } else {
@@ -93,6 +98,10 @@ impl<V: VirtualHost> VirtualHost for Box<V> {
             .hostname()
     }
 
+    fn port(&self) -> u16 {
+        self.as_ref().port()
+    }
+
     fn is_secure(&self) -> bool {
         self.as_ref()
             .is_secure()
@@ -105,8 +114,8 @@ impl<V: VirtualHost> VirtualHost for Box<V> {
 
     fn execute(
         &self,
-        request: RequestType,
-    ) -> Pin<Box<dyn Future<Output = Result<ResponseType, VetisError>> + Send>> {
+        request: Request,
+    ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send>> {
         self.as_ref()
             .execute(request)
     }

@@ -3,9 +3,20 @@
 use std::fs;
 
 #[derive(Clone)]
+pub enum Protocol {
+    #[cfg(feature = "http1")]
+    HTTP1,
+    #[cfg(feature = "http2")]
+    HTTP2,
+    #[cfg(feature = "http3")]
+    HTTP3,
+}
+
+#[derive(Clone)]
 pub struct ListenerConfigBuilder {
     port: u16,
     ssl: bool,
+    protocol: Protocol,
     interface: String,
 }
 
@@ -25,8 +36,18 @@ impl ListenerConfigBuilder {
         self
     }
 
+    pub fn protocol(mut self, protocol: Protocol) -> Self {
+        self.protocol = protocol;
+        self
+    }
+
     pub fn build(self) -> ListenerConfig {
-        ListenerConfig { port: self.port, ssl: self.ssl, interface: self.interface }
+        ListenerConfig {
+            port: self.port,
+            ssl: self.ssl,
+            protocol: self.protocol,
+            interface: self.interface,
+        }
     }
 }
 
@@ -34,12 +55,23 @@ impl ListenerConfigBuilder {
 pub struct ListenerConfig {
     port: u16,
     ssl: bool,
+    protocol: Protocol,
     interface: String,
 }
 
 impl ListenerConfig {
     pub fn builder() -> ListenerConfigBuilder {
-        ListenerConfigBuilder { port: 0, ssl: false, interface: "0.0.0.0".to_string() }
+        ListenerConfigBuilder {
+            port: 0,
+            ssl: false,
+            #[cfg(feature = "http1")]
+            protocol: Protocol::HTTP1,
+            #[cfg(feature = "http2")]
+            protocol: Protocol::HTTP2,
+            #[cfg(feature = "http3")]
+            protocol: Protocol::HTTP3,
+            interface: "0.0.0.0".to_string(),
+        }
     }
 
     pub fn port(&self) -> u16 {
@@ -50,6 +82,10 @@ impl ListenerConfig {
         self.ssl
     }
 
+    pub fn protocol(&self) -> &Protocol {
+        &self.protocol
+    }
+
     pub fn interface(&self) -> &String {
         &self.interface
     }
@@ -57,53 +93,39 @@ impl ListenerConfig {
 
 #[derive(Clone)]
 pub struct ServerConfigBuilder {
-    port: u16,
-    interface: String,
+    listeners: Vec<ListenerConfig>,
 }
 
 impl ServerConfigBuilder {
-    pub fn port(mut self, port: u16) -> Self {
-        self.port = port;
-        self
-    }
-
-    pub fn interface(mut self, interface: String) -> Self {
-        self.interface = interface;
+    pub fn add_listener(mut self, listener: ListenerConfig) -> Self {
+        self.listeners
+            .push(listener);
         self
     }
 
     pub fn build(self) -> ServerConfig {
-        ServerConfig { port: self.port, interface: self.interface }
+        ServerConfig { listeners: self.listeners }
     }
 }
 
 #[derive(Clone)]
 pub struct ServerConfig {
-    port: u16,
-    interface: String,
+    listeners: Vec<ListenerConfig>,
 }
 
 impl Default for ServerConfig {
     fn default() -> Self {
-        ServerConfig { port: 80, interface: "0.0.0.0".to_string() }
+        ServerConfig { listeners: vec![] }
     }
 }
 
 impl ServerConfig {
     pub fn builder() -> ServerConfigBuilder {
-        ServerConfigBuilder { port: 0, interface: "0.0.0.0".to_string() }
+        ServerConfigBuilder { listeners: vec![] }
     }
 
-    pub fn port(&self) -> u16 {
-        self.port
-    }
-
-    pub fn set_port(&mut self, port: u16) {
-        self.port = port;
-    }
-
-    pub fn interface(&self) -> &String {
-        &self.interface
+    pub fn listeners(&self) -> &Vec<ListenerConfig> {
+        &self.listeners
     }
 }
 

@@ -20,7 +20,12 @@ impl TlsFactory {
         alpn_protocols: Vec<Vec<u8>>,
     ) -> Result<Option<ServerConfig>, VetisError> {
         let virtual_hosts = virtual_hosts.clone();
+        #[cfg(feature = "__rustls_awc_lc_rs")]
         let provider = rustls::crypto::aws_lc_rs::default_provider();
+        #[cfg(feature = "__rustls_ring")]
+        let provider = rustls::crypto::ring::default_provider();
+        #[cfg(feature = "__rustls_rustcrypto")]
+        let provider = rustls_rustcrypto::provider();
         let mut resolver = ResolvesServerCertUsingSni::new();
         let virtual_hosts = virtual_hosts
             .read()
@@ -47,13 +52,10 @@ impl TlsFactory {
                 let certified_key = CertifiedKey::from_der(chain, key, &provider)
                     .map_err(|_| Tls("Failed to create certified key".to_string()))?;
 
-                let hostname = hostname
-                    .split_once(":")
-                    .map(|(hostname, _)| hostname)
-                    .unwrap_or(hostname);
+                let hostname = hostname.0.clone();
 
                 resolver
-                    .add(hostname, certified_key)
+                    .add(&hostname, certified_key)
                     .map_err(|e| Tls(e.to_string()))?;
             }
         }
