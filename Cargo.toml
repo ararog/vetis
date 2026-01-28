@@ -63,7 +63,7 @@ rustls = { version = "0.23.19", features = [
 ], default-features = false, optional = true }
 serde = "1.0.226"
 serde_json = "1.0.145"
-signal-hook = { version = "0.3.18", optional = true }
+signal-hook = { version = "0.4.3", optional = true }
 smol = { version = "2.0.2", optional = true }
 smol-hyper = { version = "0.1.1", optional = true }
 smol-macros = { version = "0.1.1", optional = true }
