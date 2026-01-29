@@ -17,7 +17,7 @@ VeTiS is a lightweight yet powerful web server that brings simplicity and perfor
 
 Add VeTiS to your `Cargo.toml`:
 
-```rust
+```toml
 vetis = { version = "0.1.0", features = ["tokio-rt", "http2", "tokio-rust-tls"] }
 ```
 
@@ -130,4 +130,3 @@ MIT
 ## 👤 Author
 
 Rogerio Pereira Araujo <rogerio.araujo@gmail.com>
-
