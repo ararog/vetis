@@ -8,9 +8,13 @@ async fn test_http() -> Result<(), Box<dyn std::error::Error>> {
         Ok(vetis::Response::builder().body(http_body_util::Full::from("Hello, World!")))
     });
 
-    let mut server =
-        http!(hostname => "localhost", port => 8080, interface => "0.0.0.0", handler => handler)
-            .await?;
+    let mut server = http!(
+        hostname => "localhost",
+        port => 8080,
+        interface => "0.0.0.0",
+        handler => handler
+    )
+    .await?;
 
     server
         .start()
