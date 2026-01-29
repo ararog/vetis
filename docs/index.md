@@ -101,6 +101,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+## Crates
+
+| Crate | Description | Documentation |
+|-------|-------------|---------------|
+| [vetis](./vetis) | Core HTTP server library | [![docs.rs](https://img.shields.io/docsrs/vetis/latest)](https://docs.rs/vetis) |
+| [vetis-macros](./vetis-macros) | Macros for Vetis | [![docs.rs](https://img.shields.io/docsrs/vetis-macros/latest)](https://docs.rs/vetis-macros) |
+
 ## Examples
 
 Check out the [examples](./examples.md) for complete examples of how to use Vetis in your projects.

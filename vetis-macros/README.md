@@ -24,8 +24,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let mut server =
-        http!(hostname => "localhost", port => 8080, interface => "0.0.0.0", handler => handler)
-            .await?;
+        http!(
+          hostname => "localhost", 
+          port => 8080, 
+          interface => "0.0.0.0", 
+          handler => handler
+        )
+        .await?;
 
     // Start the server, make requests and stop the server, do not call run()!!!
     server
