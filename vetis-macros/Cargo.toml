@@ -1,7 +1,16 @@
 [package]
 name = "vetis-macros"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+authors = ["Rogerio Araújo <rogerio.araujo@gmail.com>"]
+repository = "https://github.com/ararog/vetis"
+homepage = "https://github.com/ararog/vetis"
+description = "Very Tiny Server"
+readme = "README.md"
+license = "MIT"
+keywords = ["http", "networking", "server", "rest-server"]
+publish = true
+rust-version = "1.75.0"
 
 [dependencies]
 deboa = "0.0.9"

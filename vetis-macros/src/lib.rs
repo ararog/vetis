@@ -2,10 +2,10 @@
 macro_rules! http {
     (hostname => &$hostname:ident, port => &$port:ident, interface => &$interface:ident) => {
         use vetis::{
-            Vetis,
             config::{ListenerConfig, ServerConfig, VirtualHostConfig},
             errors::VetisError,
             server::virtual_host::{DefaultVirtualHost, VirtualHost},
+            Vetis,
         };
 
         let listener = ListenerConfig::builder()
@@ -37,10 +37,10 @@ macro_rules! http {
     (hostname => $hostname:literal, port => $port:literal, interface => $interface:literal, handler => $handler:ident) => {
         async move {
             use vetis::{
-                Vetis,
                 config::{ListenerConfig, ServerConfig, VirtualHostConfig},
                 errors::VetisError,
                 server::virtual_host::{DefaultVirtualHost, VirtualHost},
+                Vetis,
             };
 
             let listener = ListenerConfig::builder()
