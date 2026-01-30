@@ -23,8 +23,6 @@
 /// ```
 use std::{collections::HashMap, future::Future, pin::Pin};
 
-use hyper::service::service_fn;
-
 use crate::{
     config::VirtualHostConfig,
     errors::VetisError,
@@ -152,7 +150,7 @@ impl VirtualHost {
             Box::pin(async move {
                 Ok(Response::builder()
                     .status(http::StatusCode::NOT_FOUND)
-                    .body(http_body_util::Full::new(bytes::Bytes::from("Not Found"))))
+                    .body(b"Not Found"))
             })
         }
     }

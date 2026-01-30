@@ -40,8 +40,6 @@ vetis = { version = "0.1.0", features = ["tokio-rt", "http2", "tokio-rust-tls"] 
 Here's how simple it is to create a web server with VeTiS:
 
 ```rust
-use bytes::Bytes;
-use http_body_util::Full;
 use hyper::StatusCode;
 use vetis::{
     Vetis,
@@ -84,7 +82,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut root_path = HandlerPath::new("/", handler_fn(|request| async move {
          let response = vetis::Response::builder()
              .status(StatusCode::OK)
-             .body(Full::new(Bytes::from("Hello, World!")));
+             .text("Hello, World!");
          Ok(response)
     }));
      
