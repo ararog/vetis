@@ -645,30 +645,46 @@ impl ResponseBuilder {
         self
     }
 
-    /// Sets the body and creates the final `Response`.
+    /// Sets the body from a text string and creates the final `Response`.
     ///
     /// # Arguments
     ///
-    /// * `body` - The response body as a `Full<Bytes>`
+    /// * `text` - The response body as a text slice
     ///
     /// # Examples
     ///
     /// ```rust,ignore
-    /// use bytes::Bytes;
-    /// use http_body_util::Full;
     /// use vetis::Response;
     ///
     /// let response = Response::builder()
-    ///     .body(Full::new(Bytes::from("Hello, World!")));
+    ///     .text("Hello, World!");
+    /// ```    
+    pub fn text(self, text: &str) -> Response {
+        self.body(text.as_bytes())
+    }
+
+    /// Sets the body and creates the final `Response`.
+    ///
+    /// # Arguments
+    ///
+    /// * `body` - The response body as a byte slice
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// use vetis::Response;
+    ///
+    /// let response = Response::builder()
+    ///     .body(b"Hello, World!");
     /// ```
-    pub fn body(self, body: Full<Bytes>) -> Response {
+    pub fn body(self, body: &[u8]) -> Response {
         let response = http::Response::builder()
             .status(self.status)
             .version(self.version);
 
         Response {
             inner: response
-                .body(body)
+                .body(Full::new(Bytes::from(body.to_vec())))
                 .unwrap(),
         }
     }

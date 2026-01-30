@@ -1,5 +1,3 @@
-use bytes::Bytes;
-use http_body_util::Full;
 use hyper::StatusCode;
 use vetis::{
     Vetis,
@@ -40,11 +38,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .security(security_config)
         .build()?;
 
-    let server_config = VirtualHostConfig::builder()
-        .hostname("server".to_string())
-        .port(8080)
-        .build()?;
-
     let mut localhost_virtual_host = VirtualHost::new(localhost_config);
 
     let root_path = HandlerPath::new_host_path(
@@ -52,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         handler_fn(|request| async move {
             let response = vetis::Response::builder()
                 .status(StatusCode::OK)
-                .body(Full::new(Bytes::from("Hello from localhost")));
+                .body(b"Hello from localhost");
             Ok(response)
         }),
     );

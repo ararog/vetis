@@ -38,13 +38,11 @@ vetis = { version = "0.1.0", features = ["tokio-rt", "http2", "tokio-rust-tls"] 
 Basic usage:
 
 ```rust
-use bytes::Bytes;
-use http_body_util::Full;
 use hyper::StatusCode;
 use vetis::{
     Vetis,
     config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
-    server::virtual_host::{VirtualHost, VirtualHost, handler_fn},
+    server::virtual_host::{VirtualHost, handler_fn},
 };
 
 pub const CA_CERT: &[u8] = include_bytes!("../certs/ca.der");
@@ -82,7 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut root_path = HandlerPath::new("/", handler_fn(|request| async move {
          let response = vetis::Response::builder()
              .status(StatusCode::OK)
-             .body(Full::new(Bytes::from("Hello, World!")));
+             .text("Hello, World!");
          Ok(response)
     }));
      

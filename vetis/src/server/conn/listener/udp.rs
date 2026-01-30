@@ -195,10 +195,6 @@ fn handle_http_request(
 
             let request = Request::from_parts(parts, body);
 
-            stream
-                .finish()
-                .await;
-
             let host = request
                 .uri()
                 .authority();
@@ -291,6 +287,10 @@ fn handle_http_request(
 
                 let _ = stream
                     .send_data(buf)
+                    .await;
+
+                let _ = stream
+                    .finish()
                     .await;
             } else {
                 error!("HttpServer - Error serving connection: {:?}", response.err());
