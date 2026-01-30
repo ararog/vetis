@@ -4,6 +4,7 @@ macro_rules! http {
         use vetis::{
             config::{ListenerConfig, ServerConfig, VirtualHostConfig},
             errors::VetisError,
+            server::path::HandlerPath,
             server::virtual_host::{DefaultVirtualHost, VirtualHost},
             Vetis,
         };
@@ -23,7 +24,13 @@ macro_rules! http {
             .port($port)
             .build();
 
-        let virtual_host = DefaultVirtualHost::new(virtual_host_config);
+        let virtual_host = VirtualHost::new(virtual_host_config);
+
+        let root_path = HandlerPath::new_host_path(
+            "/".to_string(),
+            Box::new($handler));
+
+        virtual_host.add_path(root_path);
 
         let mut vetis = vetis::Vetis::new(config);
 
@@ -39,7 +46,7 @@ macro_rules! http {
             use vetis::{
                 config::{ListenerConfig, ServerConfig, VirtualHostConfig},
                 errors::VetisError,
-                server::virtual_host::VirtualHost,
+                server::{path::HandlerPath, virtual_host::VirtualHost},
                 Vetis,
             };
 
@@ -58,7 +65,12 @@ macro_rules! http {
                 .build()?;
 
             let mut virtual_host = VirtualHost::new(virtual_host_config);
-            virtual_host.set_handler($handler);
+
+            let root_path = HandlerPath::new_host_path(
+                "/".to_string(),
+                Box::new($handler));
+
+            virtual_host.add_path(root_path);
 
             let mut vetis = Vetis::new(config);
 

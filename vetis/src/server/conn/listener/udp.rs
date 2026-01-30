@@ -171,6 +171,7 @@ fn handle_http_request(
         if let Ok((req, mut stream)) = result {
             let (parts, _) = req.into_parts();
 
+            /* 
             let body = if parts.method == http::Method::POST
                 || parts.method == http::Method::PUT
                 || parts.method == http::Method::PATCH
@@ -188,6 +189,9 @@ fn handle_http_request(
             } else {
                 Full::new(Bytes::new())
             };
+            */
+
+            let body = Full::new(Bytes::new());
 
             let request = Request::from_parts(parts, body);
 
@@ -216,7 +220,7 @@ fn handle_http_request(
                     let request = crate::Request::from_quic(request);
 
                     let vetis_response = virtual_host
-                        .execute(request)
+                        .route(request)
                         .await;
 
                     let response = if let Err(err) = vetis_response {

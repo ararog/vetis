@@ -62,15 +62,17 @@
 //!         .security(security_config)
 //!         .build()?;
 //!
-//!     let mut localhost_virtual_host = DefaultVirtualHost::new(localhost_config);
+//!     let mut localhost_virtual_host = VirtualHost::new(localhost_config);
 //!
 //!     // Set up request handler
-//!     localhost_virtual_host.set_handler(handler_fn(|request| async move {
+//!     let mut root_path = HandlerPath::new("/", handler_fn(|request| async move {
 //!         let response = vetis::Response::builder()
 //!             .status(StatusCode::OK)
 //!             .body(Full::new(Bytes::from("Hello, World!")));
 //!         Ok(response)
 //!     }));
+//!
+//!     localhost_virtual_host.add_path(root_path);
 //!
 //!     // Create and run server
 //!     let mut server = Vetis::new(config);

@@ -39,6 +39,7 @@ use crate::{config::ServerConfig, errors::VetisError, VetisVirtualHosts};
 
 pub mod conn;
 pub mod http;
+pub mod path;
 pub mod tls;
 pub mod virtual_host;
 

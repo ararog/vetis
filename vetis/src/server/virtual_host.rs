@@ -21,9 +21,11 @@
 ///     Ok(response)
 /// }));
 /// ```
-use std::{future::Future, pin::Pin};
+use std::{collections::HashMap, future::Future, pin::Pin};
 
-use crate::{config::VirtualHostConfig, errors::VetisError, Request, Response};
+use hyper::service::service_fn;
+
+use crate::{Request, Response, config::VirtualHostConfig, errors::VetisError, server::path::{HostPath, Path}};
 
 /// Type alias for boxed handler closures.
 ///
@@ -95,12 +97,16 @@ where
 // All of them should have a handler to process requests
 pub struct VirtualHost {
     config: VirtualHostConfig,
-    handler: Option<BoxedHandlerClosure>,
+    paths: HashMap<String, HostPath>,
 }
 
 impl VirtualHost {
     pub fn new(config: VirtualHostConfig) -> Self {
-        Self { config, handler: None }
+        Self { config, paths: HashMap::new() }
+    }
+
+    pub fn add_path(&mut self, path: HostPath) {
+        self.paths.insert(path.value().to_string(), path);
     }
 
     pub fn config(&self) -> &VirtualHostConfig {
@@ -123,18 +129,20 @@ impl VirtualHost {
             .is_some()
     }
 
-    pub fn set_handler(&mut self, handler: BoxedHandlerClosure) {
-        self.handler = Some(handler);
-    }
-
-    pub fn execute(
+    pub fn route(
         &self,
         request: Request,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send>> {
-        if let Some(handler) = &self.handler {
-            handler(request)
+        let uri_path = request.uri().path();
+        let path = self.paths.get(uri_path);
+        if let Some(path) = path {
+            path.handle(request)
         } else {
-            Box::pin(async move { Err(VetisError::Handler("No handler set".to_string())) })
+            Box::pin(async move {
+                Ok(Response::builder()
+                    .status(http::StatusCode::NOT_FOUND)
+                    .body(http_body_util::Full::new(bytes::Bytes::from("Not Found"))))
+            })
         }
     }
 }

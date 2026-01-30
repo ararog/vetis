@@ -282,7 +282,7 @@ async fn process_request(
             let request = crate::Request::from_http(req);
 
             let vetis_response = virtual_host
-                .execute(request)
+                .route(request)
                 .await?;
 
             let response: http::Response<Full<Bytes>> = vetis_response.into_inner();
