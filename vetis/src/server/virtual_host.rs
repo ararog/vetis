@@ -25,8 +25,6 @@ use std::{future::Future, pin::Pin};
 
 use crate::{config::VirtualHostConfig, errors::VetisError, Request, Response};
 
-pub mod directory;
-
 /// Type alias for boxed handler closures.
 ///
 /// This represents an async function that takes a `Request` and returns
@@ -94,99 +92,42 @@ where
     Box::new(move |req| Box::pin(f(req)))
 }
 
-/// Trait for virtual host implementations.
-///
-/// Virtual hosts allow multiple domains to be served by a single server instance.
-/// Each virtual host has its own configuration, security settings, and request handler.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// use vetis::{
-///     config::VirtualHostConfig,
-///     server::virtual_host::{VirtualHost, DefaultVirtualHost, handler_fn},
-///     Request, Response,
-/// };
-///
-/// // Create a virtual host
-/// let config = VirtualHostConfig::builder()
-///     .hostname("api.example.com".to_string())
-///     .port(443)
-///     .build()?;
-///
-/// let mut vhost = DefaultVirtualHost::new(config);
-/// vhost.set_handler(handler_fn(|request| async move {
-///     Ok(Response::builder()
-///         .status(http::StatusCode::OK)
-///         .body(http_body_util::Full::new(bytes::Bytes::from("API response"))))
-/// }));
-///
-/// println!("Virtual host: {}:{}", vhost.hostname(), vhost.port());
-/// ```
-pub trait VirtualHost: Send + Sync + 'static {
-    /// Creates a new virtual host with the given configuration.
-    fn new(config: VirtualHostConfig) -> Self
-    where
-        Self: Sized;
-
-    /// Returns a reference to the virtual host configuration.
-    fn config(&self) -> &VirtualHostConfig;
-
-    /// Returns the hostname for this virtual host.
-    fn hostname(&self) -> String;
-
-    /// Returns the port for this virtual host.
-    fn port(&self) -> u16;
-
-    /// Returns whether this virtual host uses HTTPS.
-    fn is_secure(&self) -> bool;
-
-    /// Sets the request handler for this virtual host.
-    fn set_handler(&mut self, handler: BoxedHandlerClosure);
-
-    /// Executes the handler for the given request.
-    fn execute(
-        &self,
-        request: Request,
-    ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send>>;
-}
-
 // All of them should have a handler to process requests
-pub struct DefaultVirtualHost {
+pub struct VirtualHost {
     config: VirtualHostConfig,
     handler: Option<BoxedHandlerClosure>,
 }
 
-impl VirtualHost for DefaultVirtualHost {
-    fn new(config: VirtualHostConfig) -> Self {
+impl VirtualHost {
+    pub fn new(config: VirtualHostConfig) -> Self {
         Self { config, handler: None }
     }
 
-    fn config(&self) -> &VirtualHostConfig {
+    pub fn config(&self) -> &VirtualHostConfig {
         &self.config
     }
 
-    fn hostname(&self) -> String {
+    pub fn hostname(&self) -> String {
         self.config
             .hostname()
             .clone()
     }
 
-    fn port(&self) -> u16 {
+    pub fn port(&self) -> u16 {
         self.config.port()
     }
 
-    fn is_secure(&self) -> bool {
+    pub fn is_secure(&self) -> bool {
         self.config
             .security()
             .is_some()
     }
 
-    fn set_handler(&mut self, handler: BoxedHandlerClosure) {
+    pub fn set_handler(&mut self, handler: BoxedHandlerClosure) {
         self.handler = Some(handler);
     }
 
-    fn execute(
+    pub fn execute(
         &self,
         request: Request,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send>> {
@@ -195,46 +136,5 @@ impl VirtualHost for DefaultVirtualHost {
         } else {
             Box::pin(async move { Err(VetisError::Handler("No handler set".to_string())) })
         }
-    }
-}
-
-impl<V: VirtualHost> VirtualHost for Box<V> {
-    fn new(config: VirtualHostConfig) -> Self
-    where
-        Self: Sized,
-    {
-        Box::new(V::new(config))
-    }
-
-    fn config(&self) -> &VirtualHostConfig {
-        self.as_ref()
-            .config()
-    }
-
-    fn hostname(&self) -> String {
-        self.as_ref()
-            .hostname()
-    }
-
-    fn port(&self) -> u16 {
-        self.as_ref().port()
-    }
-
-    fn is_secure(&self) -> bool {
-        self.as_ref()
-            .is_secure()
-    }
-
-    fn set_handler(&mut self, handler: BoxedHandlerClosure) {
-        self.as_mut()
-            .set_handler(handler)
-    }
-
-    fn execute(
-        &self,
-        request: Request,
-    ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send>> {
-        self.as_ref()
-            .execute(request)
     }
 }

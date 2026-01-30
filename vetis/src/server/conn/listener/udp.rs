@@ -1,8 +1,6 @@
 use std::{
     collections::HashMap,
-    future::Future,
     net::{Ipv4Addr, Ipv6Addr, SocketAddr},
-    pin::Pin,
     sync::Arc,
 };
 
@@ -21,30 +19,29 @@ use rt_gate::{spawn_server, spawn_worker, GateTask};
 use crate::{
     config::ListenerConfig,
     errors::{StartError::Tls, VetisError},
-    server::{conn::listener::ServerListener, tls::TlsFactory},
+    server::{
+        conn::listener::{Listener, ListenerResult},
+        tls::TlsFactory,
+    },
     VetisRwLock, VetisVirtualHosts,
 };
 
-pub struct UdpServerListener {
+pub struct UdpListener {
     config: ListenerConfig,
     task: Option<GateTask>,
     virtual_hosts: VetisVirtualHosts,
 }
 
-impl ServerListener for UdpServerListener {
+impl Listener for UdpListener {
     fn new(config: ListenerConfig) -> Self {
         Self { config, task: None, virtual_hosts: Arc::new(VetisRwLock::new(HashMap::new())) }
-    }
-
-    fn port(&self) -> u16 {
-        self.config.port()
     }
 
     fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts) {
         self.virtual_hosts = virtual_hosts;
     }
 
-    fn listen(&mut self) -> Pin<Box<dyn Future<Output = Result<(), VetisError>> + Send + '_>> {
+    fn listen(&mut self) -> ListenerResult<'_, ()> {
         let future = async move {
             let addr = if let Ok(ip) = self
                 .config
@@ -96,7 +93,7 @@ impl ServerListener for UdpServerListener {
         Box::pin(future)
     }
 
-    fn stop(&mut self) -> Pin<Box<dyn Future<Output = Result<(), VetisError>> + Send + '_>> {
+    fn stop(&mut self) -> ListenerResult<'_, ()> {
         Box::pin(async move {
             if let Some(mut task) = self.task.take() {
                 task.cancel().await;
@@ -106,7 +103,7 @@ impl ServerListener for UdpServerListener {
     }
 }
 
-impl UdpServerListener {
+impl UdpListener {
     async fn handle_connections(
         &mut self,
         endpoint: quinn::Endpoint,
@@ -174,12 +171,23 @@ fn handle_http_request(
         if let Ok((req, mut stream)) = result {
             let (parts, _) = req.into_parts();
 
-            let body = Full::new(Bytes::new());
+            let body = if parts.method == http::Method::POST
+                || parts.method == http::Method::PUT
+                || parts.method == http::Method::PATCH
+            {
+                let body = Full::new(Bytes::new());
 
-            // let mut data = Vec::new();
-            // while let Ok(Some(chunk)) = stream.recv_data().await {
-            //     data.extend_from_slice(chunk.as_ref());
-            // }
+                let mut data = Vec::new();
+                while let Ok(Some(chunk)) = stream
+                    .recv_data()
+                    .await
+                {
+                    data.extend_from_slice(&[1, 2, 4]);
+                }
+                body
+            } else {
+                Full::new(Bytes::new())
+            };
 
             let request = Request::from_parts(parts, body);
 
@@ -225,7 +233,7 @@ fn handle_http_request(
 
                     Ok::<_, VetisError>(response)
                 } else {
-                    error!("Virtual host not found for host: {}", host.to_string());
+                    error!("Virtual host not found: {}", host.to_string());
                     let response = Response::builder()
                         .status(404)
                         .body(Full::new(Bytes::from_static(b"Virtual host not found")))
@@ -283,10 +291,6 @@ fn handle_http_request(
             } else {
                 error!("HttpServer - Error serving connection: {:?}", response.err());
             }
-
-            let _ = stream
-                .finish()
-                .await;
         }
     });
 

@@ -39,7 +39,7 @@ macro_rules! http {
             use vetis::{
                 config::{ListenerConfig, ServerConfig, VirtualHostConfig},
                 errors::VetisError,
-                server::virtual_host::{DefaultVirtualHost, VirtualHost},
+                server::virtual_host::VirtualHost,
                 Vetis,
             };
 
@@ -57,7 +57,7 @@ macro_rules! http {
                 .port($port)
                 .build()?;
 
-            let mut virtual_host = DefaultVirtualHost::new(virtual_host_config);
+            let mut virtual_host = VirtualHost::new(virtual_host_config);
             virtual_host.set_handler($handler);
 
             let mut vetis = Vetis::new(config);

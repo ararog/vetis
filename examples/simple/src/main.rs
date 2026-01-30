@@ -3,8 +3,8 @@ use http_body_util::Full;
 use hyper::StatusCode;
 use vetis::{
     Vetis,
-    config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
-    server::virtual_host::{DefaultVirtualHost, VirtualHost, handler_fn},
+    config::{ListenerConfig, Protocol, SecurityConfig, ServerConfig, VirtualHostConfig},
+    server::virtual_host::{VirtualHost, handler_fn},
 };
 
 pub const CA_CERT: &[u8] = include_bytes!("../certs/ca.der");
@@ -17,7 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let https = ListenerConfig::builder()
         .port(8443)
-        .protocol(vetis::config::Protocol::HTTP1)
+        .protocol(Protocol::Http1)
         .interface("0.0.0.0".to_string())
         .build();
 
@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .security(security_config)
         .build()?;
 
-    let mut localhost_virtual_host = DefaultVirtualHost::new(localhost_config);
+    let mut localhost_virtual_host = VirtualHost::new(localhost_config);
 
     localhost_virtual_host.set_handler(handler_fn(|request| async move {
         let response = vetis::Response::builder()

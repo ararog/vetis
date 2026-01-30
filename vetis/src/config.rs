@@ -53,25 +53,25 @@ use crate::errors::{ConfigError, VetisError};
 /// use vetis::config::Protocol;
 ///
 /// #[cfg(feature = "http1")]
-/// let protocol = Protocol::HTTP1;
+/// let protocol = Protocol::Http1;
 ///
 /// #[cfg(feature = "http2")]
-/// let protocol = Protocol::HTTP2;
+/// let protocol = Protocol::Http2;
 ///
 /// #[cfg(feature = "http3")]
-/// let protocol = Protocol::HTTP3;
+/// let protocol = Protocol::Http3;
 /// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Protocol {
     #[cfg(feature = "http1")]
     /// HTTP/1.1 protocol
-    HTTP1,
+    Http1,
     #[cfg(feature = "http2")]
     /// HTTP/2 protocol (requires TLS)
-    HTTP2,
+    Http2,
     #[cfg(feature = "http3")]
     /// HTTP/3 protocol over QUIC (requires TLS)
-    HTTP3,
+    Http3,
 }
 
 /// Builder for creating `ListenerConfig` instances.
@@ -85,7 +85,7 @@ pub enum Protocol {
 ///
 /// let config = ListenerConfig::builder()
 ///     .port(8080)
-///     .protocol(Protocol::HTTP1)
+///     .protocol(Protocol::Http1)
 ///     .interface("127.0.0.1".to_string())
 ///     .build();
 /// ```
@@ -191,7 +191,7 @@ impl ListenerConfigBuilder {
 ///
 /// let config = ListenerConfig::builder()
 ///     .port(8443)
-///     .protocol(Protocol::HTTP1)
+///     .protocol(Protocol::Http1)
 ///     .interface("0.0.0.0".to_string())
 ///     .build();
 ///
@@ -227,11 +227,11 @@ impl ListenerConfig {
             port: 80,
             ssl: false,
             #[cfg(feature = "http1")]
-            protocol: Protocol::HTTP1,
+            protocol: Protocol::Http1,
             #[cfg(feature = "http2")]
-            protocol: Protocol::HTTP2,
+            protocol: Protocol::Http2,
             #[cfg(feature = "http3")]
-            protocol: Protocol::HTTP3,
+            protocol: Protocol::Http3,
             interface: "0.0.0.0".to_string(),
         }
     }
@@ -269,12 +269,12 @@ impl ListenerConfig {
 ///
 /// let http_listener = ListenerConfig::builder()
 ///     .port(80)
-///     .protocol(Protocol::HTTP1)
+///     .protocol(Protocol::Http1)
 ///     .build();
 ///
 /// let https_listener = ListenerConfig::builder()
 ///     .port(443)
-///     .protocol(Protocol::HTTP1)
+///     .protocol(Protocol::Http1)
 ///     .ssl(true)
 ///     .build();
 ///

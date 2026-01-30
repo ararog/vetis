@@ -41,26 +41,19 @@ use tokio::io::{AsyncRead, AsyncWrite};
 #[cfg(all(feature = "tokio-rt", any(feature = "http1", feature = "http2")))]
 use hyper_util::rt::TokioIo;
 #[cfg(feature = "tokio-rt")]
-use tokio::net::TcpListener;
-#[cfg(feature = "tokio-rt")]
 use tokio_rustls::TlsAcceptor;
 
 #[cfg(feature = "smol-rt")]
 use futures_rustls::TlsAcceptor;
-#[cfg(feature = "smol-rt")]
-use smol::net::TcpListener;
 #[cfg(all(feature = "smol-rt", any(feature = "http1", feature = "http2")))]
 use smol_hyper::rt::FuturesIo;
 
 use crate::{
-    config::{ListenerConfig, Protocol},
-    errors::VetisError,
-    server::{conn::listener::ServerListener, tls::TlsFactory},
-    VetisRwLock, VetisVirtualHosts,
+    VetisRwLock, VetisVirtualHosts, config::{ListenerConfig, Protocol}, errors::VetisError, server::{conn::listener::{Listener, ListenerResult}, tls::TlsFactory}
 };
 
 #[cfg(feature = "tokio-rt")]
-type VetisTcpListener = TcpListener;
+type VetisTcpListener = tokio::net::TcpListener;
 #[cfg(feature = "tokio-rt")]
 type VetisTlsAcceptor = TlsAcceptor;
 #[cfg(feature = "tokio-rt")]
@@ -69,7 +62,7 @@ type VetisIo<T> = TokioIo<T>;
 type VetisExecutor = TokioExecutor;
 
 #[cfg(feature = "smol-rt")]
-type VetisTcpListener = TcpListener;
+type VetisTcpListener = smol::net::TcpListener;
 #[cfg(feature = "smol-rt")]
 type VetisTlsAcceptor = TlsAcceptor;
 #[cfg(feature = "smol-rt")]
@@ -77,13 +70,13 @@ type VetisIo<T> = FuturesIo<T>;
 #[cfg(all(feature = "smol-rt", feature = "http2"))]
 type VetisExecutor = SmolExecutor;
 
-pub struct TcpServerListener {
+pub struct TcpListener {
     task: Option<GateTask>,
     config: ListenerConfig,
     virtual_hosts: VetisVirtualHosts,
 }
 
-impl ServerListener for TcpServerListener {
+impl Listener for TcpListener {
     fn new(config: ListenerConfig) -> Self {
         Self { task: None, config, virtual_hosts: Arc::new(VetisRwLock::new(HashMap::new())) }
     }
@@ -92,7 +85,7 @@ impl ServerListener for TcpServerListener {
         self.virtual_hosts = virtual_hosts;
     }
 
-    fn listen(&mut self) -> Pin<Box<dyn Future<Output = Result<(), VetisError>> + Send + '_>> {
+    fn listen(&mut self) -> ListenerResult<'_, ()> {
         let future = async move {
             let addr = if let Ok(ip) = self
                 .config
@@ -135,7 +128,7 @@ impl ServerListener for TcpServerListener {
         Box::pin(future)
     }
 
-    fn stop(&mut self) -> Pin<Box<dyn Future<Output = Result<(), VetisError>> + Send + '_>> {
+    fn stop(&mut self) -> ListenerResult<'_, ()> {
         Box::pin(async move {
             if let Some(mut task) = self.task.take() {
                 task.cancel().await;
@@ -145,7 +138,7 @@ impl ServerListener for TcpServerListener {
     }
 }
 
-impl TcpServerListener {
+impl TcpListener {
     async fn handle_connections(
         &mut self,
         protocol: Protocol,
@@ -205,15 +198,15 @@ impl TcpServerListener {
                     let io = VetisIo::new(tls_stream);
                     match protocol {
                         #[cfg(feature = "http1")]
-                        Protocol::HTTP1 => {
+                        Protocol::Http1 => {
                             let _ = handle_http1_request(port, io, virtual_hosts.clone());
                         }
                         #[cfg(feature = "http2")]
-                        Protocol::HTTP2 => {
+                        Protocol::Http2 => {
                             let _ = handle_http2_request(port, io, virtual_hosts.clone());
                         }
                         #[cfg(feature = "http3")]
-                        Protocol::HTTP3 => {
+                        Protocol::Http3 => {
                             // HTTP/3 is handled by UDP listener
                         }
                     }
@@ -221,15 +214,15 @@ impl TcpServerListener {
                     let io = VetisIo::new(peekable);
                     match protocol {
                         #[cfg(feature = "http1")]
-                        Protocol::HTTP1 => {
+                        Protocol::Http1 => {
                             let _ = handle_http1_request(port, io, virtual_hosts.clone());
                         }
                         #[cfg(feature = "http2")]
-                        Protocol::HTTP2 => {
+                        Protocol::Http2 => {
                             let _ = handle_http2_request(port, io, virtual_hosts.clone());
                         }
                         #[cfg(feature = "http3")]
-                        Protocol::HTTP3 => {
+                        Protocol::Http3 => {
                             // HTTP/3 is handled by UDP listener
                         }
                     }
@@ -290,7 +283,7 @@ async fn process_request(
 
             Ok::<_, VetisError>(response)
         } else {
-            error!("Virtual host not found for host: {}", host);
+            error!("Virtual host not found: {}", host);
             let response = http::Response::builder()
                 .status(404)
                 .body(Full::new(Bytes::from_static(b"Virtual host not found")))

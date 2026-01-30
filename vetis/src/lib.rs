@@ -141,9 +141,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use bytes::Bytes;
 use http_body_util::Full;
-
-#[cfg(any(feature = "http1", feature = "http2"))]
 use hyper::body::Incoming;
+
 use log::{error, info};
 
 #[cfg(feature = "smol-rt")]
@@ -161,7 +160,7 @@ use tokio::sync::RwLock;
 
 pub(crate) type VetisRwLock<T> = RwLock<T>;
 
-pub(crate) type VetisVirtualHosts = Arc<VetisRwLock<HashMap<(String, u16), Box<dyn VirtualHost>>>>;
+pub(crate) type VetisVirtualHosts = Arc<VetisRwLock<HashMap<(String, u16), VirtualHost>>>;
 
 use crate::{
     config::ServerConfig,
@@ -239,7 +238,7 @@ impl Vetis {
     /// use vetis::{
     ///     Vetis,
     ///     config::{ServerConfig, VirtualHostConfig},
-    ///     server::virtual_host::{DefaultVirtualHost, VirtualHost, handler_fn},
+    ///     server::virtual_host::{VirtualHost, handler_fn},
     /// };
     ///
     /// let config = ServerConfig::builder().build();
@@ -249,21 +248,18 @@ impl Vetis {
     ///     .hostname("example.com".to_string())
     ///     .port(80)
     ///     .build()?;
-    /// let mut vhost = DefaultVirtualHost::new(vhost_config);
+    /// let mut vhost = VirtualHost::new(vhost_config);
     /// vhost.set_handler(handler_fn(|req| async move { Ok(/* response */) }));
     ///
     /// server.add_virtual_host(vhost).await;
     /// ```
-    pub async fn add_virtual_host<V>(&mut self, virtual_host: V)
-    where
-        V: VirtualHost,
-    {
+    pub async fn add_virtual_host(&mut self, virtual_host: VirtualHost) {
         let key = (virtual_host.hostname(), virtual_host.port());
 
         self.virtual_hosts
             .write()
             .await
-            .insert(key, Box::new(virtual_host));
+            .insert(key, virtual_host);
     }
 
     /// Returns a reference to the server configuration.

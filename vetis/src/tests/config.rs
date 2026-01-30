@@ -2,15 +2,22 @@ use crate::config::{ListenerConfig, Protocol, SecurityConfig, ServerConfig, Virt
 
 #[test]
 fn test_listener_config() {
+    #[cfg(feature = "http1")]
+    let protocol = Protocol::Http1;
+    #[cfg(feature = "http2")]
+    let protocol = Protocol::Http2;
+    #[cfg(feature = "http3")]
+    let protocol = Protocol::Http3;
+
     let listener_config = ListenerConfig::builder()
         .port(8080)
         .ssl(false)
-        .protocol(Protocol::HTTP1)
+        .protocol(protocol.clone())
         .interface("127.0.0.1".to_string())
         .build();
     assert_eq!(listener_config.port(), 8080);
     assert!(!listener_config.ssl());
-    assert_eq!(listener_config.protocol(), &Protocol::HTTP1);
+    assert_eq!(listener_config.protocol(), &protocol);
     assert_eq!(listener_config.interface(), "127.0.0.1");
 }
 
