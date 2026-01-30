@@ -49,7 +49,13 @@ use futures_rustls::TlsAcceptor;
 use smol_hyper::rt::FuturesIo;
 
 use crate::{
-    VetisRwLock, VetisVirtualHosts, config::{ListenerConfig, Protocol}, errors::VetisError, server::{conn::listener::{Listener, ListenerResult}, tls::TlsFactory}
+    config::{ListenerConfig, Protocol},
+    errors::VetisError,
+    server::{
+        conn::listener::{Listener, ListenerResult},
+        tls::TlsFactory,
+    },
+    VetisRwLock, VetisVirtualHosts,
 };
 
 #[cfg(feature = "tokio-rt")]
