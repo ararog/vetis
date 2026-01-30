@@ -40,6 +40,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .security(security_config)
         .build()?;
 
+    let server_config = VirtualHostConfig::builder()
+        .hostname("server".to_string())
+        .port(8080)
+        .build()?;
+
     let mut localhost_virtual_host = VirtualHost::new(localhost_config);
 
     let root_path = HandlerPath::new_host_path(
@@ -51,6 +56,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(response)
         }),
     );
+
+    localhost_virtual_host.add_path(root_path);
 
     let mut server = Vetis::new(config);
     server
