@@ -250,18 +250,18 @@ impl Vetis {
     ///     .hostname("example.com".to_string())
     ///     .port(80)
     ///     .build()?;
-    /// 
+    ///
     /// let mut vhost = VirtualHost::new(vhost_config);
-    /// 
+    ///
     /// let mut root_path = HandlerPath::new("/", handler_fn(|request| async move {
     ///     let response = vetis::Response::builder()
     ///         .status(StatusCode::OK)
     ///         .body(Full::new(Bytes::from("Hello, World!")));
     ///     Ok(response)
     /// }));
-    /// 
+    ///
     /// vhost.add_path(root_path);
-    /// 
+    ///
     /// server.add_virtual_host(vhost).await;
     /// ```
     pub async fn add_virtual_host(&mut self, virtual_host: VirtualHost) {
