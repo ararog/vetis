@@ -1,42 +1,43 @@
 #[macro_export]
 macro_rules! http {
-    (hostname => &$hostname:ident, port => &$port:ident, interface => &$interface:ident) => {
-        use vetis::{
-            config::{ListenerConfig, ServerConfig, VirtualHostConfig},
-            errors::VetisError,
-            server::path::HandlerPath,
-            server::virtual_host::{DefaultVirtualHost, VirtualHost},
-            Vetis,
-        };
+    (hostname => $hostname:expr, port => $port:expr, interface => $interface:expr, handler => $handler:ident) => {
+        async move {
+            use vetis::{
+                config::{ListenerConfig, ServerConfig, VirtualHostConfig},
+                errors::VetisError,
+                server::path::HandlerPath,
+                server::virtual_host::VirtualHost,
+                Vetis,
+            };
 
-        let listener = ListenerConfig::builder()
-            .hostname($hostname)
-            .port($port)
-            .interface($interface)
-            .build();
+            let listener = ListenerConfig::builder()
+                .port($port)
+                .interface($interface.to_string())
+                .build();
 
-        let config = ServerConfig::builder()
-            .add_listener(listener)
-            .build();
+            let config = ServerConfig::builder()
+                .add_listener(listener)
+                .build();
 
-        let virtual_host_config = VirtualHostConfig::builder()
-            .hostname($hostname)
-            .port($port)
-            .build();
+            let virtual_host_config = VirtualHostConfig::builder()
+                .hostname($hostname)
+                .port($port)
+                .build()?;
 
-        let virtual_host = VirtualHost::new(virtual_host_config);
+            let mut virtual_host = VirtualHost::new(virtual_host_config);
 
-        let root_path = HandlerPath::new_host_path("/".to_string(), Box::new($handler));
+            let root_path = HandlerPath::new_host_path("/".to_string(), Box::new($handler));
 
-        virtual_host.add_path(root_path);
+            virtual_host.add_path(root_path);
 
-        let mut vetis = vetis::Vetis::new(config);
+            let mut vetis = vetis::Vetis::new(config);
 
-        vetis
-            .add_virtual_host(virtual_host)
-            .await;
+            vetis
+                .add_virtual_host(virtual_host)
+                .await;
 
-        Ok(vetis)
+            Ok::<Vetis, Box<VetisError>>(vetis)
+        }
     };
 
     (hostname => $hostname:literal, port => $port:literal, interface => $interface:literal, handler => $handler:ident) => {
@@ -77,4 +78,9 @@ macro_rules! http {
             Ok::<Vetis, Box<VetisError>>(vetis)
         }
     };
+}
+
+#[macro_export]
+macro_rules! https {
+    (hostname => &$hostname:ident, port => &$port:ident, interface => &$interface:ident, &cert => &$cert:ident, &key => &$key:ident) => {};
 }

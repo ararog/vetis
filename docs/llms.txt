@@ -14,55 +14,65 @@ vetis = { version = "0.0.1", features = ["http1", "tokio-rt", "tokio-rust-tls"] 
 
 ```rust
 use bytes::Bytes;
-use clap::Parser;
 use http_body_util::Full;
-use hyper::Response;
-use vetis::{server::config::ServerConfig, Vetis};
+use hyper::StatusCode;
+use vetis::{
+    Vetis,
+    config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
+    server::virtual_host::{VirtualHost, VirtualHost, handler_fn},
+};
 
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-struct Args {
-    #[arg(
-        short = 'p',
-        long,
-        required = false,
-        num_args = 0..=1,
-        require_equals = true,
-        default_value = "8080",
-        help = "Port to listen on"
-    )]
-    port: u16,
-
-    #[arg(
-        short = 'i',
-        long,
-        required = false,
-        num_args = 0..=1,
-        require_equals = true,
-        default_value = "0.0.0.0",
-        help = "Interface to bind to"
-    )]
-    interface: String,
-}
+pub const CA_CERT: &[u8] = include_bytes!("../certs/ca.der");
+pub const SERVER_CERT: &[u8] = include_bytes!("../certs/server.der");
+pub const SERVER_KEY: &[u8] = include_bytes!("../certs/server.key.der");
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
+    std_logger::Config::logfmt().init();
 
-    let config = ServerConfig::builder()
-        .port(args.port)
-        .interface(args.interface)
+    let https = ListenerConfig::builder()
+        .port(8443)
+        .protocol(vetis::config::Protocol::HTTP1)
+        .interface("0.0.0.0".to_string())
         .build();
 
+    let config = ServerConfig::builder()
+        .add_listener(https)
+        .build();
+
+    let security_config = SecurityConfig::builder()
+        .ca_cert_from_bytes(CA_CERT.to_vec())
+        .cert_from_bytes(SERVER_CERT.to_vec())
+        .key_from_bytes(SERVER_KEY.to_vec())
+        .build();
+
+    let localhost_config = VirtualHostConfig::builder()
+        .hostname("localhost".to_string())
+        .port(8443)
+        .security(security_config)
+        .build()?;
+
+    let mut localhost_virtual_host = VirtualHost::new(localhost_config);
+
+    let mut root_path = HandlerPath::new("/", handler_fn(|request| async move {
+         let response = vetis::Response::builder()
+             .status(StatusCode::OK)
+             .body(Full::new(Bytes::from("Hello, World!")));
+         Ok(response)
+    }));
+     
+    localhost_virtual_host.add_path(root_path);    
+
     let mut server = Vetis::new(config);
+    server
+        .add_virtual_host(localhost_virtual_host)
+        .await;
+
+    server.run().await?;
 
     server
-        .run(|_| async move { 
-            Ok(Response::new(Full::new(Bytes::from("Hello from VeTiS! 🚀")))) 
-        })
+        .stop()
         .await?;
-
-    server.stop().await?;
 
     Ok(())
 }

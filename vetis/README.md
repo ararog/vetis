@@ -46,7 +46,7 @@ use hyper::StatusCode;
 use vetis::{
     Vetis,
     config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
-    server::virtual_host::{DefaultVirtualHost, VirtualHost, handler_fn},
+    server::virtual_host::{VirtualHost, VirtualHost, handler_fn},
 };
 
 pub const CA_CERT: &[u8] = include_bytes!("../certs/ca.der");
@@ -79,14 +79,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .security(security_config)
         .build()?;
 
-    let mut localhost_virtual_host = DefaultVirtualHost::new(localhost_config);
+    let mut localhost_virtual_host = VirtualHost::new(localhost_config);
 
-    localhost_virtual_host.set_handler(handler_fn(|request| async move {
-        let response = vetis::Response::builder()
-            .status(StatusCode::OK)
-            .body(Full::new(Bytes::from("Hello from localhost")));
-        Ok(response)
+    let mut root_path = HandlerPath::new("/", handler_fn(|request| async move {
+         let response = vetis::Response::builder()
+             .status(StatusCode::OK)
+             .body(Full::new(Bytes::from("Hello, World!")));
+         Ok(response)
     }));
+     
+    localhost_virtual_host.add_path(root_path);    
 
     let mut server = Vetis::new(config);
     server
