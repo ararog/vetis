@@ -155,7 +155,7 @@ impl VirtualHost {
             return Box::pin(async move {
                 Ok(Response::builder()
                     .status(http::StatusCode::NOT_FOUND)
-                    .body(b"Not Found"))
+                    .text("Not Found"))
             });
         };
 

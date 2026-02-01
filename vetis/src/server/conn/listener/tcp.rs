@@ -5,7 +5,7 @@ use std::{
 };
 
 use http::header;
-use http_body_util::Full;
+use http_body_util::{Either, Full};
 use hyper::{
     body::{Bytes, Incoming},
     service::service_fn,
@@ -242,7 +242,7 @@ async fn process_request(
     req: http::Request<Incoming>,
     virtual_hosts: VetisVirtualHosts,
     port: u16,
-) -> Result<http::Response<Full<Bytes>>, VetisError> {
+) -> Result<http::Response<Either<Incoming, Full<Bytes>>>, VetisError> {
     let host = req
         .headers()
         .get(header::HOST);
@@ -283,7 +283,7 @@ async fn process_request(
                 .route(request)
                 .await?;
 
-            let mut response: http::Response<Full<Bytes>> = vetis_response.into_inner();
+            let mut response = vetis_response.into_inner();
 
             let default_headers = virtual_host
                 .config()
@@ -310,12 +310,12 @@ async fn process_request(
                 }
             }
 
-            Ok::<_, VetisError>(response)
+            Ok::<http::Response<Either<Incoming, Full<Bytes>>>, VetisError>(response)
         } else {
             error!("Virtual host not found: {}", host);
             let response = http::Response::builder()
                 .status(404)
-                .body(Full::new(Bytes::from_static(b"Virtual host not found")))
+                .body(Either::Right(Full::new(Bytes::from_static(b"Virtual host not found"))))
                 .unwrap();
             Ok(response)
         }
@@ -323,7 +323,7 @@ async fn process_request(
         error!("Host not found in request");
         let response = http::Response::builder()
             .status(400)
-            .body(Full::new(Bytes::from_static(b"Host not found in request")))
+            .body(Either::Right(Full::new(Bytes::from_static(b"Host not found in request"))))
             .unwrap();
         Ok(response)
     }

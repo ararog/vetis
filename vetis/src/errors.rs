@@ -148,4 +148,8 @@ pub enum VirtualHostError {
     /// Invalid path configuration
     #[error("Invalid path: {0}")]
     InvalidPath(String),
+
+    /// Proxy errors
+    #[error("Proxy error: {0}")]
+    Proxy(String),
 }

@@ -142,7 +142,7 @@ compile_error!("Only one runtime feature can be enabled at a time.");
 use std::{collections::HashMap, sync::Arc};
 
 use bytes::Bytes;
-use http_body_util::Full;
+use http_body_util::{Either, Full};
 use hyper::body::Incoming;
 
 use log::{error, info};
@@ -553,6 +553,30 @@ impl Request {
             },
         }
     }
+
+    pub fn into_http_parts(self) -> (http::request::Parts, hyper::body::Incoming) {
+        match self.inner_http {
+            Some(req) => {
+                let (parts, body) = req.into_parts();
+                (parts, body)
+            }
+            None => {
+                panic!("No request");
+            }
+        }
+    }
+
+    pub fn into_quic_parts(self) -> (http::request::Parts, Full<Bytes>) {
+        match self.inner_quic {
+            Some(req) => {
+                let (parts, body) = req.into_parts();
+                (parts, body)
+            }
+            None => {
+                panic!("No request");
+            }
+        }
+    }
 }
 
 /// Builder for creating HTTP responses.
@@ -660,7 +684,10 @@ impl ResponseBuilder {
     ///     .text("Hello, World!");
     /// ```    
     pub fn text(self, text: &str) -> Response {
-        self.body(text.as_bytes())
+        self.body(Either::Right(Full::new(Bytes::from(
+            text.as_bytes()
+                .to_vec(),
+        ))))
     }
 
     /// Sets the body and creates the final `Response`.
@@ -677,14 +704,14 @@ impl ResponseBuilder {
     /// let response = Response::builder()
     ///     .body(b"Hello, World!");
     /// ```
-    pub fn body(self, body: &[u8]) -> Response {
+    pub fn body(self, body: Either<Incoming, Full<Bytes>>) -> Response {
         let response = http::Response::builder()
             .status(self.status)
             .version(self.version);
 
         Response {
             inner: response
-                .body(Full::new(Bytes::from(body.to_vec())))
+                .body(body)
                 .unwrap(),
         }
     }
@@ -712,7 +739,7 @@ impl ResponseBuilder {
 /// let inner_response = response.into_inner();
 /// ```
 pub struct Response {
-    pub(crate) inner: http::Response<Full<Bytes>>,
+    pub(crate) inner: http::Response<Either<Incoming, Full<Bytes>>>,
 }
 
 impl Response {
@@ -753,7 +780,7 @@ impl Response {
     ///     .body(http_body_util::Full::new(bytes::Bytes::from("Hello")));
     /// let inner = response.into_inner();
     /// ```
-    pub fn into_inner(self) -> http::Response<Full<Bytes>> {
+    pub fn into_inner(self) -> http::Response<Either<Incoming, Full<Bytes>>> {
         self.inner
     }
 }

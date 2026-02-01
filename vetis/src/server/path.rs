@@ -18,7 +18,7 @@ pub trait Path {
 pub enum HostPath {
     Handler(HandlerPath),
     #[cfg(feature = "reverse-proxy")]
-    Proxy(ProxyPath),
+    Proxy(Box<ProxyPath>),
     #[cfg(feature = "static-files")]
     Static(StaticPath),
 }
@@ -68,7 +68,7 @@ impl Path for HandlerPath {
     fn handle<'a>(
         &'a self,
         request: Request,
-        uri: Cow<'a, str>,
+        _uri: Cow<'a, str>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'a>> {
         (self.handler)(request)
     }
@@ -163,7 +163,7 @@ impl Path for StaticPath {
 
     fn handle<'a>(
         &'a self,
-        request: Request,
+        _request: Request,
         uri: Cow<'a, str>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'a>> {
         Box::pin(async move {
@@ -178,9 +178,12 @@ impl Path for StaticPath {
 
             let result = fs::read(format!("{}/{}", self.directory, uri));
             if let Ok(data) = result {
+                use bytes::Bytes;
+                use http_body_util::Full;
+
                 return Ok(Response::builder()
                     .status(http::StatusCode::OK)
-                    .body(data.as_slice()));
+                    .body(http_body_util::Either::Right(Full::new(Bytes::from(data)))));
             }
 
             // TODO: return 404
@@ -195,6 +198,7 @@ impl Path for StaticPath {
 pub struct ProxyPathBuilder {
     uri: String,
     target: String,
+    client: deboa::Client,
 }
 
 #[cfg(feature = "reverse-proxy")]
@@ -206,6 +210,11 @@ impl ProxyPathBuilder {
 
     pub fn target(mut self, target: String) -> Self {
         self.target = target;
+        self
+    }
+
+    pub fn client(mut self, client: deboa::Client) -> Self {
+        self.client = client;
         self
     }
 
@@ -224,7 +233,11 @@ impl ProxyPathBuilder {
             )));
         }
 
-        Ok(HostPath::Proxy(ProxyPath { uri: self.uri, target: self.target }))
+        Ok(HostPath::Proxy(Box::new(ProxyPath {
+            uri: self.uri,
+            target: self.target,
+            client: self.client,
+        })))
     }
 }
 
@@ -232,12 +245,17 @@ impl ProxyPathBuilder {
 pub struct ProxyPath {
     uri: String,
     target: String,
+    client: deboa::Client,
 }
 
 #[cfg(feature = "reverse-proxy")]
 impl ProxyPath {
     pub fn builder() -> ProxyPathBuilder {
-        ProxyPathBuilder { uri: String::new(), target: String::new() }
+        ProxyPathBuilder {
+            uri: String::new(),
+            target: String::new(),
+            client: deboa::Client::default(),
+        }
     }
 
     pub fn target(&self) -> &str {
@@ -251,11 +269,48 @@ impl Path for ProxyPath {
         &self.uri
     }
 
-    fn handle(
-        &self,
-        _request: Request,
-        _uri: Cow<str>,
-    ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send>> {
-        todo!()
+    fn handle<'a>(
+        &'a self,
+        request: Request,
+        uri: Cow<'a, str>,
+    ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'a>> {
+        let (request_parts, request_body) = request.into_http_parts();
+
+        let target_path = request_parts
+            .uri
+            .path()
+            .strip_prefix(uri.as_ref())
+            .unwrap_or("")
+            .to_string();
+
+        let target = self
+            .target()
+            .to_string();
+
+        Box::pin(async move {
+            use deboa::request::DeboaRequest;
+
+            let target_url = format!("{}{}", target, target_path);
+            let deboa_request = DeboaRequest::at(target_url, request_parts.method)
+                .map_err(|e| VetisError::VirtualHost(VirtualHostError::Proxy(e.to_string())))?
+                .headers(request_parts.headers)
+                .build()
+                .map_err(|e| VetisError::VirtualHost(VirtualHostError::Proxy(e.to_string())))?;
+
+            let response = self
+                .client
+                .execute(deboa_request)
+                .await
+                .map_err(|e| VetisError::VirtualHost(VirtualHostError::Proxy(e.to_string())))?;
+
+            let (response_parts, response_body) = response.into_parts();
+
+            let vetis_response = Response::builder()
+                .status(response_parts.status)
+                .headers(response_parts.headers)
+                .body(response_body);
+
+            Ok::<Response, VetisError>(vetis_response)
+        })
     }
 }

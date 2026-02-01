@@ -4,8 +4,8 @@ resolver = "3"
 # Include both parts of the library in the workspace
 members = [
     "vetis",
-    "vetis-macros",
-    "examples/simple",
+    #"vetis-macros",
+    #"examples/simple",
 ]
 
 [profile.release]
