@@ -1668,8 +1668,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "856f6fcbf377cb6bfb6af97dd3cf3fb82e1c6761e285568576ac5e8651a73160"
 dependencies = [
  "bytes",
+ "futures-util",
  "pin-project-lite",
- "smallvec",
  "tokio",
 ]
 

@@ -1,8 +1,6 @@
 use std::{
     collections::HashMap,
-    future::Future,
     net::{Ipv4Addr, Ipv6Addr, SocketAddr},
-    pin::Pin,
     sync::Arc,
 };
 
@@ -18,7 +16,7 @@ use log::{error, info};
 use rt_gate::{spawn_server, spawn_worker, GateTask};
 
 #[cfg(feature = "smol-rt")]
-use peekable::futures::AsyncPeekable;
+use peekable::future::AsyncPeekable;
 
 #[cfg(feature = "tokio-rt")]
 use peekable::tokio::AsyncPeekable;

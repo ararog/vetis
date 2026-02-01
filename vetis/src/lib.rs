@@ -155,7 +155,7 @@ use futures_lite::prelude::*;
 use signal_hook::low_level;
 
 #[cfg(feature = "smol-rt")]
-use smol::sync::RwLock;
+use smol::lock::RwLock;
 
 #[cfg(feature = "tokio-rt")]
 use tokio::sync::RwLock;

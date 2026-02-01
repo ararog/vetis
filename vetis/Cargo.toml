@@ -13,7 +13,7 @@ publish = true
 rust-version = "1.75.0"
 
 [features]
-default = ["tokio-rt", "http1", "tokio-rust-tls"]
+default = ["smol-rt", "http1", "smol-rust-tls"]
 
 tokio-rt = [
   "tokio",
@@ -31,7 +31,7 @@ smol-rt = [
   "rt-gate/smol-rt",
   "dep:async-signal",
   "dep:signal-hook",
-  "peekable/tokio",
+  "peekable/future",
 ]
 
 tokio-rust-tls = ["tokio-rustls", "rustls", "rustls-provider"]
@@ -70,7 +70,7 @@ hyper = { version = "1.8.1", default-features = false, optional = true }
 hyper-util = { version = "0.1.19", default-features = false, optional = true }
 log = "0.4.28"
 mime = "0.3.17"
-peekable = { version = "0.4.1", optional = true }
+peekable = { version = "0.4.1", optional = true, default-features = false}
 quinn = { version = "0.11.7", default-features = false, optional = true }
 radix_trie = "0.3.0"
 rand = "0.9.2"

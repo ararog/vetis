@@ -114,33 +114,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## ✨ Overview
+## Overview
 
 ### Core Features
 
-- **🌐 Virtual Hosts** - Host multiple domains on a single server
-- **🔐 SNI Support** - Server Name Indication for TLS
-- **🔄 Reverse Proxy** - Route requests to backend services
+- **Virtual Hosts** - Host multiple domains on a single server
+- **SNI Support** - Server Name Indication for TLS
+- **Reverse Proxy** - Route requests to backend services
 
 ### Content & Security
 
-- **📁 Static File Serving** - Efficient static asset delivery
-- **🎭 Dynamic Content** - Template rendering and content generation
+- **Static File Serving** - Efficient static asset delivery
+- **Dynamic Content** - Template rendering and content generation
 
-## 🗺️ Roadmap
+## Roadmap
 
 VeTiS is continuously evolving! Here's what we're working on:
 
 ### Core Features
 
-- **🔌 WebSockets** - Real-time bidirectional communication
-- **⚖️ Load Balancing** - Distribute traffic across multiple servers
+- **WebSockets** - Real-time bidirectional communication
+- **Load Balancing** - Distribute traffic across multiple servers
 
 ### Content & Security
 
-- **🔑 Authentication** - Multiple auth methods support
-- **🛡️ Authorization** - Fine-grained access control
-- **📊 Logging** - Comprehensive request and error logging
+- **Authentication** - Multiple auth methods support
+- **Authorization** - Fine-grained access control
+- **Logging** - Comprehensive request and error logging
 
 ## Subprojects
 
@@ -152,11 +152,11 @@ The core create of http server.
 
 Macros for VeTiS, make easy to create small http server.
 
-## 📄 License
+## License
 
 MIT
 
-## 👤 Author
+## Author
 
 Rogerio Pereira Araujo <rogerio.araujo@gmail.com>
 

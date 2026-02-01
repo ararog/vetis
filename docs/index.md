@@ -28,14 +28,14 @@ That's why VeTiS came to reality, by taking advantage of what I started on deboa
 
 ## Features
 
-- **🎯 Minimalist Design**: Focus on what matters - serving HTTP requests efficiently
-- **🔧 Flexible Runtime**: Choose between Tokio or Smol async runtimes
-- **🌐 Protocol Support**: Full HTTP/1, HTTP/2, and HTTP/3 implementation
-- **🛡️ Secure by Default**: Built-in TLS support with modern cryptography
-- **⚡ Zero-Cost Abstractions**: Leverage Rust's performance without overhead
-- **📦 Feature-Gated**: Include only what you need for optimal binary size
+- **Minimalist Design**: Focus on what matters - serving HTTP requests efficiently
+- **Flexible Runtime**: Choose between Tokio or Smol async runtimes
+- **Protocol Support**: Full HTTP/1, HTTP/2, and HTTP/3 implementation
+- **Secure by Default**: Built-in TLS support with modern cryptography
+- **Zero-Cost Abstractions**: Leverage Rust's performance without overhead
+- **Feature-Gated**: Include only what you need for optimal binary size
 
-## 🛠️ Quick Start
+## Quick Start
 
 Add VeTiS to your `Cargo.toml`:
 

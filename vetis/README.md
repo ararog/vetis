@@ -14,16 +14,16 @@ So with reusability in mind, I started EasyHttpMock, a project which aims to be 
 
 That's why VeTiS came to reality, by taking advantage of what I started on deboa-tests for testing purposes, it turned into a complete http server project, the goal is make it very flexible, while keeping it small and fast.
 
-## ✨ Why VeTiS?
+## Why VeTiS?
 
-- **🎯 Minimalist Design**: Focus on what matters - serving HTTP requests efficiently
-- **🔧 Flexible Runtime**: Choose between Tokio or Smol async runtimes
-- **🌐 Protocol Support**: Full HTTP/1, HTTP/2, and HTTP/3 implementation
-- **🛡️ Secure by Default**: Built-in TLS support with modern cryptography
-- **⚡ Zero-Cost Abstractions**: Leverage Rust's performance without overhead
-- **📦 Feature-Gated**: Include only what you need for optimal binary size
+- **Minimalist Design**: Focus on what matters - serving HTTP requests efficiently
+- **Flexible Runtime**: Choose between Tokio or Smol async runtimes
+- **Protocol Support**: Full HTTP/1, HTTP/2, and HTTP/3 implementation
+- **Secure by Default**: Built-in TLS support with modern cryptography
+- **Zero-Cost Abstractions**: Leverage Rust's performance without overhead
+- **Feature-Gated**: Include only what you need for optimal binary size
 
-## 🛠️ Quick Start
+## Quick Start
 
 Add VeTiS to your `Cargo.toml`:
 
@@ -113,38 +113,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## ✨ Overview
+## Overview
 
 ### Core Features
 
-- **🌐 Virtual Hosts** - Host multiple domains on a single server
-- **🔐 SNI Support** - Server Name Indication for TLS
-- **🔄 Reverse Proxy** - Route requests to backend services
+- **Virtual Hosts** - Host multiple domains on a single server
+- **SNI Support** - Server Name Indication for TLS
+- **Reverse Proxy** - Route requests to backend services
 
 ### Content & Security
 
-- **📁 Static File Serving** - Efficient static asset delivery
-- **🎭 Dynamic Content** - Template rendering and content generation
+- **Static File Serving** - Efficient static asset delivery
+- **Dynamic Content** - Template rendering and content generation
 
-## 🗺️ Roadmap
+## Roadmap
 
 VeTiS is continuously evolving! Here's what we're working on:
 
 ### Core Features
 
-- **🔌 WebSockets** - Real-time bidirectional communication
-- **⚖️ Load Balancing** - Distribute traffic across multiple servers
+- **WebSockets** - Real-time bidirectional communication
+- **Load Balancing** - Distribute traffic across multiple servers
 
 ### Content & Security
 
-- **🔑 Authentication** - Multiple auth methods support
-- **🛡️ Authorization** - Fine-grained access control
-- **📊 Logging** - Comprehensive request and error logging
+- **Authentication** - Multiple auth methods support
+- **Authorization** - Fine-grained access control
+- **Logging** - Comprehensive request and error logging
 
-## 📄 License
+## License
 
 MIT
 
-## 👤 Author
+## Author
 
 Rogerio Pereira Araujo <rogerio.araujo@gmail.com>
