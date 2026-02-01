@@ -6,6 +6,14 @@
 
 VeTiS is a lightweight yet powerful web server that brings simplicity and performance together. Designed with Rust's safety guarantees in mind, it delivers HTTP/1, HTTP/2, and HTTP/3 support with a clean, intuitive API that makes building web services a breeze.
 
+## History
+
+VeTiS started as a component of deboa-tests, a private crate used by deboa http client for integration testing purposes, as it got more features, like HTTP1/2 and 3 support, alongside TLS, I realized project could be reused somehow.
+
+So with reusability in mind, I started EasyHttpMock, a project which aims to be a quick and easy way to start a mock server for integration purposes, it didn't took too much to realized this internal http server used by EasyHttpMock could be reused for other purposes than simply be a mock server.
+
+That's why VeTiS came to reality, by taking advantage of what I started on deboa-tests for testing purposes, it turned into a complete http server project, the goal is make it very flexible, while keeping it small and fast.
+
 ## ✨ Why VeTiS?
 
 - **🎯 Minimalist Design**: Focus on what matters - serving HTTP requests efficiently
@@ -111,6 +119,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 - **🌐 Virtual Hosts** - Host multiple domains on a single server
 - **🔐 SNI Support** - Server Name Indication for TLS
+- **🔄 Reverse Proxy** - Route requests to backend services
 
 ### Content & Security
 
@@ -124,7 +133,6 @@ VeTiS is continuously evolving! Here's what we're working on:
 ### Core Features
 
 - **🔌 WebSockets** - Real-time bidirectional communication
-- **🔄 Reverse Proxy** - Route requests to backend services
 - **⚖️ Load Balancing** - Distribute traffic across multiple servers
 
 ### Content & Security
