@@ -3,7 +3,7 @@
 [![crates.io](https://img.shields.io/crates/v/vetis?style=flat-square)](https://crates.io/crates/vetis) [![Build Status](https://github.com/ararog/vetis/actions/workflows/rust.yml/badge.svg?event=push)](https://github.com/ararog/vetis/actions/workflows/rust.yml) [![codecov](https://codecov.io/gh/ararog/vetis/graph/badge.svg?token=T0HSBAPVSI)](https://codecov.io/gh/ararog/vetis) [![Documentation](https://docs.rs/vetis/badge.svg)](https://docs.rs/vetis/latest/vetis)
 
 
-🚀 **A blazingly fast, minimalist HTTP server built for modern Rust applications**
+**A blazingly fast, minimalist HTTP server built for modern Rust applications**
 
 VeTiS is a lightweight yet powerful web server that brings simplicity and performance together. Designed with Rust's safety guarantees in mind, it delivers HTTP/1, HTTP/2, and HTTP/3 support with a clean, intuitive API that makes building web services a breeze.
 
@@ -15,16 +15,16 @@ So with reusability in mind, I started EasyHttpMock, a project which aims to be 
 
 That's why VeTiS came to reality, by taking advantage of what I started on deboa-tests for testing purposes, it turned into a complete http server project, the goal is make it very flexible, while keeping it small and fast.
 
-## ✨ Why VeTiS?
+## Why VeTiS?
 
-- **🎯 Minimalist Design**: Focus on what matters - serving HTTP requests efficiently
-- **🔧 Flexible Runtime**: Choose between Tokio or Smol async runtimes
-- **🌐 Protocol Support**: Full HTTP/1, HTTP/2, and HTTP/3 implementation
-- **🛡️ Secure by Default**: Built-in TLS support with modern cryptography
-- **⚡ Zero-Cost Abstractions**: Leverage Rust's performance without overhead
-- **📦 Feature-Gated**: Include only what you need for optimal binary size
+- **Minimalist Design**: Focus on what matters - serving HTTP requests efficiently
+- **Flexible Runtime**: Choose between Tokio or Smol async runtimes
+- **Protocol Support**: Full HTTP/1, HTTP/2, and HTTP/3 implementation
+- **Secure by Default**: Built-in TLS support with modern cryptography
+- **Zero-Cost Abstractions**: Leverage Rust's performance without overhead
+- **Feature-Gated**: Include only what you need for optimal binary size
 
-## 🛠️ Quick Start
+## Quick Start
 
 Add VeTiS to your `Cargo.toml`:
 
@@ -46,7 +46,7 @@ vetis = { version = "0.1.0", features = ["tokio-rt", "http2", "tokio-rust-tls"] 
 - http3
 - tokio-rust-tls (default)
 
-## 💡 Usage Example
+## Usage Example
 
 Here's how simple it is to create a web server with VeTiS:
 
@@ -159,4 +159,3 @@ MIT
 ## Author
 
 Rogerio Pereira Araujo <rogerio.araujo@gmail.com>
-
