@@ -7,7 +7,7 @@ use crate::{
 };
 
 pub trait Path {
-    fn value(&self) -> &str;
+    fn uri(&self) -> &str;
     fn handle<'a>(
         &'a self,
         request: Request,
@@ -17,16 +17,20 @@ pub trait Path {
 
 pub enum HostPath {
     Handler(HandlerPath),
+    #[cfg(feature = "reverse-proxy")]
     Proxy(ProxyPath),
+    #[cfg(feature = "static-files")]
     Static(StaticPath),
 }
 
 impl Path for HostPath {
-    fn value(&self) -> &str {
+    fn uri(&self) -> &str {
         match self {
-            HostPath::Handler(handler) => handler.value(),
-            HostPath::Proxy(proxy) => proxy.value(),
-            HostPath::Static(static_path) => static_path.value(),
+            HostPath::Handler(handler) => handler.uri(),
+            #[cfg(feature = "reverse-proxy")]
+            HostPath::Proxy(proxy) => proxy.uri(),
+            #[cfg(feature = "static-files")]
+            HostPath::Static(static_path) => static_path.uri(),
         }
     }
 
@@ -37,7 +41,9 @@ impl Path for HostPath {
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'a>> {
         match self {
             HostPath::Handler(handler) => handler.handle(request, uri),
+            #[cfg(feature = "reverse-proxy")]
             HostPath::Proxy(proxy) => proxy.handle(request, uri),
+            #[cfg(feature = "static-files")]
             HostPath::Static(static_path) => static_path.handle(request, uri),
         }
     }
@@ -55,7 +61,7 @@ impl HandlerPath {
 }
 
 impl Path for HandlerPath {
-    fn value(&self) -> &str {
+    fn uri(&self) -> &str {
         &self.uri
     }
 
@@ -68,12 +74,14 @@ impl Path for HandlerPath {
     }
 }
 
+#[cfg(feature = "static-files")]
 pub struct StaticPathBuilder {
     uri: String,
     extensions: String,
     directory: String,
 }
 
+#[cfg(feature = "static-files")]
 impl StaticPathBuilder {
     pub fn uri(mut self, uri: String) -> Self {
         self.uri = uri;
@@ -121,17 +129,15 @@ impl StaticPathBuilder {
     }
 }
 
+#[cfg(feature = "static-files")]
 pub struct StaticPath {
     uri: String,
     extensions: String,
     directory: String,
 }
 
+#[cfg(feature = "static-files")]
 impl StaticPath {
-    pub fn uri(&self) -> &str {
-        &self.uri
-    }
-
     pub fn extensions(&self) -> &str {
         &self.extensions
     }
@@ -149,8 +155,9 @@ impl StaticPath {
     }
 }
 
+#[cfg(feature = "static-files")]
 impl Path for StaticPath {
-    fn value(&self) -> &str {
+    fn uri(&self) -> &str {
         &self.uri
     }
 
@@ -184,13 +191,63 @@ impl Path for StaticPath {
     }
 }
 
+#[cfg(feature = "reverse-proxy")]
+pub struct ProxyPathBuilder {
+    uri: String,
+    target: String,
+}
+
+#[cfg(feature = "reverse-proxy")]
+impl ProxyPathBuilder {
+    pub fn uri(mut self, uri: String) -> Self {
+        self.uri = uri;
+        self
+    }
+
+    pub fn target(mut self, target: String) -> Self {
+        self.target = target;
+        self
+    }
+
+    pub fn build(self) -> Result<HostPath, VetisError> {
+        if self.uri.is_empty() {
+            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+                "URI cannot be empty".to_string(),
+            )));
+        }
+        if self
+            .target
+            .is_empty()
+        {
+            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+                "Target cannot be empty".to_string(),
+            )));
+        }
+
+        Ok(HostPath::Proxy(ProxyPath { uri: self.uri, target: self.target }))
+    }
+}
+
+#[cfg(feature = "reverse-proxy")]
 pub struct ProxyPath {
     uri: String,
     target: String,
 }
 
+#[cfg(feature = "reverse-proxy")]
+impl ProxyPath {
+    pub fn builder() -> ProxyPathBuilder {
+        ProxyPathBuilder { uri: String::new(), target: String::new() }
+    }
+
+    pub fn target(&self) -> &str {
+        &self.target
+    }
+}
+
+#[cfg(feature = "reverse-proxy")]
 impl Path for ProxyPath {
-    fn value(&self) -> &str {
+    fn uri(&self) -> &str {
         &self.uri
     }
 

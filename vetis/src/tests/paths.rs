@@ -1,6 +1,6 @@
 use crate::{
     errors::{VetisError, VirtualHostError},
-    server::path::{HostPath, StaticPath},
+    server::path::{HostPath, Path, ProxyPath, StaticPath},
 };
 
 #[test]
@@ -60,6 +60,49 @@ pub fn test_invalid_directory() {
         some_path.err(),
         Some(VetisError::VirtualHost(VirtualHostError::InvalidPath(
             "Directory cannot be empty".to_string(),
+        )))
+    );
+}
+
+#[test]
+pub fn test_proxy_path() {
+    let some_path = ProxyPath::builder()
+        .uri("/test".to_string())
+        .target("http://localhost:8080".to_string())
+        .build();
+
+    let Ok(HostPath::Proxy(proxy_path)) = some_path else {
+        panic!("Failed to build proxy path");
+    };
+
+    assert_eq!(proxy_path.uri(), "/test");
+    assert_eq!(proxy_path.target(), "http://localhost:8080");
+}
+
+#[test]
+pub fn test_invalid_proxy_path() {
+    let some_path = ProxyPath::builder().build();
+
+    assert!(some_path.is_err());
+    assert_eq!(
+        some_path.err(),
+        Some(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+            "URI cannot be empty".to_string(),
+        )))
+    );
+}
+
+#[test]
+pub fn test_invalid_proxy_path_target() {
+    let some_path = ProxyPath::builder()
+        .uri("/test".to_string())
+        .build();
+
+    assert!(some_path.is_err());
+    assert_eq!(
+        some_path.err(),
+        Some(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+            "Target cannot be empty".to_string(),
         )))
     );
 }

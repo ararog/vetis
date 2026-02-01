@@ -52,7 +52,6 @@ use crate::{
     server::{
         conn::listener::{Listener, ListenerResult},
         tls::TlsFactory,
-        virtual_host,
     },
     VetisRwLock, VetisVirtualHosts,
 };
