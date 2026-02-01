@@ -18,6 +18,14 @@ permalink: /
 
 Built on top of [hyper](https://github.com/hyperium/hyper).
 
+## History
+
+VeTiS started as a component of deboa-tests, a private crate used by deboa http client for integration testing purposes, as it got more features, like HTTP1/2 and 3 support, alongside TLS, I realized project could be reused somehow.
+
+So with reusability in mind, I started EasyHttpMock, a project which aims to be a quick and easy way to start a mock server for integration purposes, it didn't took too much to realized this internal http server used by EasyHttpMock could be reused for other purposes than simply be a mock server.
+
+That's why VeTiS came to reality, by taking advantage of what I started on deboa-tests for testing purposes, it turned into a complete http server project, the goal is make it very flexible, while keeping it small and fast.
+
 ## Features
 
 - **🎯 Minimalist Design**: Focus on what matters - serving HTTP requests efficiently
