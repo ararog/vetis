@@ -144,11 +144,11 @@ VeTiS is continuously evolving! Here's what we're working on:
 
 ## Subprojects
 
-### [vetis](https://github.com/ararog/vetis/tree/develop/vetis)
+### [vetis](https://github.com/ararog/vetis/tree/main/vetis)
 
 The core create of http server.
 
-### [vetis-macros](https://github.com/ararog/vetis/tree/develop/vetis-macros)
+### [vetis-macros](https://github.com/ararog/vetis/tree/main/vetis-macros)
 
 Macros for VeTiS, make easy to create small http server.
 

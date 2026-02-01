@@ -82,5 +82,46 @@ macro_rules! http {
 
 #[macro_export]
 macro_rules! https {
-    (hostname => &$hostname:ident, port => &$port:ident, interface => &$interface:ident, &cert => &$cert:ident, &key => &$key:ident) => {};
+    (hostname => &$hostname:ident, port => &$port:ident, interface => &$interface:ident, &cert => &$cert:ident, &key => &$key:ident) => {
+        use vetis::{
+            config::{ListenerConfig, ServerConfig, VirtualHostConfig},
+            errors::VetisError,
+            server::{path::HandlerPath, virtual_host::VirtualHost},
+            Vetis,
+        };
+
+        let listener = ListenerConfig::builder()
+            .port($port)
+            .interface($interface.to_string())
+            .build();
+
+        let config = ServerConfig::builder()
+            .add_listener(listener)
+            .build();
+
+        let security_config = SecurityConfig::builder()
+            .cert_from_file($cert.to_string())
+            .key_from_file($key.to_string())
+            .build();
+
+        let virtual_host_config = VirtualHostConfig::builder()
+            .hostname($hostname.to_string())
+            .port($port)
+            .security(security_config)
+            .build()?;
+
+        let mut virtual_host = VirtualHost::new(virtual_host_config);
+
+        let root_path = HandlerPath::new_host_path("/".to_string(), Box::new($handler));
+
+        virtual_host.add_path(root_path);
+
+        let mut vetis = Vetis::new(config);
+
+        vetis
+            .add_virtual_host(virtual_host)
+            .await;
+
+        Ok::<Vetis, Box<VetisError>>(vetis)
+    };
 }

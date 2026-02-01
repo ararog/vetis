@@ -52,6 +52,7 @@ use crate::{
     server::{
         conn::listener::{Listener, ListenerResult},
         tls::TlsFactory,
+        virtual_host,
     },
     VetisRwLock, VetisVirtualHosts,
 };
@@ -283,7 +284,32 @@ async fn process_request(
                 .route(request)
                 .await?;
 
-            let response: http::Response<Full<Bytes>> = vetis_response.into_inner();
+            let mut response: http::Response<Full<Bytes>> = vetis_response.into_inner();
+
+            let default_headers = virtual_host
+                .config()
+                .default_headers();
+            if let Some(default_headers) = default_headers {
+                for (key, value) in default_headers {
+                    let header_name = header::HeaderName::from_bytes(key.as_bytes());
+                    if header_name.is_err() {
+                        error!("Invalid header name: {}", key);
+                        continue;
+                    }
+                    let header_name = header_name.unwrap();
+
+                    let header_value = header::HeaderValue::from_str(value.as_str());
+                    if header_value.is_err() {
+                        error!("Invalid header value: {}", value);
+                        continue;
+                    }
+                    let header_value = header_value.unwrap();
+
+                    response
+                        .headers_mut()
+                        .insert(header_name, header_value);
+                }
+            }
 
             Ok::<_, VetisError>(response)
         } else {

@@ -399,6 +399,7 @@ impl ServerConfig {
 pub struct VirtualHostConfigBuilder {
     hostname: String,
     port: u16,
+    default_headers: Option<Vec<(String, String)>>,
     security: Option<SecurityConfig>,
 }
 
@@ -439,6 +440,33 @@ impl VirtualHostConfigBuilder {
         self
     }
 
+    /// Adds a default header to the virtual host.
+    ///
+    /// These headers will be added to all responses from this virtual host.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// use vetis::config::VirtualHostConfig;
+    ///
+    /// let config = VirtualHostConfig::builder()
+    ///     .header("X-Custom".to_string(), "value".to_string())
+    ///     .build()?;
+    /// ```
+    pub fn header(mut self, key: String, value: String) -> Self {
+        if self
+            .default_headers
+            .is_none()
+        {
+            self.default_headers = Some(Vec::new());
+        }
+        self.default_headers
+            .as_mut()
+            .unwrap()
+            .push((key, value));
+        self
+    }
+
     /// Sets the security configuration for HTTPS.
     ///
     /// When provided, the virtual host will use TLS for secure connections.
@@ -476,6 +504,7 @@ impl VirtualHostConfigBuilder {
     /// let config = VirtualHostConfig::builder()
     ///     .hostname("example.com".to_string())
     ///     .port(443)
+    ///     .header("X-Custom".to_string(), "value".to_string())
     ///     .build()?;
     /// ```
     pub fn build(self) -> Result<VirtualHostConfig, VetisError> {
@@ -488,7 +517,12 @@ impl VirtualHostConfigBuilder {
             )));
         }
 
-        Ok(VirtualHostConfig { hostname: self.hostname, port: self.port, security: self.security })
+        Ok(VirtualHostConfig {
+            hostname: self.hostname,
+            port: self.port,
+            default_headers: self.default_headers,
+            security: self.security,
+        })
     }
 }
 
@@ -515,6 +549,7 @@ impl VirtualHostConfigBuilder {
 pub struct VirtualHostConfig {
     hostname: String,
     port: u16,
+    default_headers: Option<Vec<(String, String)>>,
     security: Option<SecurityConfig>,
 }
 
@@ -537,7 +572,12 @@ impl VirtualHostConfig {
     ///     .build()?;
     /// ```
     pub fn builder() -> VirtualHostConfigBuilder {
-        VirtualHostConfigBuilder { hostname: String::new(), port: 80, security: None }
+        VirtualHostConfigBuilder {
+            hostname: String::new(),
+            port: 80,
+            default_headers: None,
+            security: None,
+        }
     }
 
     /// Returns the hostname.
@@ -548,6 +588,11 @@ impl VirtualHostConfig {
     /// Returns the port.
     pub fn port(&self) -> u16 {
         self.port
+    }
+
+    /// Returns the default headers.
+    pub fn default_headers(&self) -> &Option<Vec<(String, String)>> {
+        &self.default_headers
     }
 
     /// Returns the security configuration if present.
