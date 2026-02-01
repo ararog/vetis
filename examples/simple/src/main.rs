@@ -14,7 +14,7 @@ pub const SERVER_KEY: &[u8] = include_bytes!("../certs/server.key.der");
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    std_logger::Config::logfmt().init();
+    env_logger::Builder::from_env(env_logger::Env::default().filter_or("RUST_LOG", "info")).init();
 
     let https = ListenerConfig::builder()
         .port(8443)
