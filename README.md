@@ -120,6 +120,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 - **🌐 Virtual Hosts** - Host multiple domains on a single server
 - **🔐 SNI Support** - Server Name Indication for TLS
+- **🔄 Reverse Proxy** - Route requests to backend services
 
 ### Content & Security
 
@@ -133,7 +134,6 @@ VeTiS is continuously evolving! Here's what we're working on:
 ### Core Features
 
 - **🔌 WebSockets** - Real-time bidirectional communication
-- **🔄 Reverse Proxy** - Route requests to backend services
 - **⚖️ Load Balancing** - Distribute traffic across multiple servers
 
 ### Content & Security
