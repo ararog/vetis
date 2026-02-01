@@ -42,7 +42,7 @@ use thiserror::Error;
 ///     Ok(_) => println!("Success!"),
 /// }
 /// ```
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 pub enum VetisError {
     /// Configuration-related errors
     #[error("Configuration error: {0}")]
