@@ -112,7 +112,7 @@ impl VirtualHost {
 
     pub fn add_path(&mut self, path: HostPath) {
         self.paths.insert(
-            path.value()
+            path.uri()
                 .to_string(),
             path,
         );
@@ -160,7 +160,7 @@ impl VirtualHost {
         };
 
         let target_path = uri_path
-            .strip_prefix(path.value())
+            .strip_prefix(path.uri())
             .unwrap_or(&uri_path);
 
         path.handle(request, Cow::Owned(target_path.to_string()))

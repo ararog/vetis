@@ -2853,6 +2853,7 @@ version = "0.1.3"
 dependencies = [
  "async-signal",
  "bytes",
+ "deboa",
  "futures-lite",
  "futures-rustls",
  "h3",
