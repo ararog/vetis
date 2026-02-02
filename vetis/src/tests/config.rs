@@ -13,7 +13,7 @@ fn test_listener_config() {
         .port(8080)
         .ssl(false)
         .protocol(protocol.clone())
-        .interface("127.0.0.1".to_string())
+        .interface("127.0.0.1")
         .build();
     assert_eq!(listener_config.port(), 8080);
     assert!(!listener_config.ssl());
@@ -59,7 +59,7 @@ fn test_security_config() {
 #[test]
 fn test_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
     let virtual_host_config = VirtualHostConfig::builder()
-        .hostname("localhost".to_string())
+        .hostname("localhost")
         .port(8080)
         .build()?;
     assert_eq!(virtual_host_config.hostname(), "localhost");

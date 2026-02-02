@@ -26,22 +26,22 @@ use crate::{
     VetisRwLock, VetisVirtualHosts,
 };
 
-pub struct UdpListener {
-    config: ListenerConfig,
+pub struct UdpListener<'a> {
+    config: ListenerConfig<'a>,
     task: Option<GateTask>,
-    virtual_hosts: VetisVirtualHosts,
+    virtual_hosts: VetisVirtualHosts<'a>,
 }
 
-impl Listener for UdpListener {
-    fn new(config: ListenerConfig) -> Self {
+impl<'a> Listener<'a> for UdpListener<'a> {
+    fn new(config: ListenerConfig<'a>) -> Self {
         Self { config, task: None, virtual_hosts: Arc::new(VetisRwLock::new(HashMap::new())) }
     }
 
-    fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts) {
+    fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts<'a>) {
         self.virtual_hosts = virtual_hosts;
     }
 
-    fn listen(&mut self) -> ListenerResult<'_, ()> {
+    fn listen(&mut self) -> ListenerResult<'a, ()> {
         let future = async move {
             let addr = if let Ok(ip) = self
                 .config
@@ -93,7 +93,7 @@ impl Listener for UdpListener {
         Box::pin(future)
     }
 
-    fn stop(&mut self) -> ListenerResult<'_, ()> {
+    fn stop(&mut self) -> ListenerResult<'a, ()> {
         Box::pin(async move {
             if let Some(mut task) = self.task.take() {
                 task.cancel().await;
@@ -103,11 +103,11 @@ impl Listener for UdpListener {
     }
 }
 
-impl UdpListener {
+impl<'a> UdpListener<'a> {
     async fn handle_connections(
         &mut self,
         endpoint: quinn::Endpoint,
-        virtual_hosts: VetisVirtualHosts,
+        virtual_hosts: VetisVirtualHosts<'a>,
     ) -> Result<GateTask, VetisError> {
         let port = self.config.port();
         let task = spawn_server(async move {
@@ -158,10 +158,10 @@ impl UdpListener {
     }
 }
 
-fn handle_http_request(
+fn handle_http_request<'a>(
     port: u16,
     resolver: RequestResolver<QuinnConnection, Bytes>,
-    virtual_hosts: VetisVirtualHosts,
+    virtual_hosts: VetisVirtualHosts<'a>,
 ) -> Result<(), VetisError> {
     let virtual_hosts = virtual_hosts.clone();
     spawn_worker(async move {

@@ -60,6 +60,7 @@ http3 = ["hyper/server", "hyper-util/server", "h3", "h3-quinn", "quinn"]
 deboa = ["dep:deboa"]
 
 [dependencies]
+arcstr = "1.2.0"
 async-signal = { version = "0.2.12", optional = true }
 bytes = "1.11.0"
 deboa = { version = "0.1.0-beta.1", default-features = false, optional = true }

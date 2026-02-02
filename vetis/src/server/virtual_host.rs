@@ -23,6 +23,7 @@
 /// ```
 use std::{borrow::Cow, future::Future, pin::Pin};
 
+use arcstr::ArcStr;
 use radix_trie::Trie;
 
 use crate::{
@@ -122,7 +123,7 @@ impl VirtualHost {
         &self.config
     }
 
-    pub fn hostname(&self) -> String {
+    pub fn hostname(&self) -> &str {
         self.config
             .hostname()
             .clone()
@@ -163,6 +164,6 @@ impl VirtualHost {
             .strip_prefix(path.uri())
             .unwrap_or(&uri_path);
 
-        path.handle(request, Cow::Owned(target_path.to_string()))
+        path.handle(request, ArcStr::from(target_path))
     }
 }

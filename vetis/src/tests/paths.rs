@@ -15,7 +15,7 @@ mod handler {
         let ipv4 = ListenerConfig::builder()
             .port(8082)
             .protocol(Protocol::Http1)
-            .interface("0.0.0.0".to_string())
+            .interface("0.0.0.0")
             .build();
 
         let config = ServerConfig::builder()
@@ -23,14 +23,14 @@ mod handler {
             .build();
 
         let localhost_config = VirtualHostConfig::builder()
-            .hostname("localhost".to_string())
+            .hostname("localhost")
             .port(8082)
             .build()?;
 
         let mut localhost_virtual_host = VirtualHost::new(localhost_config);
 
         let root_path = HandlerPath::new_host_path(
-            "/hello".to_string(),
+            "/hello",
             handler_fn(|_request| async move {
                 let response = crate::Response::builder()
                     .status(StatusCode::OK)
@@ -78,9 +78,9 @@ mod static_files {
     #[test]
     pub fn test_static_path() {
         let some_path = StaticPath::builder()
-            .uri("/test".to_string())
-            .extensions(".html".to_string())
-            .directory("./test".to_string())
+            .uri("/test")
+            .extensions(".html")
+            .directory("./test")
             .build();
 
         let Ok(HostPath::Static(static_path)) = some_path else {
@@ -108,7 +108,7 @@ mod static_files {
     #[test]
     pub fn test_invalid_extensions() {
         let some_path = StaticPath::builder()
-            .uri("/test".to_string())
+            .uri("/test")
             .build();
 
         assert!(some_path.is_err());
@@ -123,8 +123,8 @@ mod static_files {
     #[test]
     pub fn test_invalid_directory() {
         let some_path = StaticPath::builder()
-            .uri("/test".to_string())
-            .extensions(".html".to_string())
+            .uri("/test")
+            .extensions(".html")
             .build();
 
         assert!(some_path.is_err());
@@ -158,8 +158,8 @@ mod reverse_proxy {
     #[test]
     fn test_proxy_path() -> Result<(), Box<dyn Error>> {
         let some_path = ProxyPath::builder()
-            .uri("/test".to_string())
-            .target("http://localhost:8080".to_string())
+            .uri("/test")
+            .target("http://localhost:8080")
             .build();
 
         let Ok(HostPath::Proxy(proxy_path)) = some_path else {
@@ -190,7 +190,7 @@ mod reverse_proxy {
     #[test]
     fn test_invalid_proxy_path_target() -> Result<(), Box<dyn Error>> {
         let some_path = ProxyPath::builder()
-            .uri("/test".to_string())
+            .uri("/test")
             .build();
 
         assert!(some_path.is_err());
@@ -209,13 +209,13 @@ mod reverse_proxy {
         let source_listener = ListenerConfig::builder()
             .port(8084)
             .protocol(Protocol::Http1)
-            .interface("0.0.0.0".to_string())
+            .interface("0.0.0.0")
             .build();
 
         let target_listener = ListenerConfig::builder()
             .port(8085)
             .protocol(Protocol::Http1)
-            .interface("0.0.0.0".to_string())
+            .interface("0.0.0.0")
             .build();
 
         let config = ServerConfig::builder()
@@ -224,7 +224,7 @@ mod reverse_proxy {
             .build();
 
         let source_config = VirtualHostConfig::builder()
-            .hostname("localhost".to_string())
+            .hostname("localhost")
             .port(8084)
             .build()
             .unwrap();
@@ -232,21 +232,21 @@ mod reverse_proxy {
         let mut source_virtual_host = VirtualHost::new(source_config);
         source_virtual_host.add_path(
             ProxyPath::builder()
-                .uri("/".to_string())
-                .target("http://localhost:8085".to_string())
+                .uri("/")
+                .target("http://localhost:8085")
                 .build()
                 .unwrap(),
         );
 
         let target_config = VirtualHostConfig::builder()
-            .hostname("localhost".to_string())
+            .hostname("localhost")
             .port(8085)
             .build()
             .unwrap();
 
         let mut target_virtual_host = VirtualHost::new(target_config);
         target_virtual_host.add_path(HandlerPath::new_host_path(
-            "/".to_string(),
+            "/",
             handler_fn(|_request| async move {
                 Ok(crate::Response::builder()
                     .status(StatusCode::OK)

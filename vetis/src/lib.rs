@@ -1,22 +1,22 @@
 //! # VeTiS (Very Tiny Server)
 //!
-//! 🚀 **A blazingly fast, minimalist HTTP server built for modern Rust applications**
+//! **A blazingly fast, minimalist HTTP server built for modern Rust applications**
 //!
 //! VeTiS is a lightweight yet powerful web server that brings simplicity and performance together.
 //! Designed with Rust's safety guarantees in mind, it delivers HTTP/1, HTTP/2, and HTTP/3 support
 //! with a clean, intuitive API that makes building web services a breeze.
 //!
-//! ## ✨ Features
+//! ## Features
 //!
-//! - **🎯 Minimalist Design**: Focus on what matters - serving HTTP requests efficiently
-//! - **🔧 Flexible Runtime**: Choose between Tokio or Smol async runtimes
-//! - **🌐 Protocol Support**: Full HTTP/1, HTTP/2, and HTTP/3 implementation
-//! - **🛡️ Secure by Default**: Built-in TLS support with modern cryptography
-//! - **⚡ Zero-Cost Abstractions**: Leverage Rust's performance without overhead
-//! - **📦 Feature-Gated**: Include only what you need for optimal binary size
-//! - **🏠 Virtual Hosts**: Host multiple domains on a single server
+//! - **Minimalist Design**: Focus on what matters - serving HTTP requests efficiently
+//! - **Flexible Runtime**: Choose between Tokio or Smol async runtimes
+//! - **Protocol Support**: Full HTTP/1, HTTP/2, and HTTP/3 implementation
+//! - **Secure by Default**: Built-in TLS support with modern cryptography
+//! - **Zero-Cost Abstractions**: Leverage Rust's performance without overhead
+//! - **Feature-Gated**: Include only what you need for optimal binary size
+//! - **Virtual Hosts**: Host multiple domains on a single server
 //!
-//! ## 🛠️ Quick Start
+//! ## Quick Start
 //!
 //! Add VeTiS to your `Cargo.toml`:
 //!
@@ -24,7 +24,7 @@
 //! vetis = { version = "0.1.3", features = ["tokio-rt", "http1", "tokio-rust-tls"] }
 //! ```
 //!
-//! ## 💡 Basic Usage
+//! ## Basic Usage
 //!
 //! ```rust,ignore
 //! use bytes::Bytes;
@@ -83,7 +83,7 @@
 //! }
 //! ```
 //!
-//! ## 🏗️ Architecture
+//! ## Architecture
 //!
 //! VeTiS is built around several key components:
 //!
@@ -93,7 +93,7 @@
 //! - **[`Request`]**: HTTP request wrapper supporting multiple protocols
 //! - **[`Response`]**: HTTP response builder for creating responses
 //!
-//! ## 🔧 Runtime Configuration
+//! ## Runtime Configuration
 //!
 //! VeTiS supports two async runtimes:
 //!
@@ -102,26 +102,26 @@
 //!
 //! Only one runtime can be enabled at a time.
 //!
-//! ## 🌐 Protocol Support
+//! ## Protocol Support
 //!
 //! - **HTTP/1**: Enable with `http1` feature
 //! - **HTTP/2**: Enable with `http2` feature (requires TLS)
 //! - **HTTP/3**: Enable with `http3` feature (requires TLS)
 //!
-//! ## 🛡️ TLS Configuration
+//! ## TLS Configuration
 //!
 //! For HTTPS support, enable one of:
 //!
 //! - **Tokio TLS**: `tokio-rust-tls` feature (default)
 //! - **Smol TLS**: `smol-rust-tls` feature
 //!
-//! ## 📦 Modules
+//! ## Modules
 //!
 //! - [`config`]: Server and virtual host configuration builders
 //! - [`errors`]: Comprehensive error handling types
 //! - [`server`]: HTTP server implementation and virtual host system
 //!
-//! ## 🚀 Examples
+//! ## Examples
 //!
 //! Check out the `examples/` directory for more comprehensive examples including:
 //!
@@ -141,6 +141,7 @@ compile_error!("Only one runtime feature can be enabled at a time.");
 
 use std::{collections::HashMap, sync::Arc};
 
+use arcstr::ArcStr;
 use bytes::Bytes;
 use http_body_util::{Either, Full};
 use hyper::body::Incoming;
@@ -162,7 +163,7 @@ use tokio::sync::RwLock;
 
 pub(crate) type VetisRwLock<T> = RwLock<T>;
 
-pub(crate) type VetisVirtualHosts = Arc<VetisRwLock<HashMap<(String, u16), VirtualHost>>>;
+pub(crate) type VetisVirtualHosts = Arc<VetisRwLock<HashMap<(ArcStr, u16), VirtualHost>>>;
 
 use crate::{
     config::ServerConfig,
@@ -247,7 +248,7 @@ impl Vetis {
     /// let mut server = Vetis::new(config);
     ///
     /// let vhost_config = VirtualHostConfig::builder()
-    ///     .hostname("example.com".to_string())
+    ///     .hostname("example.com")
     ///     .port(80)
     ///     .build()?;
     ///
@@ -265,7 +266,7 @@ impl Vetis {
     /// server.add_virtual_host(vhost).await;
     /// ```
     pub async fn add_virtual_host(&mut self, virtual_host: VirtualHost) {
-        let key = (virtual_host.hostname(), virtual_host.port());
+        let key = (ArcStr::from(virtual_host.hostname()), virtual_host.port());
 
         self.virtual_hosts
             .write()

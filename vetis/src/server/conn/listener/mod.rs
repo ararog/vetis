@@ -26,9 +26,9 @@ pub trait Listener {
 
     fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts);
 
-    fn listen(&mut self) -> ListenerResult<'_, ()>;
+    fn listen(&mut self) -> ListenerResult<()>;
 
-    fn stop(&mut self) -> ListenerResult<'_, ()>;
+    fn stop(&mut self) -> ListenerResult<()>;
 }
 
 pub enum ServerListener {
@@ -66,7 +66,7 @@ impl Listener for ServerListener {
         }
     }
 
-    fn listen(&mut self) -> ListenerResult<'_, ()> {
+    fn listen(&mut self) -> ListenerResult<()> {
         Box::pin(async move {
             match self {
                 #[cfg(any(feature = "http1", feature = "http2"))]
@@ -87,7 +87,7 @@ impl Listener for ServerListener {
         })
     }
 
-    fn stop(&mut self) -> ListenerResult<'_, ()> {
+    fn stop(&mut self) -> ListenerResult<()> {
         Box::pin(async move {
             match self {
                 #[cfg(any(feature = "http1", feature = "http2"))]

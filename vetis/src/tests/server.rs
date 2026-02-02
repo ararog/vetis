@@ -17,13 +17,13 @@ mod server_tests {
         let ipv4 = ListenerConfig::builder()
             .port(8080)
             .protocol(Protocol::Http1)
-            .interface("0.0.0.0".to_string())
+            .interface("0.0.0.0")
             .build();
 
         let ipv6 = ListenerConfig::builder()
             .port(8081)
             .protocol(Protocol::Http1)
-            .interface("::".to_string())
+            .interface("::")
             .build();
 
         let config = ServerConfig::builder()
@@ -32,12 +32,12 @@ mod server_tests {
             .build();
 
         let localhost_config = VirtualHostConfig::builder()
-            .hostname("localhost".to_string())
+            .hostname("localhost")
             .port(8080)
             .build()?;
 
         let ip6_localhost_config = VirtualHostConfig::builder()
-            .hostname("ip6-localhost".to_string())
+            .hostname("ip6-localhost")
             .port(8081)
             .build()?;
 
@@ -45,7 +45,7 @@ mod server_tests {
         let mut ip6_localhost_virtual_host = VirtualHost::new(ip6_localhost_config);
 
         let ip4_root_path = HandlerPath::new_host_path(
-            "/hello".to_string(),
+            "/hello",
             handler_fn(|_request| async move {
                 let response = crate::Response::builder()
                     .status(StatusCode::OK)
@@ -55,7 +55,7 @@ mod server_tests {
         );
 
         let ip6_root_path = HandlerPath::new_host_path(
-            "/hello".to_string(),
+            "/hello",
             handler_fn(|_request| async move {
                 let response = crate::Response::builder()
                     .status(StatusCode::OK)

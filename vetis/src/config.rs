@@ -40,6 +40,8 @@
 
 use std::fs;
 
+use arcstr::ArcStr;
+
 use crate::errors::{ConfigError, VetisError};
 
 /// Supported HTTP protocols.
@@ -86,7 +88,7 @@ pub enum Protocol {
 /// let config = ListenerConfig::builder()
 ///     .port(8080)
 ///     .protocol(Protocol::Http1)
-///     .interface("127.0.0.1".to_string())
+///     .interface("127.0.0.1")
 ///     .build();
 /// ```
 #[derive(Clone)]
@@ -94,7 +96,7 @@ pub struct ListenerConfigBuilder {
     port: u16,
     ssl: bool,
     protocol: Protocol,
-    interface: String,
+    interface: ArcStr,
 }
 
 impl ListenerConfigBuilder {
@@ -143,11 +145,11 @@ impl ListenerConfigBuilder {
     /// use vetis::config::ListenerConfig;
     ///
     /// let config = ListenerConfig::builder()
-    ///     .interface("127.0.0.1".to_string())
+    ///     .interface("127.0.0.1")
     ///     .build();
     /// ```
-    pub fn interface(mut self, interface: String) -> Self {
-        self.interface = interface;
+    pub fn interface(mut self, interface: &str) -> Self {
+        self.interface = ArcStr::from(interface);
         self
     }
 
@@ -192,7 +194,7 @@ impl ListenerConfigBuilder {
 /// let config = ListenerConfig::builder()
 ///     .port(8443)
 ///     .protocol(Protocol::Http1)
-///     .interface("0.0.0.0".to_string())
+///     .interface("0.0.0.0")
 ///     .build();
 ///
 /// println!("Listening on port {}", config.port());
@@ -202,7 +204,7 @@ pub struct ListenerConfig {
     port: u16,
     ssl: bool,
     protocol: Protocol,
-    interface: String,
+    interface: ArcStr,
 }
 
 impl ListenerConfig {
@@ -232,7 +234,7 @@ impl ListenerConfig {
             protocol: Protocol::Http2,
             #[cfg(feature = "http3")]
             protocol: Protocol::Http3,
-            interface: "0.0.0.0".to_string(),
+            interface: "0.0.0.0".into(),
         }
     }
 
@@ -252,7 +254,7 @@ impl ListenerConfig {
     }
 
     /// Returns the network interface.
-    pub fn interface(&self) -> &String {
+    pub fn interface(&self) -> &str {
         &self.interface
     }
 }
@@ -391,15 +393,15 @@ impl ServerConfig {
 ///     .build();
 ///
 /// let config = VirtualHostConfig::builder()
-///     .hostname("example.com".to_string())
+///     .hostname("example.com")
 ///     .port(443)
 ///     .security(security)
 ///     .build()?;
 /// ```
 pub struct VirtualHostConfigBuilder {
-    hostname: String,
+    hostname: ArcStr,
     port: u16,
-    default_headers: Option<Vec<(String, String)>>,
+    default_headers: Option<Vec<(ArcStr, ArcStr)>>,
     security: Option<SecurityConfig>,
 }
 
@@ -414,11 +416,11 @@ impl VirtualHostConfigBuilder {
     /// use vetis::config::VirtualHostConfig;
     ///
     /// let config = VirtualHostConfig::builder()
-    ///     .hostname("api.example.com".to_string())
+    ///     .hostname("api.example.com")
     ///     .build()?;
     /// ```
-    pub fn hostname(mut self, hostname: String) -> Self {
-        self.hostname = hostname;
+    pub fn hostname(mut self, hostname: &str) -> Self {
+        self.hostname = ArcStr::from(hostname);
         self
     }
 
@@ -450,10 +452,10 @@ impl VirtualHostConfigBuilder {
     /// use vetis::config::VirtualHostConfig;
     ///
     /// let config = VirtualHostConfig::builder()
-    ///     .header("X-Custom".to_string(), "value".to_string())
+    ///     .header("X-Custom", "value")
     ///     .build()?;
     /// ```
-    pub fn header(mut self, key: String, value: String) -> Self {
+    pub fn header(mut self, key: ArcStr, value: ArcStr) -> Self {
         if self
             .default_headers
             .is_none()
@@ -502,9 +504,9 @@ impl VirtualHostConfigBuilder {
     /// use vetis::config::VirtualHostConfig;
     ///
     /// let config = VirtualHostConfig::builder()
-    ///     .hostname("example.com".to_string())
+    ///     .hostname("example.com")
     ///     .port(443)
-    ///     .header("X-Custom".to_string(), "value".to_string())
+    ///     .header("X-Custom", "value")
     ///     .build()?;
     /// ```
     pub fn build(self) -> Result<VirtualHostConfig, VetisError> {
@@ -540,16 +542,16 @@ impl VirtualHostConfigBuilder {
 /// use vetis::config::VirtualHostConfig;
 ///
 /// let config = VirtualHostConfig::builder()
-///     .hostname("api.example.com".to_string())
+///     .hostname("api.example.com")
 ///     .port(443)
 ///     .build()?;
 ///
 /// println!("Virtual host: {}:{}", config.hostname(), config.port());
 /// ```
 pub struct VirtualHostConfig {
-    hostname: String,
+    hostname: ArcStr,
     port: u16,
-    default_headers: Option<Vec<(String, String)>>,
+    default_headers: Option<Vec<(ArcStr, ArcStr)>>,
     security: Option<SecurityConfig>,
 }
 
@@ -567,13 +569,13 @@ impl VirtualHostConfig {
     /// use vetis::config::VirtualHostConfig;
     ///
     /// let config = VirtualHostConfig::builder()
-    ///     .hostname("example.com".to_string())
+    ///     .hostname("example.com")
     ///     .port(443)
     ///     .build()?;
     /// ```
     pub fn builder() -> VirtualHostConfigBuilder {
         VirtualHostConfigBuilder {
-            hostname: String::new(),
+            hostname: ArcStr::from(""),
             port: 80,
             default_headers: None,
             security: None,
@@ -581,7 +583,7 @@ impl VirtualHostConfig {
     }
 
     /// Returns the hostname.
-    pub fn hostname(&self) -> &String {
+    pub fn hostname(&self) -> &str {
         &self.hostname
     }
 
@@ -591,7 +593,7 @@ impl VirtualHostConfig {
     }
 
     /// Returns the default headers.
-    pub fn default_headers(&self) -> &Option<Vec<(String, String)>> {
+    pub fn default_headers(&self) -> &Option<Vec<(ArcStr, ArcStr)>> {
         &self.default_headers
     }
 

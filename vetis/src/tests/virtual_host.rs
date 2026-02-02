@@ -11,13 +11,13 @@ mod virtual_host_tests {
     #[tokio::test]
     async fn test_add_virtual_host() -> Result<(), Box<dyn std::error::Error>> {
         let config = VirtualHostConfig::builder()
-            .hostname("localhost".to_string())
+            .hostname("localhost")
             .build()
             .unwrap();
 
         let mut virtual_host = VirtualHost::new(config);
         virtual_host.add_path(HandlerPath::new_host_path(
-            "/".to_string(),
+            "/",
             handler_fn(|_request| async move {
                 Ok(crate::Response::builder()
                     .status(StatusCode::OK)
@@ -38,13 +38,13 @@ mod virtual_host_tests {
     #[tokio::test]
     async fn test_handle_request() -> Result<(), Box<dyn std::error::Error>> {
         let config = VirtualHostConfig::builder()
-            .hostname("localhost".to_string())
+            .hostname("localhost")
             .build()
             .unwrap();
 
         let mut virtual_host = VirtualHost::new(config);
         virtual_host.add_path(HandlerPath::new_host_path(
-            "/".to_string(),
+            "/",
             handler_fn(|_request| async move {
                 Ok(crate::Response::builder()
                     .status(StatusCode::OK)

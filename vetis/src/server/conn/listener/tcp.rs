@@ -89,7 +89,7 @@ impl Listener for TcpListener {
         self.virtual_hosts = virtual_hosts;
     }
 
-    fn listen(&mut self) -> ListenerResult<'_, ()> {
+    fn listen(&mut self) -> ListenerResult<()> {
         let future = async move {
             let addr = if let Ok(ip) = self
                 .config
@@ -132,13 +132,15 @@ impl Listener for TcpListener {
         Box::pin(future)
     }
 
-    fn stop(&mut self) -> ListenerResult<'_, ()> {
-        Box::pin(async move {
+    fn stop(&mut self) -> ListenerResult<()> {
+        let future = async move {
             if let Some(mut task) = self.task.take() {
                 task.cancel().await;
             }
             Ok(())
-        })
+        };
+
+        Box::pin(future)
     }
 }
 
@@ -158,10 +160,10 @@ impl TcpListener {
             b"h3".to_vec(),
         ];
         let tls_config = TlsFactory::create_tls_config(virtual_hosts.clone(), alpn).await?;
-        let port = self.config.port();
+        let port = Arc::new(self.config.port());
         let tls_config = tls_config.unwrap();
         let tls_acceptor = VetisTlsAcceptor::from(Arc::new(tls_config));
-        let task = spawn_server(async move {
+        let future = async move {
             loop {
                 let result = listener
                     .accept()
@@ -203,11 +205,11 @@ impl TcpListener {
                     match protocol {
                         #[cfg(feature = "http1")]
                         Protocol::Http1 => {
-                            let _ = handle_http1_request(port, io, virtual_hosts.clone());
+                            let _ = handle_http1_request(port.clone(), io, virtual_hosts.clone());
                         }
                         #[cfg(feature = "http2")]
                         Protocol::Http2 => {
-                            let _ = handle_http2_request(port, io, virtual_hosts.clone());
+                            let _ = handle_http2_request(port.clone(), io, virtual_hosts.clone());
                         }
                         #[cfg(feature = "http3")]
                         Protocol::Http3 => {
@@ -219,11 +221,11 @@ impl TcpListener {
                     match protocol {
                         #[cfg(feature = "http1")]
                         Protocol::Http1 => {
-                            let _ = handle_http1_request(port, io, virtual_hosts.clone());
+                            let _ = handle_http1_request(port.clone(), io, virtual_hosts.clone());
                         }
                         #[cfg(feature = "http2")]
                         Protocol::Http2 => {
-                            let _ = handle_http2_request(port, io, virtual_hosts.clone());
+                            let _ = handle_http2_request(port.clone(), io, virtual_hosts.clone());
                         }
                         #[cfg(feature = "http3")]
                         Protocol::Http3 => {
@@ -232,7 +234,9 @@ impl TcpListener {
                     }
                 }
             }
-        });
+        };
+
+        let task = spawn_server(future);
 
         Ok(task)
     }
@@ -241,7 +245,7 @@ impl TcpListener {
 async fn process_request(
     req: http::Request<Incoming>,
     virtual_hosts: VetisVirtualHosts,
-    port: u16,
+    port: Arc<u16>,
 ) -> Result<http::Response<Either<Incoming, Full<Bytes>>>, VetisError> {
     let host = req
         .headers()
@@ -274,7 +278,7 @@ async fn process_request(
             .read()
             .await;
 
-        let virtual_host = virtual_hosts.get(&(host.to_string(), port));
+        let virtual_host = virtual_hosts.get(&(host.into(), *port.clone()));
 
         if let Some(virtual_host) = virtual_host {
             let request = crate::Request::from_http(req);
@@ -297,7 +301,7 @@ async fn process_request(
                     }
                     let header_name = header_name.unwrap();
 
-                    let header_value = header::HeaderValue::from_str(value.as_str());
+                    let header_value = header::HeaderValue::from_str(value);
                     if header_value.is_err() {
                         error!("Invalid header value: {}", value);
                         continue;
@@ -331,7 +335,7 @@ async fn process_request(
 
 #[cfg(feature = "http1")]
 fn handle_http1_request<T>(
-    port: u16,
+    port: Arc<u16>,
     io: VetisIo<T>,
     virtual_hosts: VetisVirtualHosts,
 ) -> Result<(), VetisError>
@@ -340,24 +344,27 @@ where
 {
     let service_fn = service_fn(move |req| {
         let value = virtual_hosts.clone();
+        let port = port.clone();
         async move { process_request(req, value, port).await }
     });
 
-    spawn_worker(async move {
+    let future = async move {
         if let Err(err) = http1::Builder::new()
             .serve_connection(io, service_fn)
             .await
         {
             error!("Error serving connection: {:?}", err);
         }
-    });
+    };
+
+    spawn_worker(future);
 
     Ok(())
 }
 
 #[cfg(feature = "http2")]
 pub fn handle_http2_request<T>(
-    port: u16,
+    port: Arc<u16>,
     io: VetisIo<T>,
     virtual_hosts: VetisVirtualHosts,
 ) -> Result<(), VetisError>
@@ -366,17 +373,19 @@ where
 {
     let service_fn = service_fn(move |req| {
         let value = virtual_hosts.clone();
-        async move { process_request(req, value, port).await }
+        async move { process_request(req, value, port.clone()).await }
     });
 
-    spawn_worker(async move {
+    let future = async move {
         if let Err(err) = http2::Builder::new(VetisExecutor::new())
             .serve_connection(io, service_fn)
             .await
         {
             error!("Error serving connection: {:?}", err);
         }
-    });
+    };
+
+    spawn_worker(future);
 
     Ok(())
 }
