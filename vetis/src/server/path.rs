@@ -4,7 +4,7 @@ use std::{future::Future, pin::Pin, sync::OnceLock};
 use std::fs;
 
 #[cfg(feature = "reverse-proxy")]
-use deboa::Client;
+use deboa::{client::conn::pool::HttpConnectionPool, request::DeboaRequest, Client};
 
 use ecow::EcoString;
 
@@ -284,8 +284,6 @@ impl Path for ProxyPath {
             .to_string();
 
         Box::pin(async move {
-            use deboa::request::DeboaRequest;
-
             let target_url = format!("{}{}", target, target_path);
             let deboa_request = DeboaRequest::at(target_url, request_parts.method)
                 .map_err(|e| VetisError::VirtualHost(VirtualHostError::Proxy(e.to_string())))?
@@ -293,7 +291,11 @@ impl Path for ProxyPath {
                 .build()
                 .map_err(|e| VetisError::VirtualHost(VirtualHostError::Proxy(e.to_string())))?;
 
-            let client = CLIENT.get_or_init(|| deboa::Client::default());
+            let client = CLIENT.get_or_init(|| {
+                Client::builder()
+                    .pool(HttpConnectionPool::default())
+                    .build()
+            });
 
             let response = client
                 .execute(deboa_request)
