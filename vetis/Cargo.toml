@@ -1,6 +1,6 @@
 [package]
 name = "vetis"
-version = "0.1.3"
+version = "0.1.4-beta.1"
 edition = "2021"
 authors = ["Rogerio Araújo <rogerio.araujo@gmail.com>"]
 repository = "https://github.com/ararog/vetis"

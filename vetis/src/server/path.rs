@@ -1,5 +1,8 @@
 use std::{future::Future, pin::Pin};
 
+#[cfg(any(feature = "static-files", feature = "reverse-proxy"))]
+use crate::errors::VirtualHostError;
+
 #[cfg(feature = "static-files")]
 use std::fs;
 
@@ -10,11 +13,7 @@ use std::sync::OnceLock;
 
 use std::sync::Arc;
 
-use crate::{
-    errors::{VetisError, VirtualHostError},
-    server::virtual_host::BoxedHandlerClosure,
-    Request, Response,
-};
+use crate::{errors::VetisError, server::virtual_host::BoxedHandlerClosure, Request, Response};
 
 #[cfg(feature = "reverse-proxy")]
 static CLIENT: OnceLock<Client> = OnceLock::new();

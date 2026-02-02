@@ -281,6 +281,13 @@ impl Vetis {
         &self.config
     }
 
+    /// Returns a reference to the virtual hosts.
+    ///
+    /// This provides access to the virtual hosts configured when the server was created.
+    pub fn virtual_hosts(&self) -> &Arc<RwLock<HashMap<(Arc<str>, u16), VirtualHost>>> {
+        &self.virtual_hosts
+    }
+
     /// Starts the server and runs until interrupted.
     ///
     /// This method combines `start()` and graceful shutdown handling:
@@ -608,7 +615,7 @@ impl Request {
 pub struct ResponseBuilder {
     status: http::StatusCode,
     version: http::Version,
-    headers: http::HeaderMap,
+    headers: Option<http::HeaderMap>,
 }
 
 impl ResponseBuilder {
@@ -648,6 +655,34 @@ impl ResponseBuilder {
         self
     }
 
+    /// Adds a header to the response.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// use vetis::Response;
+    ///
+    /// let response = Response::builder()
+    ///     .header("content-type", "text/plain".parse().unwrap())
+    ///     .body(http_body_util::Full::new(bytes::Bytes::from("Plain text")));
+    /// ```
+    pub fn header<K>(mut self, key: K, value: http::header::HeaderValue) -> Self
+    where
+        K: http::header::IntoHeaderName,
+    {
+        if self
+            .headers
+            .is_none()
+        {
+            self.headers = Some(http::HeaderMap::new());
+        }
+        self.headers
+            .as_mut()
+            .unwrap()
+            .append(key, value);
+        self
+    }
+
     /// Sets the headers for the response.
     ///
     /// This replaces all existing headers.
@@ -665,7 +700,7 @@ impl ResponseBuilder {
     ///     .body(http_body_util::Full::new(bytes::Bytes::from("Plain text")));
     /// ```
     pub fn headers(mut self, headers: http::HeaderMap) -> Self {
-        self.headers = headers;
+        self.headers = Some(headers);
         self
     }
 
@@ -762,7 +797,7 @@ impl Response {
         ResponseBuilder {
             status: http::StatusCode::OK,
             version: http::Version::HTTP_11,
-            headers: http::HeaderMap::new(),
+            headers: None,
         }
     }
 
