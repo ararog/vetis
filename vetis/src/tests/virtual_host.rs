@@ -3,10 +3,14 @@ mod virtual_host_tests {
     use http::StatusCode;
     use http_body_util::{BodyExt, Full};
 
-    use crate::config::VirtualHostConfig;
-    use crate::server::path::HandlerPath;
-    use crate::server::virtual_host::{handler_fn, VirtualHost};
-    use crate::Request;
+    use crate::{
+        config::VirtualHostConfig,
+        server::{
+            path::HandlerPath,
+            virtual_host::{handler_fn, VirtualHost},
+        },
+        Request,
+    };
 
     #[tokio::test]
     async fn test_add_virtual_host() -> Result<(), Box<dyn std::error::Error>> {
@@ -16,14 +20,17 @@ mod virtual_host_tests {
             .unwrap();
 
         let mut virtual_host = VirtualHost::new(config);
-        virtual_host.add_path(HandlerPath::new_host_path(
-            "/",
-            handler_fn(|_request| async move {
-                Ok(crate::Response::builder()
-                    .status(StatusCode::OK)
-                    .text("Hello, world!"))
-            }),
-        ));
+        virtual_host.add_path(
+            HandlerPath::builder()
+                .uri("/")
+                .handler(handler_fn(|_request| async move {
+                    Ok(crate::Response::builder()
+                        .status(StatusCode::OK)
+                        .text("Hello, world!"))
+                }))
+                .build()
+                .unwrap(),
+        );
 
         assert_eq!(
             virtual_host
@@ -43,14 +50,17 @@ mod virtual_host_tests {
             .unwrap();
 
         let mut virtual_host = VirtualHost::new(config);
-        virtual_host.add_path(HandlerPath::new_host_path(
-            "/",
-            handler_fn(|_request| async move {
-                Ok(crate::Response::builder()
-                    .status(StatusCode::OK)
-                    .text("Hello, world!"))
-            }),
-        ));
+        virtual_host.add_path(
+            HandlerPath::builder()
+                .uri("/")
+                .handler(handler_fn(|_request| async move {
+                    Ok(crate::Response::builder()
+                        .status(StatusCode::OK)
+                        .text("Hello, world!"))
+                }))
+                .build()
+                .unwrap(),
+        );
 
         assert_eq!(
             virtual_host

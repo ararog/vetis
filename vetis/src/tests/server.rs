@@ -44,25 +44,27 @@ mod server_tests {
         let mut localhost_virtual_host = VirtualHost::new(localhost_config);
         let mut ip6_localhost_virtual_host = VirtualHost::new(ip6_localhost_config);
 
-        let ip4_root_path = HandlerPath::new_host_path(
-            "/hello",
-            handler_fn(|_request| async move {
+        let ip4_root_path = HandlerPath::builder()
+            .uri("/hello")
+            .handler(handler_fn(|_request| async move {
                 let response = crate::Response::builder()
                     .status(StatusCode::OK)
                     .text("Hello from ipv4");
                 Ok(response)
-            }),
-        );
+            }))
+            .build()
+            .unwrap();
 
-        let ip6_root_path = HandlerPath::new_host_path(
-            "/hello",
-            handler_fn(|_request| async move {
+        let ip6_root_path = HandlerPath::builder()
+            .uri("/hello")
+            .handler(handler_fn(|_request| async move {
                 let response = crate::Response::builder()
                     .status(StatusCode::OK)
                     .text("Hello from ipv6");
                 Ok(response)
-            }),
-        );
+            }))
+            .build()
+            .unwrap();
 
         localhost_virtual_host.add_path(ip4_root_path);
         ip6_localhost_virtual_host.add_path(ip6_root_path);

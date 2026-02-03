@@ -111,7 +111,11 @@ impl VirtualHost {
         Self { config, paths: Trie::new() }
     }
 
-    pub fn add_path(&mut self, path: HostPath) {
+    pub fn add_path<P>(&mut self, path: P)
+    where
+        P: Into<HostPath>,
+    {
+        let path = path.into();
         self.paths.insert(
             path.uri()
                 .to_string(),
