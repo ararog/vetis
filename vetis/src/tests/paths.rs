@@ -29,15 +29,16 @@ mod handler {
 
         let mut localhost_virtual_host = VirtualHost::new(localhost_config);
 
-        let root_path = HandlerPath::new_host_path(
-            "/hello",
-            handler_fn(|_request| async move {
+        let root_path = HandlerPath::builder()
+            .uri("/hello")
+            .handler(handler_fn(|_request| async move {
                 let response = crate::Response::builder()
                     .status(StatusCode::OK)
                     .text("Hello from localhost");
                 Ok(response)
-            }),
-        );
+            }))
+            .build()
+            .unwrap();
 
         localhost_virtual_host.add_path(root_path);
 
@@ -69,32 +70,30 @@ mod handler {
 #[cfg(feature = "static-files")]
 mod static_files {
     use crate::{
+        config::StaticPathConfig,
         errors::{VetisError, VirtualHostError},
-        server::path::{HostPath, Path},
     };
 
-    use crate::server::path::StaticPath;
-
     #[test]
-    pub fn test_static_path() {
-        let some_path = StaticPath::builder()
+    pub fn test_static_path_config() -> Result<(), Box<dyn std::error::Error>> {
+        let path_config = StaticPathConfig::builder()
             .uri("/test")
             .extensions(".html")
             .directory("./test")
-            .build();
+            .build()?;
 
-        let Ok(HostPath::Static(static_path)) = some_path else {
-            panic!("Failed to build static path");
-        };
+        assert_eq!(path_config.uri(), "/test");
+        assert_eq!(path_config.directory(), "./test");
+        assert_eq!(path_config.extensions(), ".html");
 
-        assert_eq!(static_path.uri(), "/test");
-        assert_eq!(static_path.directory(), "./test");
-        assert_eq!(static_path.extensions(), ".html");
+        Ok(())
     }
 
     #[test]
     pub fn test_invalid_uri() {
-        let some_path = StaticPath::builder().build();
+        let some_path = StaticPathConfig::builder()
+            .uri("")
+            .build();
 
         assert!(some_path.is_err());
         assert_eq!(
@@ -107,8 +106,9 @@ mod static_files {
 
     #[test]
     pub fn test_invalid_extensions() {
-        let some_path = StaticPath::builder()
+        let some_path = StaticPathConfig::builder()
             .uri("/test")
+            .extensions("")
             .build();
 
         assert!(some_path.is_err());
@@ -122,9 +122,10 @@ mod static_files {
 
     #[test]
     pub fn test_invalid_directory() {
-        let some_path = StaticPath::builder()
+        let some_path = StaticPathConfig::builder()
             .uri("/test")
             .extensions(".html")
+            .directory("")
             .build();
 
         assert!(some_path.is_err());
@@ -145,7 +146,7 @@ mod reverse_proxy {
     use http::StatusCode;
 
     use crate::{
-        config::{ListenerConfig, Protocol, ServerConfig, VirtualHostConfig},
+        config::{ListenerConfig, Protocol, ProxyPathConfig, ServerConfig, VirtualHostConfig},
         errors::{VetisError, VirtualHostError},
         server::{
             path::{HandlerPath, HostPath, Path},
@@ -157,24 +158,23 @@ mod reverse_proxy {
 
     #[test]
     fn test_proxy_path() -> Result<(), Box<dyn Error>> {
-        let some_path = ProxyPath::builder()
+        let some_path = ProxyPathConfig::builder()
             .uri("/test")
             .target("http://localhost:8080")
-            .build();
+            .build()?;
 
-        let Ok(HostPath::Proxy(proxy_path)) = some_path else {
-            panic!("Failed to build proxy path");
-        };
-
-        assert_eq!(proxy_path.uri(), "/test");
-        assert_eq!(proxy_path.target(), "http://localhost:8080");
+        assert_eq!(some_path.uri(), "/test");
+        assert_eq!(some_path.target(), "http://localhost:8080");
 
         Ok(())
     }
 
     #[test]
     fn test_invalid_proxy_path() -> Result<(), Box<dyn Error>> {
-        let some_path = ProxyPath::builder().build();
+        let some_path = ProxyPathConfig::builder()
+            .uri("")
+            .target("http://localhost:8080")
+            .build();
 
         assert!(some_path.is_err());
         assert_eq!(
@@ -189,8 +189,9 @@ mod reverse_proxy {
 
     #[test]
     fn test_invalid_proxy_path_target() -> Result<(), Box<dyn Error>> {
-        let some_path = ProxyPath::builder()
+        let some_path = ProxyPathConfig::builder()
             .uri("/test")
+            .target("")
             .build();
 
         assert!(some_path.is_err());
@@ -230,13 +231,12 @@ mod reverse_proxy {
             .unwrap();
 
         let mut source_virtual_host = VirtualHost::new(source_config);
-        source_virtual_host.add_path(
-            ProxyPath::builder()
+        source_virtual_host.add_path(ProxyPath::new(
+            ProxyPathConfig::builder()
                 .uri("/")
                 .target("http://localhost:8085")
-                .build()
-                .unwrap(),
-        );
+                .build()?,
+        ));
 
         let target_config = VirtualHostConfig::builder()
             .hostname("localhost")
@@ -245,14 +245,16 @@ mod reverse_proxy {
             .unwrap();
 
         let mut target_virtual_host = VirtualHost::new(target_config);
-        target_virtual_host.add_path(HandlerPath::new_host_path(
-            "/",
-            handler_fn(|_request| async move {
-                Ok(crate::Response::builder()
-                    .status(StatusCode::OK)
-                    .text("Hello, world!"))
-            }),
-        ));
+        target_virtual_host.add_path(
+            HandlerPath::builder()
+                .uri("/")
+                .handler(handler_fn(|_request| async move {
+                    Ok(crate::Response::builder()
+                        .status(StatusCode::OK)
+                        .text("Hello, world!"))
+                }))
+                .build()?,
+        );
 
         assert_eq!(
             target_virtual_host

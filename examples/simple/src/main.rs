@@ -1,7 +1,9 @@
 use hyper::StatusCode;
 use vetis::{
     Vetis,
-    config::{ListenerConfig, Protocol, SecurityConfig, ServerConfig, VirtualHostConfig},
+    config::{
+        ListenerConfig, Protocol, SecurityConfig, ServerConfig, StaticPathConfig, VirtualHostConfig,
+    },
     server::{
         path::{HandlerPath, StaticPath},
         virtual_host::{VirtualHost, handler_fn},
@@ -40,37 +42,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut localhost_virtual_host = VirtualHost::new(localhost_config);
 
-    let root_path = HandlerPath::new_host_path(
-        "/hello",
-        handler_fn(|request| async move {
+    let root_path = HandlerPath::builder()
+        .uri("/hello")
+        .handler(handler_fn(|request| async move {
             let response = vetis::Response::builder()
                 .status(StatusCode::OK)
                 .text("Hello from localhost");
             Ok(response)
-        }),
-    );
+        }))
+        .build()
+        .unwrap();
 
     localhost_virtual_host.add_path(root_path);
 
-    let health_path = HandlerPath::new_host_path(
-        "/health",
-        handler_fn(|request| async move {
+    let health_path = HandlerPath::builder()
+        .uri("/health")
+        .handler(handler_fn(|request| async move {
             let response = vetis::Response::builder()
                 .status(StatusCode::OK)
                 .text("Health check");
             Ok(response)
-        }),
-    );
+        }))
+        .build()
+        .unwrap();
 
     localhost_virtual_host.add_path(health_path);
 
-    let images_path = StaticPath::builder()
+    let images_path = StaticPathConfig::builder()
         .uri("/images")
         .directory("/home/rogerio/Downloads")
         .extensions("\\.(jpg|png|gif)$")
         .build()?;
 
-    localhost_virtual_host.add_path(images_path);
+    localhost_virtual_host.add_path(StaticPath::new(images_path));
 
     let mut server = Vetis::new(config);
     server

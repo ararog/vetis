@@ -1,6 +1,10 @@
 use std::{future::Future, pin::Pin};
 
-#[cfg(any(feature = "static-files", feature = "reverse-proxy"))]
+#[cfg(feature = "reverse-proxy")]
+use crate::config::ProxyPathConfig;
+#[cfg(feature = "static-files")]
+use crate::config::StaticPathConfig;
+
 use crate::errors::VirtualHostError;
 
 #[cfg(feature = "static-files")]
@@ -8,6 +12,8 @@ use std::fs;
 
 #[cfg(feature = "reverse-proxy")]
 use deboa::{client::conn::pool::HttpConnectionPool, request::DeboaRequest, Client};
+#[cfg(feature = "static-files")]
+use serde::Deserialize;
 #[cfg(feature = "reverse-proxy")]
 use std::sync::OnceLock;
 
@@ -61,14 +67,55 @@ impl Path for HostPath {
     }
 }
 
+pub struct HandlerPathBuilder {
+    uri: Arc<str>,
+    handler: Option<BoxedHandlerClosure>,
+}
+
+impl HandlerPathBuilder {
+    pub fn uri(mut self, uri: &str) -> Self {
+        self.uri = Arc::from(uri);
+        self
+    }
+
+    pub fn handler(mut self, handler: BoxedHandlerClosure) -> Self {
+        self.handler = Some(handler);
+        self
+    }
+
+    pub fn build(self) -> Result<HostPath, VetisError> {
+        if self.uri.is_empty() {
+            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+                "URI cannot be empty".to_string(),
+            )));
+        }
+
+        if self
+            .handler
+            .is_none()
+        {
+            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+                "Handler cannot be empty".to_string(),
+            )));
+        }
+
+        Ok(HostPath::Handler(HandlerPath {
+            uri: self.uri,
+            handler: self
+                .handler
+                .unwrap(),
+        }))
+    }
+}
+
 pub struct HandlerPath {
     uri: Arc<str>,
     handler: BoxedHandlerClosure,
 }
 
 impl HandlerPath {
-    pub fn new_host_path(uri: &str, handler: BoxedHandlerClosure) -> HostPath {
-        HostPath::Handler(Self { uri: Arc::from(uri), handler })
+    pub fn builder() -> HandlerPathBuilder {
+        HandlerPathBuilder { uri: Arc::from(""), handler: None }
     }
 }
 
@@ -87,90 +134,29 @@ impl Path for HandlerPath {
 }
 
 #[cfg(feature = "static-files")]
-pub struct StaticPathBuilder {
-    uri: Arc<str>,
-    extensions: Arc<str>,
-    directory: Arc<str>,
-}
-
-#[cfg(feature = "static-files")]
-impl StaticPathBuilder {
-    pub fn uri(mut self, uri: &str) -> Self {
-        self.uri = Arc::from(uri);
-        self
-    }
-
-    pub fn extensions(mut self, extensions: &str) -> Self {
-        self.extensions = Arc::from(extensions);
-        self
-    }
-
-    pub fn directory(mut self, directory: &str) -> Self {
-        self.directory = Arc::from(directory);
-        self
-    }
-
-    pub fn build(self) -> Result<HostPath, VetisError> {
-        if self.uri.is_empty() {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "URI cannot be empty".to_string(),
-            )));
-        }
-        if self
-            .extensions
-            .is_empty()
-        {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "Extensions cannot be empty".to_string(),
-            )));
-        }
-        if self
-            .directory
-            .is_empty()
-        {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "Directory cannot be empty".to_string(),
-            )));
-        }
-
-        Ok(HostPath::Static(StaticPath {
-            uri: self.uri,
-            extensions: self.extensions,
-            directory: self.directory,
-        }))
-    }
-}
-
-#[cfg(feature = "static-files")]
+#[derive(Deserialize)]
 pub struct StaticPath {
-    uri: Arc<str>,
-    extensions: Arc<str>,
-    directory: Arc<str>,
+    config: StaticPathConfig,
 }
 
 #[cfg(feature = "static-files")]
 impl StaticPath {
-    pub fn extensions(&self) -> &str {
-        &self.extensions
+    pub fn new(config: StaticPathConfig) -> StaticPath {
+        StaticPath { config }
     }
+}
 
-    pub fn directory(&self) -> &str {
-        &self.directory
-    }
-
-    pub fn builder() -> StaticPathBuilder {
-        StaticPathBuilder {
-            uri: Arc::from(""),
-            extensions: Arc::from(""),
-            directory: Arc::from(""),
-        }
+#[cfg(feature = "static-files")]
+impl From<StaticPath> for HostPath {
+    fn from(value: StaticPath) -> Self {
+        HostPath::Static(value)
     }
 }
 
 #[cfg(feature = "static-files")]
 impl Path for StaticPath {
     fn uri(&self) -> &str {
-        self.uri.as_ref()
+        self.config.uri()
     }
 
     fn handle(
@@ -179,7 +165,10 @@ impl Path for StaticPath {
         uri: Arc<str>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>> {
         Box::pin(async move {
-            let ext_regex = regex::Regex::new(&self.extensions);
+            let ext_regex = regex::Regex::new(
+                self.config
+                    .extensions(),
+            );
             if let Ok(ext_regex) = ext_regex {
                 if !ext_regex.is_match(uri.as_ref()) {
                     return Ok(Response::builder()
@@ -188,7 +177,12 @@ impl Path for StaticPath {
                 }
             }
 
-            let result = fs::read(format!("{}/{}", self.directory, uri));
+            let result = fs::read(format!(
+                "{}/{}",
+                self.config
+                    .directory(),
+                uri
+            ));
             if let Ok(data) = result {
                 use bytes::Bytes;
                 use http_body_util::Full;
@@ -207,63 +201,28 @@ impl Path for StaticPath {
 }
 
 #[cfg(feature = "reverse-proxy")]
-pub struct ProxyPathBuilder {
-    uri: Arc<str>,
-    target: Arc<str>,
-}
-
-#[cfg(feature = "reverse-proxy")]
-impl ProxyPathBuilder {
-    pub fn uri(mut self, uri: &str) -> Self {
-        self.uri = Arc::from(uri);
-        self
-    }
-
-    pub fn target(mut self, target: &str) -> Self {
-        self.target = Arc::from(target);
-        self
-    }
-
-    pub fn build(self) -> Result<HostPath, VetisError> {
-        if self.uri.is_empty() {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "URI cannot be empty".to_string(),
-            )));
-        }
-        if self
-            .target
-            .is_empty()
-        {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "Target cannot be empty".to_string(),
-            )));
-        }
-
-        Ok(HostPath::Proxy(ProxyPath { uri: self.uri, target: self.target }))
-    }
-}
-
-#[cfg(feature = "reverse-proxy")]
 pub struct ProxyPath {
-    uri: Arc<str>,
-    target: Arc<str>,
+    config: ProxyPathConfig,
 }
 
 #[cfg(feature = "reverse-proxy")]
 impl ProxyPath {
-    pub fn builder() -> ProxyPathBuilder {
-        ProxyPathBuilder { uri: "".into(), target: "".into() }
+    pub fn new(config: ProxyPathConfig) -> ProxyPath {
+        ProxyPath { config }
     }
+}
 
-    pub fn target(&self) -> &str {
-        self.target.as_ref()
+#[cfg(feature = "reverse-proxy")]
+impl From<ProxyPath> for HostPath {
+    fn from(value: ProxyPath) -> Self {
+        HostPath::Proxy(value)
     }
 }
 
 #[cfg(feature = "reverse-proxy")]
 impl Path for ProxyPath {
     fn uri(&self) -> &str {
-        self.uri.as_ref()
+        self.config.uri()
     }
 
     fn handle(
@@ -281,7 +240,7 @@ impl Path for ProxyPath {
 
         let target_path = Arc::<str>::from(target_path);
 
-        let target = self.target();
+        let target = self.config.target();
 
         Box::pin(async move {
             let target_url = format!("{}{}", target, target_path);

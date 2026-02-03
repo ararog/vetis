@@ -40,11 +40,12 @@
 
 use std::fs;
 
-use std::sync::Arc;
-
 use serde::Deserialize;
 
 use crate::errors::{ConfigError, VetisError};
+
+#[cfg(feature = "static-files")]
+use crate::errors::VirtualHostError;
 
 /// Supported HTTP protocols.
 ///
@@ -603,6 +604,155 @@ impl VirtualHostConfig {
     /// Returns the security configuration if present.
     pub fn security(&self) -> &Option<SecurityConfig> {
         &self.security
+    }
+}
+
+#[cfg(feature = "static-files")]
+pub struct StaticPathConfigBuilder {
+    uri: String,
+    extensions: String,
+    directory: String,
+}
+
+#[cfg(feature = "static-files")]
+impl StaticPathConfigBuilder {
+    pub fn uri(mut self, uri: &str) -> Self {
+        self.uri = uri.to_string();
+        self
+    }
+
+    pub fn extensions(mut self, extensions: &str) -> Self {
+        self.extensions = extensions.to_string();
+        self
+    }
+
+    pub fn directory(mut self, directory: &str) -> Self {
+        self.directory = directory.to_string();
+        self
+    }
+
+    pub fn build(self) -> Result<StaticPathConfig, VetisError> {
+        if self.uri.is_empty() {
+            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+                "URI cannot be empty".to_string(),
+            )));
+        }
+        if self
+            .extensions
+            .is_empty()
+        {
+            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+                "Extensions cannot be empty".to_string(),
+            )));
+        }
+        if self
+            .directory
+            .is_empty()
+        {
+            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+                "Directory cannot be empty".to_string(),
+            )));
+        }
+
+        Ok(StaticPathConfig {
+            uri: self.uri,
+            extensions: self.extensions,
+            directory: self.directory,
+        })
+    }
+}
+
+#[cfg(feature = "static-files")]
+#[derive(Deserialize)]
+pub struct StaticPathConfig {
+    uri: String,
+    extensions: String,
+    directory: String,
+}
+
+#[cfg(feature = "static-files")]
+impl StaticPathConfig {
+    pub fn builder() -> StaticPathConfigBuilder {
+        StaticPathConfigBuilder {
+            uri: "/test".to_string(),
+            extensions: ".html".to_string(),
+            directory: "./test".to_string(),
+        }
+    }
+
+    pub fn uri(&self) -> &str {
+        &self.uri
+    }
+
+    pub fn extensions(&self) -> &str {
+        &self.extensions
+    }
+
+    pub fn directory(&self) -> &str {
+        &self.directory
+    }
+}
+
+#[cfg(feature = "reverse-proxy")]
+#[derive(Deserialize)]
+pub struct ProxyPathConfigBuilder {
+    uri: String,
+    target: String,
+}
+
+#[cfg(feature = "reverse-proxy")]
+impl ProxyPathConfigBuilder {
+    pub fn uri(mut self, uri: &str) -> Self {
+        self.uri = uri.to_string();
+        self
+    }
+
+    pub fn target(mut self, target: &str) -> Self {
+        self.target = target.to_string();
+        self
+    }
+
+    pub fn build(self) -> Result<ProxyPathConfig, VetisError> {
+        if self.uri.is_empty() {
+            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+                "URI cannot be empty".to_string(),
+            )));
+        }
+        if self
+            .target
+            .is_empty()
+        {
+            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+                "Target cannot be empty".to_string(),
+            )));
+        }
+
+        Ok(ProxyPathConfig { uri: self.uri, target: self.target })
+    }
+}
+
+#[cfg(feature = "reverse-proxy")]
+#[derive(Deserialize)]
+pub struct ProxyPathConfig {
+    uri: String,
+    target: String,
+}
+
+#[cfg(feature = "reverse-proxy")]
+impl ProxyPathConfig {
+    pub fn builder() -> ProxyPathConfigBuilder {
+        ProxyPathConfigBuilder {
+            uri: "/test".to_string(),
+            target: "http://localhost:8080".to_string(),
+        }
+    }
+
+    pub fn uri(&self) -> &str {
+        &self.uri
+    }
+
+    pub fn target(&self) -> &str {
+        &self.target
     }
 }
 
