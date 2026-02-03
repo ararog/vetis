@@ -81,7 +81,7 @@ regex = "1.12.3"
 rt-gate = { version = "0.1.3", optional = true, default-features = false }
 rustls = { version = "0.23.19", default-features = false, optional = true }
 rustls-rustcrypto = { version = "0.0.2-alpha", optional = true }
-serde = "1.0.226"
+serde = { version = "1.0.226", features = ["derive"] }
 serde_json = "1.0.145"
 signal-hook = { version = "0.4.3", optional = true }
 smol = { version = "2.0.2", optional = true }
@@ -90,6 +90,7 @@ smol-macros = { version = "0.1.1", optional = true }
 thiserror = "2.0.17"
 tokio = { version = "1.49.0", default-features = false, optional = true }
 tokio-rustls = { version = "0.26.0", optional = true }
+toml = "0.9.6"
 url = "2.5.7"
 
 [dev-dependencies]

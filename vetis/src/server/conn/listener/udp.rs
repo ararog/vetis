@@ -26,22 +26,22 @@ use crate::{
     VetisRwLock, VetisVirtualHosts,
 };
 
-pub struct UdpListener<'a> {
-    config: ListenerConfig<'a>,
+pub struct UdpListener {
+    config: ListenerConfig,
     task: Option<GateTask>,
-    virtual_hosts: VetisVirtualHosts<'a>,
+    virtual_hosts: VetisVirtualHosts,
 }
 
-impl<'a> Listener<'a> for UdpListener<'a> {
-    fn new(config: ListenerConfig<'a>) -> Self {
+impl Listener for UdpListener {
+    fn new(config: ListenerConfig) -> Self {
         Self { config, task: None, virtual_hosts: Arc::new(VetisRwLock::new(HashMap::new())) }
     }
 
-    fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts<'a>) {
+    fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts) {
         self.virtual_hosts = virtual_hosts;
     }
 
-    fn listen(&mut self) -> ListenerResult<'a, ()> {
+    fn listen(&mut self) -> ListenerResult<'_, ()> {
         let future = async move {
             let addr = if let Ok(ip) = self
                 .config
@@ -93,7 +93,7 @@ impl<'a> Listener<'a> for UdpListener<'a> {
         Box::pin(future)
     }
 
-    fn stop(&mut self) -> ListenerResult<'a, ()> {
+    fn stop(&mut self) -> ListenerResult<'_, ()> {
         Box::pin(async move {
             if let Some(mut task) = self.task.take() {
                 task.cancel().await;
@@ -103,11 +103,11 @@ impl<'a> Listener<'a> for UdpListener<'a> {
     }
 }
 
-impl<'a> UdpListener<'a> {
+impl UdpListener {
     async fn handle_connections(
         &mut self,
         endpoint: quinn::Endpoint,
-        virtual_hosts: VetisVirtualHosts<'a>,
+        virtual_hosts: VetisVirtualHosts,
     ) -> Result<GateTask, VetisError> {
         let port = self.config.port();
         let task = spawn_server(async move {
@@ -158,10 +158,10 @@ impl<'a> UdpListener<'a> {
     }
 }
 
-fn handle_http_request<'a>(
+fn handle_http_request(
     port: u16,
     resolver: RequestResolver<QuinnConnection, Bytes>,
-    virtual_hosts: VetisVirtualHosts<'a>,
+    virtual_hosts: VetisVirtualHosts,
 ) -> Result<(), VetisError> {
     let virtual_hosts = virtual_hosts.clone();
     spawn_worker(async move {

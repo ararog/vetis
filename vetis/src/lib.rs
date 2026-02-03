@@ -68,7 +68,7 @@
 //!     let mut root_path = HandlerPath::new("/", handler_fn(|request| async move {
 //!         let response = vetis::Response::builder()
 //!             .status(StatusCode::OK)
-//!             .body(Full::new(Bytes::from("Hello, World!")));
+//!             .text("Hello, World!");
 //!         Ok(response)
 //!     }));
 //!
@@ -176,6 +176,8 @@ mod rt;
 pub mod server;
 mod tests;
 
+pub static CONFIG: &str = "vetis.toml";
+
 /// Main server instance that manages virtual hosts and listeners.
 ///
 /// The `Vetis` struct is the core of the VeTiS server. It handles:
@@ -256,7 +258,7 @@ impl Vetis {
     /// let mut root_path = HandlerPath::new("/", handler_fn(|request| async move {
     ///     let response = vetis::Response::builder()
     ///         .status(StatusCode::OK)
-    ///         .body(Full::new(Bytes::from("Hello, World!")));
+    ///         .text("Hello, World!");
     ///     Ok(response)
     /// }));
     ///
@@ -284,7 +286,7 @@ impl Vetis {
     /// Returns a reference to the virtual hosts.
     ///
     /// This provides access to the virtual hosts configured when the server was created.
-    pub fn virtual_hosts(&self) -> &Arc<RwLock<HashMap<(Arc<str>, u16), VirtualHost>>> {
+    pub fn virtual_hosts(&self) -> &VetisVirtualHosts {
         &self.virtual_hosts
     }
 
@@ -466,7 +468,7 @@ impl Vetis {
 ///     
 ///     Ok(vetis::Response::builder()
 ///         .status(http::StatusCode::OK)
-///         .body(http_body_util::Full::new(bytes::Bytes::from("Hello"))))
+///         .text("Hello")))
 /// }
 /// ```
 pub struct Request {
@@ -602,7 +604,7 @@ impl Request {
 /// // Simple response
 /// let response = Response::builder()
 ///     .status(StatusCode::OK)
-///     .body(Full::new(Bytes::from("Hello, World!")));
+///     .text("Hello, World!");
 ///
 /// // Response with custom headers
 /// let mut headers = http::HeaderMap::new();
@@ -610,7 +612,7 @@ impl Request {
 /// let response = Response::builder()
 ///     .status(StatusCode::CREATED)
 ///     .headers(headers)
-///     .body(Full::new(Bytes::from(r#"{"status": "success"}"#)));
+///     .text(r#"{"status": "success"}"#);
 /// ```
 pub struct ResponseBuilder {
     status: http::StatusCode,
@@ -629,7 +631,7 @@ impl ResponseBuilder {
     ///
     /// let response = Response::builder()
     ///     .status(StatusCode::NOT_FOUND)
-    ///     .body(http_body_util::Full::new(bytes::Bytes::from("Not found")));
+    ///     .text("Not found");
     /// ```
     pub fn status(mut self, status: http::StatusCode) -> Self {
         self.status = status;
@@ -648,7 +650,7 @@ impl ResponseBuilder {
     ///
     /// let response = Response::builder()
     ///     .version(http::Version::HTTP_2)
-    ///     .body(http_body_util::Full::new(bytes::Bytes::from("Response")));
+    ///     .text("Response");
     /// ```
     pub fn version(mut self, version: http::Version) -> Self {
         self.version = version;
@@ -664,7 +666,7 @@ impl ResponseBuilder {
     ///
     /// let response = Response::builder()
     ///     .header("content-type", "text/plain".parse().unwrap())
-    ///     .body(http_body_util::Full::new(bytes::Bytes::from("Plain text")));
+    ///     .text("Plain text");
     /// ```
     pub fn header<K>(mut self, key: K, value: http::header::HeaderValue) -> Self
     where
@@ -697,7 +699,7 @@ impl ResponseBuilder {
     ///
     /// let response = Response::builder()
     ///     .headers(headers)
-    ///     .body(http_body_util::Full::new(bytes::Bytes::from("Plain text")));
+    ///     .text("Plain text");
     /// ```
     pub fn headers(mut self, headers: http::HeaderMap) -> Self {
         self.headers = Some(headers);
@@ -740,15 +742,18 @@ impl ResponseBuilder {
     ///     .body(b"Hello, World!");
     /// ```
     pub fn body(self, body: Either<Incoming, Full<Bytes>>) -> Response {
-        let response = http::Response::builder()
-            .status(self.status)
-            .version(self.version);
+        let response = http::Response::new(body);
 
-        Response {
-            inner: response
-                .body(body)
-                .unwrap(),
+        let (mut parts, body) = response.into_parts();
+        parts.status = self.status;
+        parts.version = self.version;
+        if let Some(headers) = self.headers {
+            parts.headers = headers;
         }
+
+        let response = http::Response::from_parts(parts, body);
+
+        Response { inner: response }
     }
 }
 
@@ -768,7 +773,7 @@ impl ResponseBuilder {
 /// // Create a simple response
 /// let response = Response::builder()
 ///     .status(StatusCode::OK)
-///     .body(Full::new(Bytes::from("Hello, World!")));
+///     .text("Hello, World!");
 ///
 /// // Convert to inner http::Response if needed
 /// let inner_response = response.into_inner();
@@ -791,7 +796,7 @@ impl Response {
     /// use vetis::Response;
     ///
     /// let builder = Response::builder();
-    /// let response = builder.body(http_body_util::Full::new(bytes::Bytes::from("Hello")));
+    /// let response = builder.text("Hello");
     /// ```
     pub fn builder() -> ResponseBuilder {
         ResponseBuilder {
@@ -812,7 +817,7 @@ impl Response {
     /// use vetis::Response;
     ///
     /// let response = Response::builder()
-    ///     .body(http_body_util::Full::new(bytes::Bytes::from("Hello")));
+    ///     .text("Hello");
     /// let inner = response.into_inner();
     /// ```
     pub fn into_inner(self) -> http::Response<Either<Incoming, Full<Bytes>>> {

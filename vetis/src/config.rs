@@ -42,6 +42,8 @@ use std::fs;
 
 use std::sync::Arc;
 
+use serde::Deserialize;
+
 use crate::errors::{ConfigError, VetisError};
 
 /// Supported HTTP protocols.
@@ -63,7 +65,7 @@ use crate::errors::{ConfigError, VetisError};
 /// #[cfg(feature = "http3")]
 /// let protocol = Protocol::Http3;
 /// ```
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
 pub enum Protocol {
     #[cfg(feature = "http1")]
     /// HTTP/1.1 protocol
@@ -96,7 +98,7 @@ pub struct ListenerConfigBuilder {
     port: u16,
     ssl: bool,
     protocol: Protocol,
-    interface: Arc<str>,
+    interface: String,
 }
 
 impl ListenerConfigBuilder {
@@ -149,7 +151,7 @@ impl ListenerConfigBuilder {
     ///     .build();
     /// ```
     pub fn interface(mut self, interface: &str) -> Self {
-        self.interface = Arc::from(interface);
+        self.interface = interface.to_string();
         self
     }
 
@@ -199,12 +201,12 @@ impl ListenerConfigBuilder {
 ///
 /// println!("Listening on port {}", config.port());
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Deserialize)]
 pub struct ListenerConfig {
     port: u16,
     ssl: bool,
     protocol: Protocol,
-    interface: Arc<str>,
+    interface: String,
 }
 
 impl ListenerConfig {
@@ -336,7 +338,7 @@ impl ServerConfigBuilder {
 ///
 /// println!("Server has {} listeners", config.listeners().len());
 /// ```
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Deserialize)]
 pub struct ServerConfig {
     listeners: Vec<ListenerConfig>,
 }
@@ -399,9 +401,9 @@ impl ServerConfig {
 ///     .build()?;
 /// ```
 pub struct VirtualHostConfigBuilder {
-    hostname: Arc<str>,
+    hostname: String,
     port: u16,
-    default_headers: Option<Vec<(Arc<str>, Arc<str>)>>,
+    default_headers: Option<Vec<(String, String)>>,
     security: Option<SecurityConfig>,
 }
 
@@ -420,7 +422,7 @@ impl VirtualHostConfigBuilder {
     ///     .build()?;
     /// ```
     pub fn hostname(mut self, hostname: &str) -> Self {
-        self.hostname = Arc::from(hostname);
+        self.hostname = hostname.to_string();
         self
     }
 
@@ -455,7 +457,7 @@ impl VirtualHostConfigBuilder {
     ///     .header("X-Custom", "value")
     ///     .build()?;
     /// ```
-    pub fn header(mut self, key: Arc<str>, value: Arc<str>) -> Self {
+    pub fn header(mut self, key: &str, value: &str) -> Self {
         if self
             .default_headers
             .is_none()
@@ -465,7 +467,7 @@ impl VirtualHostConfigBuilder {
         self.default_headers
             .as_mut()
             .unwrap()
-            .push((key, value));
+            .push((key.to_string(), value.to_string()));
         self
     }
 
@@ -548,10 +550,11 @@ impl VirtualHostConfigBuilder {
 ///
 /// println!("Virtual host: {}:{}", config.hostname(), config.port());
 /// ```
+#[derive(Clone, Deserialize)]
 pub struct VirtualHostConfig {
-    hostname: Arc<str>,
+    hostname: String,
     port: u16,
-    default_headers: Option<Vec<(Arc<str>, Arc<str>)>>,
+    default_headers: Option<Vec<(String, String)>>,
     security: Option<SecurityConfig>,
 }
 
@@ -575,7 +578,7 @@ impl VirtualHostConfig {
     /// ```
     pub fn builder() -> VirtualHostConfigBuilder {
         VirtualHostConfigBuilder {
-            hostname: Arc::from(""),
+            hostname: "localhost".to_string(),
             port: 80,
             default_headers: None,
             security: None,
@@ -593,7 +596,7 @@ impl VirtualHostConfig {
     }
 
     /// Returns the default headers.
-    pub fn default_headers(&self) -> &Option<Vec<(Arc<str>, Arc<str>)>> {
+    pub fn default_headers(&self) -> &Option<Vec<(String, String)>> {
         &self.default_headers
     }
 
@@ -795,7 +798,7 @@ impl SecurityConfigBuilder {
 ///
 /// println!("Certificate length: {} bytes", security.cert().len());
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Deserialize)]
 pub struct SecurityConfig {
     cert: Vec<u8>,
     key: Vec<u8>,
