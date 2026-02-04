@@ -537,6 +537,29 @@ impl Request {
         }
     }
 
+    /// Returns the request headers (mutable).
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// use vetis::Request;
+    ///
+    /// async fn handler(request: Request) -> Result<vetis::Response, vetis::VetisError> {
+    ///     let content_type = request.headers().get("content-type");
+    ///     let user_agent = request.headers().get("user-agent");
+    ///     Ok(/* response */)
+    /// }
+    /// ```
+    pub fn headers_mut(&mut self) -> &mut http::HeaderMap {
+        match &mut self.inner_http {
+            Some(req) => req.headers_mut(),
+            None => match &mut self.inner_quic {
+                Some(req) => req.headers_mut(),
+                None => panic!("No request"),
+            },
+        }
+    }
+
     /// Returns the HTTP method.
     ///
     /// # Examples

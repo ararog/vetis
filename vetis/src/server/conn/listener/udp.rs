@@ -130,7 +130,12 @@ impl UdpListener {
                                     .await
                                 {
                                     Ok(Some(resolver)) => {
-                                        handle_http_request(port, resolver, virtual_hosts.clone());
+                                        handle_http_request(
+                                            port,
+                                            resolver,
+                                            virtual_hosts.clone(),
+                                            conn.remote_address(),
+                                        );
                                     }
                                     Ok(None) => {
                                         break;
@@ -162,6 +167,7 @@ fn handle_http_request(
     port: u16,
     resolver: RequestResolver<QuinnConnection, Bytes>,
     virtual_hosts: VetisVirtualHosts,
+    client_addr: SocketAddr,
 ) -> Result<(), VetisError> {
     let virtual_hosts = virtual_hosts.clone();
     spawn_worker(async move {
@@ -217,10 +223,10 @@ fn handle_http_request(
 
                     let response = if let Err(err) = vetis_response {
                         error!("Error executing request: {:?}", err);
-                        Response::builder()
-                            .status(500)
-                            .body(Full::new(Bytes::from_static(b"Internal server error")))
-                            .unwrap()
+                        static_response(
+                            http::StatusCode::INTERNAL_SERVER_ERROR,
+                            "Internal server error".to_string(),
+                        )
                     } else {
                         let response = vetis_response
                             .unwrap()
@@ -256,20 +262,20 @@ fn handle_http_request(
                     Ok::<_, VetisError>(response)
                 } else {
                     error!("Virtual host not found: {}", host);
-                    let response = Response::builder()
-                        .status(404)
-                        .body(Full::new(Bytes::from_static(b"Virtual host not found")))
-                        .unwrap();
+                    let response = static_response(
+                        http::StatusCode::NOT_FOUND,
+                        "Virtual host not found".to_string(),
+                    );
                     Ok(response)
                 };
 
                 response
             } else {
                 error!("Host not found in request");
-                let response = Response::builder()
-                    .status(400)
-                    .body(Full::new(Bytes::from_static(b"Host not found in request")))
-                    .unwrap();
+                let response = static_response(
+                    http::StatusCode::BAD_REQUEST,
+                    "Host not found in request".to_string(),
+                );
                 Ok(response)
             };
 

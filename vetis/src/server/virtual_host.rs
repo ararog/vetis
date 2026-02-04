@@ -33,6 +33,12 @@ use crate::{
     Request, Response,
 };
 
+#[cfg(feature = "static-files")]
+use crate::server::path::StaticPath;
+
+#[cfg(feature = "reverse-proxy")]
+use crate::server::path::ProxyPath;
+
 /// Type alias for boxed handler closures.
 ///
 /// This represents an async function that takes a `Request` and returns
@@ -107,8 +113,24 @@ pub struct VirtualHost {
 }
 
 impl VirtualHost {
-    pub fn new(config: VirtualHostConfig) -> Self {
-        Self { config, paths: Trie::new() }
+    pub fn new(host_config: VirtualHostConfig) -> Self {
+        let mut host = Self { config: host_config.clone(), paths: Trie::new() };
+
+        #[cfg(feature = "static-files")]
+        if let Some(static_paths) = &host_config.static_paths() {
+            for static_path in static_paths {
+                host.add_path(StaticPath::new(static_path.clone()));
+            }
+        }
+
+        #[cfg(feature = "reverse-proxy")]
+        if let Some(proxy_paths) = &host_config.proxy_paths() {
+            for proxy_path in proxy_paths {
+                host.add_path(ProxyPath::new(proxy_path.clone()));
+            }
+        }
+
+        host
     }
 
     pub fn add_path<P>(&mut self, path: P)
@@ -157,6 +179,7 @@ impl VirtualHost {
 
         let Some(path) = matches else {
             return Box::pin(async move {
+                // TODO: Do not return a response, but rather propagate the error
                 Ok(Response::builder()
                     .status(http::StatusCode::NOT_FOUND)
                     .text("Not Found"))
@@ -167,6 +190,7 @@ impl VirtualHost {
             .strip_prefix(path.uri())
             .unwrap_or(&uri_path);
 
+        // TODO: Is proxy path a special case to be handled here?
         path.handle(request, Arc::from(target_path))
     }
 }

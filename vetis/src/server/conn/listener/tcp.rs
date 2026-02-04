@@ -51,6 +51,7 @@ use crate::{
     errors::VetisError,
     server::{
         conn::listener::{Listener, ListenerResult},
+        http::static_response,
         tls::TlsFactory,
     },
     VetisRwLock, VetisVirtualHosts,
@@ -144,6 +145,7 @@ impl Listener for TcpListener {
     }
 }
 
+/// Decompose the TCP listener into smaller, more manageable structs
 impl TcpListener {
     async fn handle_connections(
         &mut self,
@@ -174,11 +176,13 @@ impl TcpListener {
                     continue;
                 }
 
-                let (stream, _) = result.unwrap();
+                let (stream, client_addr) = result.unwrap();
                 if let Err(e) = stream.set_nodelay(true) {
                     error!("Cannot set TCP_NODELAY: {}", e);
                     continue;
                 }
+
+                // TODO: Check ACL before proceeding
 
                 let mut peekable = AsyncPeekable::from(stream);
 
@@ -205,11 +209,21 @@ impl TcpListener {
                     match protocol {
                         #[cfg(feature = "http1")]
                         Protocol::Http1 => {
-                            let _ = handle_http1_request(port.clone(), io, virtual_hosts.clone());
+                            let _ = handle_http1_request(
+                                port.clone(),
+                                io,
+                                virtual_hosts.clone(),
+                                client_addr,
+                            );
                         }
                         #[cfg(feature = "http2")]
                         Protocol::Http2 => {
-                            let _ = handle_http2_request(port.clone(), io, virtual_hosts.clone());
+                            let _ = handle_http2_request(
+                                port.clone(),
+                                io,
+                                virtual_hosts.clone(),
+                                client_addr,
+                            );
                         }
                         #[cfg(feature = "http3")]
                         Protocol::Http3 => {
@@ -221,11 +235,21 @@ impl TcpListener {
                     match protocol {
                         #[cfg(feature = "http1")]
                         Protocol::Http1 => {
-                            let _ = handle_http1_request(port.clone(), io, virtual_hosts.clone());
+                            let _ = handle_http1_request(
+                                port.clone(),
+                                io,
+                                virtual_hosts.clone(),
+                                client_addr,
+                            );
                         }
                         #[cfg(feature = "http2")]
                         Protocol::Http2 => {
-                            let _ = handle_http2_request(port.clone(), io, virtual_hosts.clone());
+                            let _ = handle_http2_request(
+                                port.clone(),
+                                io,
+                                virtual_hosts.clone(),
+                                client_addr,
+                            );
                         }
                         #[cfg(feature = "http3")]
                         Protocol::Http3 => {
@@ -246,6 +270,7 @@ async fn process_request(
     req: http::Request<Incoming>,
     virtual_hosts: VetisVirtualHosts,
     port: Arc<u16>,
+    _client_addr: SocketAddr,
 ) -> Result<http::Response<Either<Incoming, Full<Bytes>>>, VetisError> {
     let host = req
         .headers()
@@ -281,6 +306,7 @@ async fn process_request(
         let virtual_host = virtual_hosts.get(&(host.into(), *port.clone()));
 
         if let Some(virtual_host) = virtual_host {
+            // TODO: Save client_addr in request, grab url from request for logging
             let request = crate::Request::from_http(req);
 
             let vetis_response = virtual_host
@@ -314,21 +340,18 @@ async fn process_request(
                 }
             }
 
+            // TODO: Log request and its response status code
             Ok::<http::Response<Either<Incoming, Full<Bytes>>>, VetisError>(response)
         } else {
             error!("Virtual host not found: {}", host);
-            let response = http::Response::builder()
-                .status(404)
-                .body(Either::Right(Full::new(Bytes::from_static(b"Virtual host not found"))))
-                .unwrap();
+            let response =
+                static_response(http::StatusCode::NOT_FOUND, "Virtual host not found".to_string());
             Ok(response)
         }
     } else {
         error!("Host not found in request");
-        let response = http::Response::builder()
-            .status(400)
-            .body(Either::Right(Full::new(Bytes::from_static(b"Host not found in request"))))
-            .unwrap();
+        let response =
+            static_response(http::StatusCode::BAD_REQUEST, "Host not found in request".to_string());
         Ok(response)
     }
 }
@@ -338,6 +361,7 @@ fn handle_http1_request<T>(
     port: Arc<u16>,
     io: VetisIo<T>,
     virtual_hosts: VetisVirtualHosts,
+    client_addr: SocketAddr,
 ) -> Result<(), VetisError>
 where
     T: AsyncRead + AsyncWrite + Unpin + Send + 'static,
@@ -345,7 +369,7 @@ where
     let service_fn = service_fn(move |req| {
         let value = virtual_hosts.clone();
         let port = port.clone();
-        async move { process_request(req, value, port).await }
+        async move { process_request(req, value, port, client_addr).await }
     });
 
     let future = async move {
@@ -367,13 +391,14 @@ pub fn handle_http2_request<T>(
     port: Arc<u16>,
     io: VetisIo<T>,
     virtual_hosts: VetisVirtualHosts,
+    client_addr: SocketAddr,
 ) -> Result<(), VetisError>
 where
     T: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
     let service_fn = service_fn(move |req| {
         let value = virtual_hosts.clone();
-        async move { process_request(req, value, port.clone()).await }
+        async move { process_request(req, value, port.clone(), client_addr).await }
     });
 
     let future = async move {

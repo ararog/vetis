@@ -1,3 +1,5 @@
+//! Path module for handling different types of paths in the server
+
 use std::{future::Future, pin::Pin};
 
 #[cfg(feature = "reverse-proxy")]
@@ -284,7 +286,7 @@ impl Path for ProxyPath {
         request: Request,
         uri: Arc<str>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>> {
-        let (request_parts, request_body) = request.into_http_parts();
+        let (request_parts, _request_body) = request.into_http_parts();
 
         let target_path = request_parts
             .uri
@@ -310,6 +312,7 @@ impl Path for ProxyPath {
                     .build()
             });
 
+            // TODO: Check errors and handle them properly by returning a proper response 500, 503 or 504
             let response = client
                 .execute(deboa_request)
                 .await

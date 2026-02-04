@@ -38,7 +38,6 @@
 //!     .build()?;
 //! ```
 
-#[cfg(feature = "static-files")]
 use std::collections::HashMap;
 use std::fs;
 
@@ -408,6 +407,12 @@ pub struct VirtualHostConfigBuilder {
     port: u16,
     default_headers: Option<Vec<(String, String)>>,
     security: Option<SecurityConfig>,
+    status_pages: Option<HashMap<u16, String>>,
+    enable_logging: bool,
+    #[cfg(feature = "static-files")]
+    static_paths: Option<Vec<StaticPathConfig>>,
+    #[cfg(feature = "reverse-proxy")]
+    proxy_paths: Option<Vec<ProxyPathConfig>>,
 }
 
 impl VirtualHostConfigBuilder {
@@ -497,6 +502,80 @@ impl VirtualHostConfigBuilder {
         self
     }
 
+    /// Sets the status pages for the virtual host.
+    ///
+    /// These status pages will be used to serve custom error pages.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// use vetis::config::VirtualHostConfig;
+    ///
+    /// let config = VirtualHostConfig::builder()
+    ///     .status_pages(vec![(404, "404.html".to_string())])
+    ///     .build()?;
+    /// ```
+    pub fn status_pages(mut self, status_pages: HashMap<u16, String>) -> Self {
+        self.status_pages = Some(status_pages);
+        self
+    }
+
+    /// Enables or disables logging for this virtual host.
+    ///
+    /// When enabled, all requests to this virtual host will be logged.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// use vetis::config::VirtualHostConfig;
+    ///
+    /// let config = VirtualHostConfig::builder()
+    ///     .enable_logging(true)
+    ///     .build()?;
+    /// ```
+    pub fn enable_logging(mut self, logging: bool) -> Self {
+        self.enable_logging = logging;
+        self
+    }
+
+    #[cfg(feature = "static-files")]
+    /// Sets the status pages for the virtual host.
+    ///
+    /// These status pages will be used to serve custom error pages.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// use vetis::config::VirtualHostConfig;
+    ///
+    /// let config = VirtualHostConfig::builder()
+    ///     .static_paths(vec![(404, "404.html".to_string())])
+    ///     .build()?;
+    /// ```
+    pub fn static_paths(mut self, static_paths: Vec<StaticPathConfig>) -> Self {
+        self.static_paths = Some(static_paths);
+        self
+    }
+
+    #[cfg(feature = "reverse-proxy")]
+    /// Sets the status pages for the virtual host.
+    ///
+    /// These status pages will be used to serve custom error pages.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// use vetis::config::VirtualHostConfig;
+    ///
+    /// let config = VirtualHostConfig::builder()
+    ///     .proxy_paths(vec![(404, "404.html".to_string())])
+    ///     .build()?;
+    /// ```
+    pub fn proxy_paths(mut self, proxy_paths: Vec<ProxyPathConfig>) -> Self {
+        self.proxy_paths = Some(proxy_paths);
+        self
+    }
+
     /// Creates the `VirtualHostConfig` with the configured settings.
     ///
     /// # Errors
@@ -529,6 +608,12 @@ impl VirtualHostConfigBuilder {
             port: self.port,
             default_headers: self.default_headers,
             security: self.security,
+            status_pages: self.status_pages,
+            enable_logging: self.enable_logging,
+            #[cfg(feature = "static-files")]
+            static_paths: self.static_paths,
+            #[cfg(feature = "reverse-proxy")]
+            proxy_paths: self.proxy_paths,
         })
     }
 }
@@ -559,6 +644,12 @@ pub struct VirtualHostConfig {
     port: u16,
     default_headers: Option<Vec<(String, String)>>,
     security: Option<SecurityConfig>,
+    status_pages: Option<HashMap<u16, String>>,
+    enable_logging: bool,
+    #[cfg(feature = "static-files")]
+    static_paths: Option<Vec<StaticPathConfig>>,
+    #[cfg(feature = "reverse-proxy")]
+    proxy_paths: Option<Vec<ProxyPathConfig>>,
 }
 
 impl VirtualHostConfig {
@@ -585,6 +676,12 @@ impl VirtualHostConfig {
             port: 80,
             default_headers: None,
             security: None,
+            status_pages: None,
+            enable_logging: true,
+            #[cfg(feature = "static-files")]
+            static_paths: None,
+            #[cfg(feature = "reverse-proxy")]
+            proxy_paths: None,
         }
     }
 
@@ -607,6 +704,26 @@ impl VirtualHostConfig {
     pub fn security(&self) -> &Option<SecurityConfig> {
         &self.security
     }
+
+    /// Returns the status pages.
+    pub fn status_pages(&self) -> &Option<HashMap<u16, String>> {
+        &self.status_pages
+    }
+
+    /// Returns the logging setting.
+    pub fn enable_logging(&self) -> bool {
+        self.enable_logging
+    }
+
+    #[cfg(feature = "static-files")]
+    pub fn static_paths(&self) -> &Option<Vec<StaticPathConfig>> {
+        &self.static_paths
+    }
+
+    #[cfg(feature = "reverse-proxy")]
+    pub fn proxy_paths(&self) -> &Option<Vec<ProxyPathConfig>> {
+        &self.proxy_paths
+    }
 }
 
 #[cfg(feature = "static-files")]
@@ -615,6 +732,7 @@ pub struct StaticPathConfigBuilder {
     extensions: String,
     directory: String,
     index_files: Option<Vec<String>>,
+    // TODO: Finish removal of status pages from here, move to virtual host config
     status_pages: Option<HashMap<u16, String>>,
 }
 
@@ -679,13 +797,14 @@ impl StaticPathConfigBuilder {
 }
 
 #[cfg(feature = "static-files")]
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct StaticPathConfig {
     uri: String,
     extensions: String,
     directory: String,
     index_files: Option<Vec<String>>,
     status_pages: Option<HashMap<u16, String>>,
+    // TODO: Add basicauth config
 }
 
 #[cfg(feature = "static-files")]
@@ -760,10 +879,13 @@ impl ProxyPathConfigBuilder {
 }
 
 #[cfg(feature = "reverse-proxy")]
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct ProxyPathConfig {
     uri: String,
     target: String,
+    // TODO: Add custom proxy rules
+
+    // TODO: Add support for custom headers
 }
 
 #[cfg(feature = "reverse-proxy")]

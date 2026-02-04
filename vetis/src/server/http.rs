@@ -1,5 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
+use bytes::Bytes;
+use http_body_util::{Either, Full};
+use hyper::body::Incoming;
+
 use crate::{
     config::{Protocol, ServerConfig},
     errors::VetisError,
@@ -87,4 +91,14 @@ impl Server for HttpServer {
         }
         Ok(())
     }
+}
+
+pub fn static_response(
+    status: http::StatusCode,
+    body: String,
+) -> http::Response<Either<Incoming, Full<Bytes>>> {
+    http::Response::builder()
+        .status(status)
+        .body(Either::Right(Full::new(Bytes::from(body))))
+        .unwrap()
 }

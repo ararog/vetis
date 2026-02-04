@@ -38,12 +38,10 @@ impl TlsFactory {
                 let cert = security.cert();
                 let key = security.key();
 
-                let cert = CertificateDer::try_from(cert.to_vec())
-                    .map_err(|_| Tls("Failed to parse certificate".to_string()))?;
+                let cert = CertificateDer::from(cert.to_vec());
                 let mut chain = vec![cert];
                 if let Some(ca_cert) = security.ca_cert() {
-                    let ca_cert = CertificateDer::try_from(ca_cert.to_vec())
-                        .map_err(|_| Tls("Failed to parse CA certificate".to_string()))?;
+                    let ca_cert = CertificateDer::from(ca_cert.to_vec());
                     chain.push(ca_cert);
                 }
 
