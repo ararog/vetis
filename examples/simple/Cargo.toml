@@ -7,8 +7,8 @@ edition = "2024"
 default = []
 
 [dependencies]
-bytes = "1.11.0"
-clap = { version = "4.5.54", features = ["derive"] }
+bytes = "1.11.1"
+clap = { version = "4.5.57", features = ["derive"] }
 deboa = "0.1.0-beta"
 env_logger = "0.11.8"
 http-body-util = "0.1.3"
