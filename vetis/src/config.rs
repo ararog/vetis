@@ -38,6 +38,8 @@
 //!     .build()?;
 //! ```
 
+#[cfg(feature = "static-files")]
+use std::collections::HashMap;
 use std::fs;
 
 use serde::Deserialize;
@@ -612,6 +614,8 @@ pub struct StaticPathConfigBuilder {
     uri: String,
     extensions: String,
     directory: String,
+    index_files: Option<Vec<String>>,
+    status_pages: Option<HashMap<u16, String>>,
 }
 
 #[cfg(feature = "static-files")]
@@ -628,6 +632,16 @@ impl StaticPathConfigBuilder {
 
     pub fn directory(mut self, directory: &str) -> Self {
         self.directory = directory.to_string();
+        self
+    }
+
+    pub fn index_files(mut self, index_files: Vec<String>) -> Self {
+        self.index_files = Some(index_files);
+        self
+    }
+
+    pub fn status_pages(mut self, status_pages: HashMap<u16, String>) -> Self {
+        self.status_pages = Some(status_pages);
         self
     }
 
@@ -658,6 +672,8 @@ impl StaticPathConfigBuilder {
             uri: self.uri,
             extensions: self.extensions,
             directory: self.directory,
+            index_files: self.index_files,
+            status_pages: self.status_pages,
         })
     }
 }
@@ -668,6 +684,8 @@ pub struct StaticPathConfig {
     uri: String,
     extensions: String,
     directory: String,
+    index_files: Option<Vec<String>>,
+    status_pages: Option<HashMap<u16, String>>,
 }
 
 #[cfg(feature = "static-files")]
@@ -677,6 +695,8 @@ impl StaticPathConfig {
             uri: "/test".to_string(),
             extensions: ".html".to_string(),
             directory: "./test".to_string(),
+            index_files: None,
+            status_pages: None,
         }
     }
 
@@ -690,6 +710,14 @@ impl StaticPathConfig {
 
     pub fn directory(&self) -> &str {
         &self.directory
+    }
+
+    pub fn index_files(&self) -> &Option<Vec<String>> {
+        &self.index_files
+    }
+
+    pub fn status_pages(&self) -> &Option<HashMap<u16, String>> {
+        &self.status_pages
     }
 }
 

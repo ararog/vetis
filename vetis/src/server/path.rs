@@ -2,24 +2,29 @@ use std::{future::Future, pin::Pin};
 
 #[cfg(feature = "reverse-proxy")]
 use crate::config::ProxyPathConfig;
-#[cfg(feature = "static-files")]
-use crate::config::StaticPathConfig;
-
-use crate::errors::VirtualHostError;
-
-#[cfg(feature = "static-files")]
-use std::fs;
-
 #[cfg(feature = "reverse-proxy")]
 use deboa::{client::conn::pool::HttpConnectionPool, request::DeboaRequest, Client};
-#[cfg(feature = "static-files")]
-use serde::Deserialize;
 #[cfg(feature = "reverse-proxy")]
 use std::sync::OnceLock;
 
+#[cfg(feature = "static-files")]
+use crate::config::StaticPathConfig;
+#[cfg(feature = "static-files")]
+use bytes::Bytes;
+#[cfg(feature = "static-files")]
+use http_body_util::Full;
+#[cfg(feature = "static-files")]
+use serde::Deserialize;
+#[cfg(feature = "static-files")]
+use std::{fs, path::PathBuf};
+
 use std::sync::Arc;
 
-use crate::{errors::VetisError, server::virtual_host::BoxedHandlerClosure, Request, Response};
+use crate::{
+    errors::{VetisError, VirtualHostError},
+    server::virtual_host::BoxedHandlerClosure,
+    Request, Response,
+};
 
 #[cfg(feature = "reverse-proxy")]
 static CLIENT: OnceLock<Client> = OnceLock::new();
@@ -144,6 +149,60 @@ impl StaticPath {
     pub fn new(config: StaticPathConfig) -> StaticPath {
         StaticPath { config }
     }
+
+    fn serve_file(&self, file: PathBuf) -> Result<Response, VetisError> {
+        let result = fs::read(file);
+        if let Ok(data) = result {
+            return Ok(Response::builder()
+                .status(http::StatusCode::OK)
+                .body(http_body_util::Either::Right(Full::new(Bytes::from(data)))));
+        }
+
+        self.serve_status_page(404)
+    }
+
+    fn serve_index_file(&self, directory: PathBuf) -> Result<Response, VetisError> {
+        if let Some(index_files) = self
+            .config
+            .index_files()
+        {
+            if let Some(index_file) = index_files
+                .iter()
+                .find(|index_file| {
+                    directory
+                        .join(index_file)
+                        .exists()
+                })
+            {
+                return self.serve_file(directory.join(index_file));
+            }
+        }
+
+        self.serve_status_page(404)
+    }
+
+    fn serve_status_page(&self, status: u16) -> Result<Response, VetisError> {
+        let not_found_response = Response::builder()
+            .status(http::StatusCode::from_u16(status).unwrap())
+            .text("Not found");
+
+        if let Some(status_pages) = &self
+            .config
+            .status_pages()
+        {
+            if let Some(page) = status_pages.get(&status) {
+                let file = PathBuf::from(
+                    self.config
+                        .directory(),
+                )
+                .join(page);
+                if file.exists() {
+                    return self.serve_file(file);
+                }
+            }
+        }
+        Ok(not_found_response)
+    }
 }
 
 #[cfg(feature = "static-files")]
@@ -169,33 +228,28 @@ impl Path for StaticPath {
                 self.config
                     .extensions(),
             );
-            if let Ok(ext_regex) = ext_regex {
-                if !ext_regex.is_match(uri.as_ref()) {
-                    return Ok(Response::builder()
-                        .status(http::StatusCode::BAD_REQUEST)
-                        .text("Invalid file extension"));
-                }
-            }
 
-            let result = fs::read(format!(
-                "{}/{}",
+            let directory = PathBuf::from(
                 self.config
                     .directory(),
-                uri
-            ));
-            if let Ok(data) = result {
-                use bytes::Bytes;
-                use http_body_util::Full;
+            );
 
-                return Ok(Response::builder()
-                    .status(http::StatusCode::OK)
-                    .body(http_body_util::Either::Right(Full::new(Bytes::from(data)))));
+            let uri = uri
+                .strip_prefix("/")
+                .unwrap_or(&uri);
+            let file = directory.join(uri);
+            if file.is_file() && !file.exists() {
+                // check file by mimetype
+                if let Ok(ext_regex) = ext_regex {
+                    if !ext_regex.is_match(uri.as_ref()) {
+                        return self.serve_index_file(directory);
+                    }
+                }
+            } else if file.is_dir() {
+                return self.serve_index_file(file);
             }
 
-            // TODO: return 404
-            Ok(Response::builder()
-                .status(http::StatusCode::NOT_FOUND)
-                .text("Not found"))
+            self.serve_file(file)
         })
     }
 }

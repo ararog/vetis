@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use hyper::StatusCode;
 use vetis::{
     Vetis,
@@ -71,7 +73,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let images_path = StaticPathConfig::builder()
         .uri("/images")
         .directory("/home/rogerio/Downloads")
-        .extensions("\\.(jpg|png|gif)$")
+        .extensions("\\.(jpg|png|gif|html)$")
+        .index_files(vec!["index.html".to_string()])
+        .status_pages(maplit::hashmap! {
+            404 => "404.html".to_string()
+        })
         .build()?;
 
     localhost_virtual_host.add_path(StaticPath::new(images_path));
