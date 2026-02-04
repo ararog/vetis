@@ -19,7 +19,7 @@ async fn test_http() -> Result<(), Box<dyn std::error::Error>> {
         .start()
         .await?;
 
-    let client = deboa::Deboa::new();
+    let client = deboa::Client::default();
 
     let response = get("http://localhost:8080")?
         .send_with(client)
