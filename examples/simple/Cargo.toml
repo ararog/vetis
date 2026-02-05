@@ -9,7 +9,7 @@ default = []
 [dependencies]
 bytes = "1.11.1"
 clap = { version = "4.5.57", features = ["derive"] }
-deboa = { version = "0.1.0-beta", features = [
+deboa = { version = "0.1.0-beta.1", path = "../../../deboa/deboa", features = [
   "tokio-rt",
   "tokio-rust-tls",
   "http1",

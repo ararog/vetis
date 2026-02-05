@@ -5,11 +5,7 @@ use std::{
 };
 
 use http::header;
-use http_body_util::{Either, Full};
-use hyper::{
-    body::{Bytes, Incoming},
-    service::service_fn,
-};
+use hyper::{body::Incoming, service::service_fn};
 
 use log::{error, info};
 
@@ -54,7 +50,7 @@ use crate::{
         http::static_response,
         tls::TlsFactory,
     },
-    VetisRwLock, VetisVirtualHosts,
+    VetisResponseBody, VetisRwLock, VetisVirtualHosts,
 };
 
 #[cfg(feature = "tokio-rt")]
@@ -271,7 +267,7 @@ async fn process_request(
     virtual_hosts: VetisVirtualHosts,
     port: Arc<u16>,
     _client_addr: SocketAddr,
-) -> Result<http::Response<Either<Incoming, Full<Bytes>>>, VetisError> {
+) -> Result<http::Response<VetisResponseBody>, VetisError> {
     let host = req
         .headers()
         .get(header::HOST);
@@ -341,7 +337,7 @@ async fn process_request(
             }
 
             // TODO: Log request and its response status code
-            Ok::<http::Response<Either<Incoming, Full<Bytes>>>, VetisError>(response)
+            Ok::<http::Response<VetisResponseBody>, VetisError>(response)
         } else {
             error!("Virtual host not found: {}", host);
             let response =
