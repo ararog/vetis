@@ -10,15 +10,15 @@ use deboa::{client::conn::pool::HttpConnectionPool, request::DeboaRequest, Clien
 use std::sync::OnceLock;
 
 #[cfg(feature = "static-files")]
-use crate::config::StaticPathConfig;
-#[cfg(feature = "static-files")]
-use bytes::Bytes;
-#[cfg(feature = "static-files")]
-use http_body_util::Full;
+use crate::{config::StaticPathConfig, VetisBodyExt, VetisResponseBody};
 #[cfg(feature = "static-files")]
 use serde::Deserialize;
+#[cfg(all(feature = "static-files", feature = "smol-rt"))]
+use smol::fs::File;
 #[cfg(feature = "static-files")]
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
+#[cfg(all(feature = "static-files", feature = "tokio-rt"))]
+use tokio::fs::File;
 
 use std::sync::Arc;
 
@@ -152,18 +152,18 @@ impl StaticPath {
         StaticPath { config }
     }
 
-    fn serve_file(&self, file: PathBuf) -> Result<Response, VetisError> {
-        let result = fs::read(file);
+    async fn serve_file(&self, file: PathBuf) -> Result<Response, VetisError> {
+        let result = File::open(file).await;
         if let Ok(data) = result {
             return Ok(Response::builder()
                 .status(http::StatusCode::OK)
-                .body(http_body_util::Either::Right(Full::new(Bytes::from(data)))));
+                .body(VetisResponseBody::body_from_file(data)));
         }
 
-        self.serve_status_page(404)
+        Err(VetisError::VirtualHost(VirtualHostError::InvalidPath("File not found".to_string())))
     }
 
-    fn serve_index_file(&self, directory: PathBuf) -> Result<Response, VetisError> {
+    async fn serve_index_file(&self, directory: PathBuf) -> Result<Response, VetisError> {
         if let Some(index_files) = self
             .config
             .index_files()
@@ -176,14 +176,17 @@ impl StaticPath {
                         .exists()
                 })
             {
-                return self.serve_file(directory.join(index_file));
+                return self
+                    .serve_file(directory.join(index_file))
+                    .await;
             }
         }
 
         self.serve_status_page(404)
+            .await
     }
 
-    fn serve_status_page(&self, status: u16) -> Result<Response, VetisError> {
+    async fn serve_status_page(&self, status: u16) -> Result<Response, VetisError> {
         let not_found_response = Response::builder()
             .status(http::StatusCode::from_u16(status).unwrap())
             .text("Not found");
@@ -199,7 +202,9 @@ impl StaticPath {
                 )
                 .join(page);
                 if file.exists() {
-                    return self.serve_file(file);
+                    return self
+                        .serve_file(file)
+                        .await;
                 }
             }
         }
@@ -244,14 +249,19 @@ impl Path for StaticPath {
                 // check file by mimetype
                 if let Ok(ext_regex) = ext_regex {
                     if !ext_regex.is_match(uri.as_ref()) {
-                        return self.serve_index_file(directory);
+                        return self
+                            .serve_index_file(directory)
+                            .await;
                     }
                 }
             } else if file.is_dir() {
-                return self.serve_index_file(file);
+                return self
+                    .serve_index_file(file)
+                    .await;
             }
 
             self.serve_file(file)
+                .await
         })
     }
 }

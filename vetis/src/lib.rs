@@ -142,8 +142,9 @@ compile_error!("Only one runtime feature can be enabled at a time.");
 use std::{collections::HashMap, sync::Arc};
 
 use bytes::Bytes;
-use http_body_util::{Either, Full};
-use hyper::body::Incoming;
+use futures_util::{stream, TryStreamExt};
+use http_body_util::{combinators::BoxBody, BodyExt, Either, Full, StreamBody};
+use hyper::body::{Frame, Incoming};
 
 use log::{error, info};
 
@@ -155,10 +156,16 @@ use futures_lite::prelude::*;
 use signal_hook::low_level;
 
 #[cfg(feature = "smol-rt")]
+use smol::fs::File;
+#[cfg(feature = "smol-rt")]
 use smol::lock::RwLock;
 
 #[cfg(feature = "tokio-rt")]
+use tokio::fs::File;
+#[cfg(feature = "tokio-rt")]
 use tokio::sync::RwLock;
+#[cfg(feature = "tokio-rt")]
+use tokio_util::io::ReaderStream;
 
 pub(crate) type VetisRwLock<T> = RwLock<T>;
 
@@ -444,6 +451,28 @@ impl Vetis {
             return Err(VetisError::NoInstances);
         }
         Ok(())
+    }
+}
+
+pub type VetisResponseBody = Either<Incoming, BoxBody<Bytes, std::io::Error>>;
+
+pub trait VetisBodyExt {
+    fn body_from_text(text: &str) -> VetisResponseBody;
+    fn body_from_file(file: File) -> VetisResponseBody;
+}
+
+impl VetisBodyExt for VetisResponseBody {
+    fn body_from_text(text: &str) -> VetisResponseBody {
+        let all_bytes = Bytes::copy_from_slice(text.as_bytes());
+        let content = stream::iter(vec![Ok(all_bytes)]).map_ok(Frame::data);
+        let body = StreamBody::new(content);
+        Either::Right(body.boxed())
+    }
+
+    fn body_from_file(file: File) -> VetisResponseBody {
+        let content = ReaderStream::new(file).map_ok(Frame::data);
+        let body = StreamBody::new(content);
+        Either::Right(body.boxed())
     }
 }
 
@@ -744,10 +773,7 @@ impl ResponseBuilder {
     ///     .text("Hello, World!");
     /// ```    
     pub fn text(self, text: &str) -> Response {
-        self.body(Either::Right(Full::new(Bytes::from(
-            text.as_bytes()
-                .to_vec(),
-        ))))
+        self.body(VetisResponseBody::body_from_text(text))
     }
 
     /// Sets the body and creates the final `Response`.
@@ -764,7 +790,7 @@ impl ResponseBuilder {
     /// let response = Response::builder()
     ///     .body(b"Hello, World!");
     /// ```
-    pub fn body(self, body: Either<Incoming, Full<Bytes>>) -> Response {
+    pub fn body(self, body: VetisResponseBody) -> Response {
         let response = http::Response::new(body);
 
         let (mut parts, body) = response.into_parts();
@@ -802,7 +828,7 @@ impl ResponseBuilder {
 /// let inner_response = response.into_inner();
 /// ```
 pub struct Response {
-    pub(crate) inner: http::Response<Either<Incoming, Full<Bytes>>>,
+    pub(crate) inner: http::Response<VetisResponseBody>,
 }
 
 impl Response {
@@ -843,7 +869,7 @@ impl Response {
     ///     .text("Hello");
     /// let inner = response.into_inner();
     /// ```
-    pub fn into_inner(self) -> http::Response<Either<Incoming, Full<Bytes>>> {
+    pub fn into_inner(self) -> http::Response<VetisResponseBody> {
         self.inner
     }
 }
