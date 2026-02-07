@@ -340,14 +340,20 @@ async fn process_request(
             Ok::<http::Response<VetisBody>, VetisError>(response)
         } else {
             error!("Virtual host not found: {}", host);
-            let response =
-                static_response(http::StatusCode::NOT_FOUND, "Virtual host not found".to_string());
+            let response = static_response(
+                http::StatusCode::NOT_FOUND,
+                None,
+                "Virtual host not found".to_string(),
+            );
             Ok(response)
         }
     } else {
         error!("Host not found in request");
-        let response =
-            static_response(http::StatusCode::BAD_REQUEST, "Host not found in request".to_string());
+        let response = static_response(
+            http::StatusCode::BAD_REQUEST,
+            None,
+            "Host not found in request".to_string(),
+        );
         Ok(response)
     }
 }

@@ -39,7 +39,7 @@ use smol::fs::File;
 use tokio::fs::File;
 
 #[cfg(feature = "static-files")]
-use crate::server::path::StaticPath;
+use crate::{errors::FileError, server::path::StaticPath};
 
 #[cfg(feature = "reverse-proxy")]
 use crate::server::path::ProxyPath;
@@ -225,7 +225,7 @@ impl VirtualHost {
                 Ok(response) => Ok(response),
                 Err(error) => {
                     match error {
-                        VetisError::VirtualHost(VirtualHostError::InvalidPath(ref error)) => {
+                        VetisError::VirtualHost(VirtualHostError::File(FileError::NotFound)) => {
                             log::error!("Invalid path: {}", error);
                             return self
                                 .serve_status_page(http::StatusCode::NOT_FOUND.as_u16())

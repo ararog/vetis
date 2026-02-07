@@ -45,9 +45,6 @@ use serde::Deserialize;
 
 use crate::errors::{ConfigError, VetisError};
 
-#[cfg(feature = "static-files")]
-use crate::errors::VirtualHostError;
-
 /// Supported HTTP protocols.
 ///
 /// The protocol enum is feature-gated to only include protocols
@@ -758,15 +755,13 @@ impl StaticPathConfigBuilder {
 
     pub fn build(self) -> Result<StaticPathConfig, VetisError> {
         if self.uri.is_empty() {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "URI cannot be empty".to_string(),
-            )));
+            return Err(VetisError::Config(ConfigError::Path("URI cannot be empty".to_string())));
         }
         if self
             .extensions
             .is_empty()
         {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+            return Err(VetisError::Config(ConfigError::Path(
                 "Extensions cannot be empty".to_string(),
             )));
         }
@@ -774,7 +769,7 @@ impl StaticPathConfigBuilder {
             .directory
             .is_empty()
         {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+            return Err(VetisError::Config(ConfigError::Path(
                 "Directory cannot be empty".to_string(),
             )));
         }
@@ -847,15 +842,13 @@ impl ProxyPathConfigBuilder {
 
     pub fn build(self) -> Result<ProxyPathConfig, VetisError> {
         if self.uri.is_empty() {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "URI cannot be empty".to_string(),
-            )));
+            return Err(VetisError::Config(ConfigError::Path("URI cannot be empty".to_string())));
         }
         if self
             .target
             .is_empty()
         {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+            return Err(VetisError::Config(ConfigError::Path(
                 "Target cannot be empty".to_string(),
             )));
         }

@@ -98,6 +98,8 @@ pub enum ConfigError {
     /// Invalid virtual host configuration
     #[error("Invalid virtual host config: {0}")]
     VirtualHost(String),
+    #[error("Invalid path config: {0}")]
+    Path(String),
 }
 
 /// Server startup errors.
@@ -145,11 +147,35 @@ pub enum VirtualHostError {
     #[error("No virtual hosts")]
     NoVirtualHosts,
 
-    /// Invalid path configuration
-    #[error("Invalid path: {0}")]
-    InvalidPath(String),
+    #[error("Handler error: {0}")]
+    Handler(HandlerError),
+
+    /// File errors
+    #[error("File error: {0}")]
+    File(FileError),
 
     /// Proxy errors
     #[error("Proxy error: {0}")]
     Proxy(String),
+}
+
+#[derive(Debug, Clone, Error, PartialEq)]
+pub enum HandlerError {
+    #[error("Uri error: {0}")]
+    Uri(String),
+
+    #[error("Handler error: {0}")]
+    Handler(String),
+}
+
+#[derive(Debug, Clone, Error, PartialEq)]
+pub enum FileError {
+    #[error("File not found")]
+    NotFound,
+
+    #[error("Invalid metadata")]
+    InvalidMetadata,
+
+    #[error("Invalid range")]
+    InvalidRange,
 }

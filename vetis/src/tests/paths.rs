@@ -71,7 +71,7 @@ mod handler {
 mod static_files {
     use crate::{
         config::StaticPathConfig,
-        errors::{VetisError, VirtualHostError},
+        errors::{ConfigError, VetisError},
     };
 
     #[test]
@@ -98,9 +98,7 @@ mod static_files {
         assert!(some_path.is_err());
         assert_eq!(
             some_path.err(),
-            Some(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "URI cannot be empty".into(),
-            )))
+            Some(VetisError::Config(ConfigError::Path("URI cannot be empty".into(),)))
         );
     }
 
@@ -114,9 +112,7 @@ mod static_files {
         assert!(some_path.is_err());
         assert_eq!(
             some_path.err(),
-            Some(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "Extensions cannot be empty".into(),
-            )))
+            Some(VetisError::Config(ConfigError::Path("Extensions cannot be empty".into(),)))
         );
     }
 
@@ -131,9 +127,7 @@ mod static_files {
         assert!(some_path.is_err());
         assert_eq!(
             some_path.err(),
-            Some(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "Directory cannot be empty".into(),
-            )))
+            Some(VetisError::Config(ConfigError::Path("Directory cannot be empty".into(),)))
         );
     }
 }
@@ -147,9 +141,9 @@ mod reverse_proxy {
 
     use crate::{
         config::{ListenerConfig, Protocol, ProxyPathConfig, ServerConfig, VirtualHostConfig},
-        errors::{VetisError, VirtualHostError},
+        errors::{ConfigError, VetisError},
         server::{
-            path::{HandlerPath, HostPath, Path},
+            path::HandlerPath,
             virtual_host::{handler_fn, VirtualHost},
         },
     };
@@ -179,9 +173,7 @@ mod reverse_proxy {
         assert!(some_path.is_err());
         assert_eq!(
             some_path.err(),
-            Some(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "URI cannot be empty".into(),
-            )))
+            Some(VetisError::Config(ConfigError::Path("URI cannot be empty".into(),)))
         );
 
         Ok(())
@@ -197,9 +189,7 @@ mod reverse_proxy {
         assert!(some_path.is_err());
         assert_eq!(
             some_path.err(),
-            Some(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-                "Target cannot be empty".into(),
-            )))
+            Some(VetisError::Config(ConfigError::Path("Target cannot be empty".into(),)))
         );
 
         Ok(())

@@ -12,17 +12,21 @@ use std::sync::OnceLock;
 #[cfg(all(feature = "static-files", feature = "smol-rt"))]
 use smol::fs::File;
 #[cfg(all(feature = "static-files", feature = "tokio-rt"))]
-use tokio::fs::File;
+use tokio::{fs::File, io::AsyncSeekExt};
 
 #[cfg(feature = "static-files")]
-use crate::{config::StaticPathConfig, VetisBodyExt};
+use crate::{
+    config::StaticPathConfig, errors::FileError, server::http::static_response, VetisBodyExt,
+};
+#[cfg(feature = "static-files")]
+use http::{HeaderMap, HeaderValue};
 #[cfg(feature = "static-files")]
 use std::path::PathBuf;
 
 use std::sync::Arc;
 
 use crate::{
-    errors::{VetisError, VirtualHostError},
+    errors::{HandlerError, VetisError, VirtualHostError},
     server::virtual_host::BoxedHandlerClosure,
     Request, Response, VetisBody,
 };
@@ -91,18 +95,18 @@ impl HandlerPathBuilder {
 
     pub fn build(self) -> Result<HostPath, VetisError> {
         if self.uri.is_empty() {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+            return Err(VetisError::VirtualHost(VirtualHostError::Handler(HandlerError::Uri(
                 "URI cannot be empty".to_string(),
-            )));
+            ))));
         }
 
         if self
             .handler
             .is_none()
         {
-            return Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
+            return Err(VetisError::VirtualHost(VirtualHostError::Handler(HandlerError::Handler(
                 "Handler cannot be empty".to_string(),
-            )));
+            ))));
         }
 
         Ok(HostPath::Handler(HandlerPath {
@@ -150,15 +154,70 @@ impl StaticPath {
         StaticPath { config }
     }
 
-    pub async fn serve_file(&self, file: PathBuf) -> Result<Response, VetisError> {
+    pub async fn serve_file(
+        &self,
+        file: PathBuf,
+        range: Option<&str>,
+    ) -> Result<Response, VetisError> {
         let result = File::open(file).await;
-        if let Ok(data) = result {
+        if let Ok(mut data) = result {
+            let filesize = match data
+                .metadata()
+                .await
+            {
+                Ok(metadata) => metadata.len(),
+                Err(_) => 0u64,
+            };
+
+            if let Some(range) = range {
+                let (unit, range) = range
+                    .split_once("=")
+                    .unwrap();
+                if unit != "bytes" {
+                    return Err(VetisError::VirtualHost(VirtualHostError::File(
+                        FileError::InvalidRange,
+                    )));
+                }
+
+                let (start, end) = range
+                    .split_once("-")
+                    .unwrap();
+                let start = start
+                    .parse::<u64>()
+                    .unwrap();
+                let end = end
+                    .parse::<u64>()
+                    .unwrap();
+                if start > end || start >= filesize {
+                    return Ok(Response::builder()
+                        .status(http::StatusCode::RANGE_NOT_SATISFIABLE)
+                        .body(VetisBody::body_from_text("")));
+                } else if start < end
+                    && end < filesize
+                    && data
+                        .seek(std::io::SeekFrom::Start(start))
+                        .await
+                        .is_ok()
+                {
+                    return Ok(Response::builder()
+                        .status(http::StatusCode::PARTIAL_CONTENT)
+                        .body(VetisBody::body_from_file(data)));
+                }
+            }
+
             return Ok(Response::builder()
                 .status(http::StatusCode::OK)
+                .header(
+                    http::header::ACCEPT_RANGES,
+                    "bytes"
+                        .parse()
+                        .unwrap(),
+                )
+                .header(http::header::CONTENT_LENGTH, HeaderValue::from(filesize))
                 .body(VetisBody::body_from_file(data)));
         }
 
-        Err(VetisError::VirtualHost(VirtualHostError::InvalidPath("File not found".to_string())))
+        Err(VetisError::VirtualHost(VirtualHostError::File(FileError::NotFound)))
     }
 
     async fn serve_index_file(&self, directory: PathBuf) -> Result<Response, VetisError> {
@@ -175,14 +234,69 @@ impl StaticPath {
                 })
             {
                 return self
-                    .serve_file(directory.join(index_file))
+                    .serve_file(directory.join(index_file), None)
                     .await;
             }
         }
 
-        Err(VetisError::VirtualHost(VirtualHostError::InvalidPath(
-            "Index file not found".to_string(),
-        )))
+        Err(VetisError::VirtualHost(VirtualHostError::File(FileError::NotFound)))
+    }
+
+    fn serve_metadata(&self, file: PathBuf) -> Result<Response, VetisError> {
+        if let Ok(metadata) = file.metadata() {
+            let len = metadata.len();
+            let mut headers = HeaderMap::new();
+            match len
+                .to_string()
+                .parse()
+            {
+                Ok(len) => {
+                    headers.insert(http::header::CONTENT_LENGTH, len);
+                }
+                Err(_) => todo!(),
+            }
+            let last_modified = metadata.modified();
+            match last_modified {
+                Ok(date) => {
+                    let date = crate::utils::date::format_date(date);
+                    headers.insert(
+                        http::header::LAST_MODIFIED,
+                        date.parse()
+                            .unwrap(),
+                    );
+                }
+                Err(_) => todo!(),
+            }
+            match file.file_name() {
+                Some(filename) => {
+                    let mime_type = minimime::lookup_by_filename(
+                        filename
+                            .to_str()
+                            .unwrap(),
+                    );
+                    if let Some(mime_type) = mime_type {
+                        headers.insert(
+                            http::header::CONTENT_TYPE,
+                            HeaderValue::from_str(
+                                mime_type
+                                    .content_type
+                                    .as_str(),
+                            )
+                            .unwrap(),
+                        );
+                    }
+                }
+                None => {
+                    todo!()
+                }
+            }
+
+            Ok(Response {
+                inner: static_response(http::StatusCode::OK, Some(headers), String::new()),
+            })
+        } else {
+            Err(VetisError::VirtualHost(VirtualHostError::File(FileError::NotFound)))
+        }
     }
 }
 
@@ -201,7 +315,7 @@ impl Path for StaticPath {
 
     fn handle(
         &self,
-        _request: Request,
+        request: Request,
         uri: Arc<String>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>> {
         Box::pin(async move {
@@ -234,7 +348,28 @@ impl Path for StaticPath {
                     .await;
             }
 
-            self.serve_file(file)
+            if request.method() == http::Method::HEAD {
+                return self.serve_metadata(file);
+            }
+
+            let range = if request
+                .headers()
+                .contains_key(http::header::RANGE)
+            {
+                let value = request
+                    .headers()
+                    .get(http::header::RANGE);
+                Some(
+                    value
+                        .unwrap()
+                        .to_str()
+                        .unwrap(),
+                )
+            } else {
+                None
+            };
+
+            self.serve_file(file, range)
                 .await
         })
     }

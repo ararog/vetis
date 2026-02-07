@@ -1,5 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
+use http::HeaderMap;
+
 use crate::{
     config::{Protocol, ServerConfig},
     errors::VetisError,
@@ -89,9 +91,19 @@ impl Server for HttpServer {
     }
 }
 
-pub fn static_response(status: http::StatusCode, body: String) -> http::Response<VetisBody> {
-    http::Response::builder()
+pub fn static_response(
+    status: http::StatusCode,
+    headers: Option<HeaderMap>,
+    body: String,
+) -> http::Response<VetisBody> {
+    let mut response = http::Response::builder()
         .status(status)
         .body(VetisBody::body_from_text(&body))
-        .unwrap()
+        .unwrap();
+
+    if let Some(headers) = headers {
+        *response.headers_mut() = headers;
+    }
+
+    response
 }

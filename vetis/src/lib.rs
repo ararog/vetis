@@ -182,6 +182,7 @@ pub mod errors;
 mod rt;
 pub mod server;
 mod tests;
+pub mod utils;
 
 pub static CONFIG: &str = "vetis.toml";
 
