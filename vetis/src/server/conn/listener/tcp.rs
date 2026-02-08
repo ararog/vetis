@@ -400,7 +400,8 @@ where
 {
     let service_fn = service_fn(move |req| {
         let value = virtual_hosts.clone();
-        async move { process_request(req, value, port.clone(), client_addr).await }
+        let port = port.clone();
+        async move { process_request(req, value, port, client_addr).await }
     });
 
     let future = async move {

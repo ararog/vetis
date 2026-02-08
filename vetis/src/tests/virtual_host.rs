@@ -2,6 +2,10 @@ mod virtual_host_tests {
     use bytes::Bytes;
     use http::StatusCode;
     use http_body_util::{BodyExt, Full};
+    #[cfg(feature = "smol-rt")]
+    use macro_rules_attribute::apply;
+    #[cfg(feature = "smol-rt")]
+    use smol_macros::test;
 
     use crate::{
         config::VirtualHostConfig,
@@ -12,8 +16,7 @@ mod virtual_host_tests {
         Request,
     };
 
-    #[tokio::test]
-    async fn test_add_virtual_host() -> Result<(), Box<dyn std::error::Error>> {
+    async fn do_add_virtual_host() -> Result<(), Box<dyn std::error::Error>> {
         let config = VirtualHostConfig::builder()
             .hostname("localhost")
             .build()
@@ -42,8 +45,19 @@ mod virtual_host_tests {
         Ok(())
     }
 
+    #[cfg(feature = "tokio-rt")]
     #[tokio::test]
-    async fn test_handle_request() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_add_virtual_host() -> Result<(), Box<dyn std::error::Error>> {
+        do_add_virtual_host().await
+    }
+
+    #[cfg(feature = "smol-rt")]
+    #[apply(test!)]
+    async fn test_add_virtual_host() -> Result<(), Box<dyn std::error::Error>> {
+        do_add_virtual_host().await
+    }
+
+    async fn do_handle_request() -> Result<(), Box<dyn std::error::Error>> {
         let config = VirtualHostConfig::builder()
             .hostname("localhost")
             .build()
@@ -94,5 +108,17 @@ mod virtual_host_tests {
         );
 
         Ok(())
+    }
+
+    #[cfg(feature = "tokio-rt")]
+    #[tokio::test]
+    async fn test_handle_request() -> Result<(), Box<dyn std::error::Error>> {
+        do_handle_request().await
+    }
+
+    #[cfg(feature = "smol-rt")]
+    #[apply(test!)]
+    async fn test_handle_request() -> Result<(), Box<dyn std::error::Error>> {
+        do_handle_request().await
     }
 }

@@ -10,6 +10,8 @@ use deboa::{client::conn::pool::HttpConnectionPool, request::DeboaRequest, Clien
 use std::sync::OnceLock;
 
 #[cfg(all(feature = "static-files", feature = "smol-rt"))]
+use futures_lite::AsyncSeekExt;
+#[cfg(all(feature = "static-files", feature = "smol-rt"))]
 use smol::fs::File;
 #[cfg(all(feature = "static-files", feature = "tokio-rt"))]
 use tokio::{fs::File, io::AsyncSeekExt};
@@ -78,13 +80,13 @@ impl Path for HostPath {
 }
 
 pub struct HandlerPathBuilder {
-    uri: Arc<str>,
+    uri: Arc<String>,
     handler: Option<BoxedHandlerClosure>,
 }
 
 impl HandlerPathBuilder {
     pub fn uri(mut self, uri: &str) -> Self {
-        self.uri = Arc::from(uri);
+        self.uri = Arc::from(uri.to_string());
         self
     }
 
@@ -119,13 +121,13 @@ impl HandlerPathBuilder {
 }
 
 pub struct HandlerPath {
-    uri: Arc<str>,
+    uri: Arc<String>,
     handler: BoxedHandlerClosure,
 }
 
 impl HandlerPath {
     pub fn builder() -> HandlerPathBuilder {
-        HandlerPathBuilder { uri: Arc::from(""), handler: None }
+        HandlerPathBuilder { uri: Arc::from("/".to_string()), handler: None }
     }
 }
 

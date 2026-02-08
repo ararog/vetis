@@ -48,7 +48,7 @@ impl TlsFactory {
                 let key = PrivateKeyDer::try_from(key.to_vec())
                     .map_err(|_| Tls("Failed to parse private key".to_string()))?;
                 let certified_key = CertifiedKey::from_der(chain, key, &provider)
-                    .map_err(|_| Tls("Failed to create certified key".to_string()))?;
+                    .map_err(|e| Tls(format!("Failed to create certified key: {}", e)))?;
 
                 let hostname = hostname.0.clone();
 

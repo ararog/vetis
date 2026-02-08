@@ -1,6 +1,10 @@
 use clap::Parser;
 use log::error;
+#[cfg(feature = "smol-rt")]
+use macro_rules_attribute::apply;
 use serde::Deserialize;
+#[cfg(feature = "smol-rt")]
+use smol_macros::main;
 use std::{error::Error, fs::read_to_string, path::Path};
 use vetis::{
     config::{ListenerConfig, ServerConfig, StaticPathConfig, VirtualHostConfig},
@@ -111,7 +115,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[cfg(feature = "smol-rt")]
-#[apply::main]
+#[apply(main!)]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Err(e) = run().await {
         error!("Failed to start server: {}", e);

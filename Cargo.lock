@@ -2697,7 +2697,9 @@ dependencies = [
  "env_logger",
  "http-body-util",
  "hyper",
+ "macro_rules_attribute",
  "maplit",
+ "smol-macros",
  "tokio",
  "vetis",
 ]
@@ -3324,6 +3326,7 @@ version = "0.1.4-beta.1"
 dependencies = [
  "async-signal",
  "bytes",
+ "cfg-if",
  "clap",
  "deboa",
  "env_logger",
@@ -3337,6 +3340,7 @@ dependencies = [
  "hyper",
  "hyper-util",
  "log",
+ "macro_rules_attribute",
  "mime",
  "minimime",
  "peekable",

@@ -1,20 +1,26 @@
 mod handler {
-    use deboa::request;
+    use deboa::{cert::Certificate, request};
     use http::StatusCode;
 
+    #[cfg(feature = "smol-rt")]
+    use macro_rules_attribute::apply;
+    #[cfg(feature = "smol-rt")]
+    use smol_macros::test;
+
     use crate::{
-        config::{ListenerConfig, Protocol, ServerConfig, VirtualHostConfig},
+        config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
+        default_protocol,
         server::{
             path::HandlerPath,
             virtual_host::{handler_fn, VirtualHost},
         },
+        tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
     };
 
-    #[tokio::test]
-    pub async fn test_handler() -> Result<(), Box<dyn std::error::Error>> {
+    async fn do_test_handler() -> Result<(), Box<dyn std::error::Error>> {
         let ipv4 = ListenerConfig::builder()
             .port(8082)
-            .protocol(Protocol::Http1)
+            .protocol(default_protocol())
             .interface("0.0.0.0")
             .build();
 
@@ -22,9 +28,16 @@ mod handler {
             .add_listener(ipv4)
             .build();
 
+        let security_config = SecurityConfig::builder()
+            .ca_cert_from_bytes(CA_CERT.to_vec())
+            .cert_from_bytes(SERVER_CERT.to_vec())
+            .key_from_bytes(SERVER_KEY.to_vec())
+            .build();
+
         let localhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8082)
+            .security(security_config)
             .build()?;
 
         let mut localhost_virtual_host = VirtualHost::new(localhost_config);
@@ -51,9 +64,11 @@ mod handler {
             .start()
             .await?;
 
-        let client = deboa::Client::default();
+        let client = deboa::Client::builder()
+            .certificate(Certificate::from_slice(CA_CERT, deboa::cert::ContentEncoding::DER))
+            .build();
 
-        let request = request::get("http://localhost:8082/hello")?
+        let request = request::get("https://localhost:8082/hello")?
             .send_with(&client)
             .await?;
 
@@ -64,6 +79,18 @@ mod handler {
             .await?;
 
         Ok(())
+    }
+
+    #[cfg(feature = "tokio-rt")]
+    #[tokio::test]
+    async fn test_handler() -> Result<(), Box<dyn std::error::Error>> {
+        do_test_handler().await
+    }
+
+    #[cfg(feature = "smol-rt")]
+    #[apply(test!)]
+    async fn test_handler_smol() -> Result<(), Box<dyn std::error::Error>> {
+        do_test_handler().await
     }
 }
 
@@ -134,18 +161,26 @@ mod static_files {
 
 #[cfg(feature = "reverse-proxy")]
 mod reverse_proxy {
+    use deboa::{cert::Certificate, request};
+    use http::StatusCode;
     use std::error::Error;
 
-    use deboa::request;
-    use http::StatusCode;
+    #[cfg(feature = "smol-rt")]
+    use macro_rules_attribute::apply;
+    #[cfg(feature = "smol-rt")]
+    use smol_macros::test;
 
     use crate::{
-        config::{ListenerConfig, Protocol, ProxyPathConfig, ServerConfig, VirtualHostConfig},
+        config::{
+            ListenerConfig, ProxyPathConfig, SecurityConfig, ServerConfig, VirtualHostConfig,
+        },
+        default_protocol,
         errors::{ConfigError, VetisError},
         server::{
             path::HandlerPath,
             virtual_host::{handler_fn, VirtualHost},
         },
+        tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
     };
 
     use crate::server::path::ProxyPath;
@@ -195,17 +230,16 @@ mod reverse_proxy {
         Ok(())
     }
 
-    #[tokio::test]
-    async fn test_proxy_to_target() -> Result<(), Box<dyn Error>> {
+    async fn do_proxy_to_target() -> Result<(), Box<dyn Error>> {
         let source_listener = ListenerConfig::builder()
             .port(8084)
-            .protocol(Protocol::Http1)
+            .protocol(default_protocol())
             .interface("0.0.0.0")
             .build();
 
         let target_listener = ListenerConfig::builder()
             .port(8085)
-            .protocol(Protocol::Http1)
+            .protocol(default_protocol())
             .interface("0.0.0.0")
             .build();
 
@@ -214,9 +248,16 @@ mod reverse_proxy {
             .add_listener(target_listener)
             .build();
 
+        let security_config = SecurityConfig::builder()
+            .ca_cert_from_bytes(CA_CERT.to_vec())
+            .cert_from_bytes(SERVER_CERT.to_vec())
+            .key_from_bytes(SERVER_KEY.to_vec())
+            .build();
+
         let source_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8084)
+            .security(security_config)
             .build()
             .unwrap();
 
@@ -224,13 +265,20 @@ mod reverse_proxy {
         source_virtual_host.add_path(ProxyPath::new(
             ProxyPathConfig::builder()
                 .uri("/")
-                .target("http://localhost:8085")
+                .target("https://localhost:8085")
                 .build()?,
         ));
+
+        let ip6_security_config = SecurityConfig::builder()
+            .ca_cert_from_bytes(CA_CERT.to_vec())
+            .cert_from_bytes(SERVER_CERT.to_vec())
+            .key_from_bytes(SERVER_KEY.to_vec())
+            .build();
 
         let target_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8085)
+            .security(ip6_security_config)
             .build()
             .unwrap();
 
@@ -265,9 +313,11 @@ mod reverse_proxy {
             .start()
             .await?;
 
-        let client = deboa::Client::default();
+        let client = deboa::Client::builder()
+            .certificate(Certificate::from_slice(CA_CERT, deboa::cert::ContentEncoding::DER))
+            .build();
 
-        let request = request::get("http://localhost:8084/")?
+        let request = request::get("https://localhost:8084/")?
             .send_with(&client)
             .await?;
 
@@ -284,5 +334,17 @@ mod reverse_proxy {
             .await?;
 
         Ok(())
+    }
+
+    #[cfg(feature = "tokio-rt")]
+    #[tokio::test]
+    async fn test_proxy_to_target() -> Result<(), Box<dyn Error>> {
+        do_proxy_to_target().await
+    }
+
+    #[cfg(feature = "smol-rt")]
+    #[apply(test!)]
+    async fn test_proxy_to_target() -> Result<(), Box<dyn Error>> {
+        do_proxy_to_target().await
     }
 }

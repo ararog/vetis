@@ -1,4 +1,7 @@
-use crate::config::{ListenerConfig, Protocol, SecurityConfig, ServerConfig, VirtualHostConfig};
+use crate::{
+    config::{ListenerConfig, Protocol, SecurityConfig, ServerConfig, VirtualHostConfig},
+    errors::{ConfigError, VetisError},
+};
 
 #[test]
 fn test_listener_config() {
@@ -65,5 +68,26 @@ fn test_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(virtual_host_config.hostname(), "localhost");
     assert_eq!(virtual_host_config.port(), 8080);
 
+    Ok(())
+}
+
+#[test]
+fn test_default_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
+    let virtual_host_config = VirtualHostConfig::builder().build()?;
+    assert_eq!(virtual_host_config.hostname(), "localhost");
+    assert_eq!(virtual_host_config.port(), 80);
+    Ok(())
+}
+
+#[test]
+fn test_invalid_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
+    let virtual_host_config = VirtualHostConfig::builder()
+        .hostname("")
+        .build();
+
+    assert_eq!(
+        virtual_host_config.err(),
+        Some(VetisError::Config(ConfigError::VirtualHost("hostname is empty".to_string())))
+    );
     Ok(())
 }

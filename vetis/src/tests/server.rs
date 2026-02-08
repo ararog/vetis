@@ -1,28 +1,37 @@
 mod server_tests {
+    use deboa::{
+        cert::{Certificate, ContentEncoding},
+        request,
+    };
+    use http::StatusCode;
+    #[cfg(feature = "smol-rt")]
+    use macro_rules_attribute::apply;
+    #[cfg(feature = "smol-rt")]
+    use smol_macros::test;
     use std::error::Error;
 
-    use deboa::request;
-    use http::StatusCode;
-
     use crate::{
-        config::{ListenerConfig, Protocol, ServerConfig, VirtualHostConfig},
+        config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
+        default_protocol,
         server::{
             path::HandlerPath,
             virtual_host::{handler_fn, VirtualHost},
         },
+        tests::{CA_CERT, IP6_SERVER_CERT, IP6_SERVER_KEY, SERVER_CERT, SERVER_KEY},
     };
 
-    #[tokio::test]
-    async fn test_multiple_interfaces() -> Result<(), Box<dyn Error>> {
+    async fn do_multiple_interfaces() -> Result<(), Box<dyn Error>> {
+        let protocol = default_protocol();
+
         let ipv4 = ListenerConfig::builder()
             .port(8080)
-            .protocol(Protocol::Http1)
+            .protocol(protocol.clone())
             .interface("0.0.0.0")
             .build();
 
         let ipv6 = ListenerConfig::builder()
             .port(8081)
-            .protocol(Protocol::Http1)
+            .protocol(protocol.clone())
             .interface("::")
             .build();
 
@@ -31,14 +40,28 @@ mod server_tests {
             .add_listener(ipv6)
             .build();
 
+        let security_config = SecurityConfig::builder()
+            .ca_cert_from_bytes(CA_CERT.to_vec())
+            .cert_from_bytes(SERVER_CERT.to_vec())
+            .key_from_bytes(SERVER_KEY.to_vec())
+            .build();
+
         let localhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8080)
+            .security(security_config)
             .build()?;
+
+        let ip6_security_config = SecurityConfig::builder()
+            .ca_cert_from_bytes(CA_CERT.to_vec())
+            .cert_from_bytes(IP6_SERVER_CERT.to_vec())
+            .key_from_bytes(IP6_SERVER_KEY.to_vec())
+            .build();
 
         let ip6_localhost_config = VirtualHostConfig::builder()
             .hostname("ip6-localhost")
             .port(8081)
+            .security(ip6_security_config)
             .build()?;
 
         let mut localhost_virtual_host = VirtualHost::new(localhost_config);
@@ -81,9 +104,11 @@ mod server_tests {
             .start()
             .await?;
 
-        let client = deboa::Client::default();
+        let client = deboa::Client::builder()
+            .certificate(Certificate::from_slice(CA_CERT, ContentEncoding::DER))
+            .build();
 
-        let request = request::get("http://localhost:8080/hello")?
+        let request = request::get("https://localhost:8080/hello")?
             .send_with(&client)
             .await?;
 
@@ -95,7 +120,16 @@ mod server_tests {
             "Hello from ipv4"
         );
 
-        let request = request::get("http://ip6-localhost:8081/hello")?
+        let client = deboa::Client::builder()
+            .certificate(Certificate::from_slice(CA_CERT, ContentEncoding::DER))
+            .bind_addr(
+                "::1"
+                    .parse()
+                    .unwrap(),
+            )
+            .build();
+
+        let request = request::get("https://ip6-localhost:8081/hello")?
             .send_with(&client)
             .await?;
 
@@ -112,5 +146,17 @@ mod server_tests {
             .await?;
 
         Ok(())
+    }
+
+    #[cfg(feature = "tokio-rt")]
+    #[tokio::test]
+    async fn test_multiple_interfaces() -> Result<(), Box<dyn Error>> {
+        do_multiple_interfaces().await
+    }
+
+    #[cfg(feature = "smol-rt")]
+    #[apply(test!)]
+    async fn test_multiple_interfaces_smol() -> Result<(), Box<dyn Error>> {
+        do_multiple_interfaces().await
     }
 }

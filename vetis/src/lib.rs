@@ -142,6 +142,7 @@ compile_error!("Only one runtime feature can be enabled at a time.");
 use std::{collections::HashMap, sync::Arc};
 
 use bytes::Bytes;
+use cfg_if::cfg_if;
 use futures_util::{stream, TryStreamExt};
 use http_body_util::{combinators::BoxBody, BodyExt, Either, Full, StreamBody};
 use hyper::body::{Frame, Incoming};
@@ -172,7 +173,7 @@ pub(crate) type VetisRwLock<T> = RwLock<T>;
 pub(crate) type VetisVirtualHosts = Arc<VetisRwLock<HashMap<(Arc<str>, u16), VirtualHost>>>;
 
 use crate::{
-    config::ServerConfig,
+    config::{Protocol, ServerConfig},
     errors::{VetisError, VirtualHostError},
     server::{virtual_host::VirtualHost, Server},
 };
@@ -185,6 +186,18 @@ mod tests;
 pub mod utils;
 
 pub static CONFIG: &str = "vetis.toml";
+
+pub(crate) const fn default_protocol() -> Protocol {
+    cfg_if::cfg_if! {
+        if #[cfg(feature="http1")] {
+            Protocol::Http1
+        } else if #[cfg(feature="http2")] {
+            Protocol::Http2
+        } else {
+            Protocol::Http3
+        }
+    }
+}
 
 /// Main server instance that manages virtual hosts and listeners.
 ///
@@ -467,7 +480,7 @@ impl VetisBodyExt for VetisBody {
         let all_bytes = Bytes::copy_from_slice(text.as_bytes());
         let content = stream::iter(vec![Ok(all_bytes)]).map_ok(Frame::data);
         let body = StreamBody::new(content);
-        Either::Right(body.boxed())
+        Either::Right(BodyExt::boxed(body))
     }
 
     fn body_from_file(file: File) -> VetisBody {
@@ -478,7 +491,7 @@ impl VetisBodyExt for VetisBody {
             .bytes()
             .map_ok(|data| Frame::data(bytes::Bytes::copy_from_slice(&[data])));
         let body = StreamBody::new(content);
-        Either::Right(body.boxed())
+        Either::Right(BodyExt::boxed(body))
     }
 }
 

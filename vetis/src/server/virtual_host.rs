@@ -170,9 +170,14 @@ impl VirtualHost {
     }
 
     pub async fn serve_status_page(&self, status: u16) -> Result<Response, VetisError> {
-        let not_found_response = Response::builder()
-            .status(http::StatusCode::from_u16(status).unwrap())
-            .text("Not found");
+        let status_code = http::StatusCode::from_u16(status).unwrap();
+        let static_status_response = Response::builder()
+            .status(status_code)
+            .text(
+                status_code
+                    .canonical_reason()
+                    .unwrap_or("Unknown status code"),
+            );
 
         if let Some(status_pages) = &self
             .config
@@ -190,17 +195,24 @@ impl VirtualHost {
                 }
             }
         }
-        Ok(not_found_response)
+        Ok(static_status_response)
     }
 
     pub fn route(
         &self,
         request: Request,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>> {
-        let uri_path = request
+        let uri_path: String = request
             .uri()
             .path()
-            .to_string();
+            .into();
+
+        if uri_path.starts_with("..") {
+            return Box::pin(async move {
+                self.serve_status_page(http::StatusCode::FORBIDDEN.as_u16())
+                    .await
+            });
+        }
 
         let matches = self
             .paths
@@ -213,10 +225,10 @@ impl VirtualHost {
             });
         };
 
-        let target_path = uri_path
+        let target_path: String = uri_path
             .strip_prefix(path.uri())
             .unwrap_or(&uri_path)
-            .to_string();
+            .into();
 
         let result = path.handle(request, Arc::from(target_path));
 

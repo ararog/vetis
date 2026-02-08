@@ -1,0 +1,14 @@
+[ req ]
+prompt = no
+distinguished_name = req_distinguished_name
+req_extensions = req_ext
+
+[ req_distinguished_name ]
+CN = ip6-localhost
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = ip6-localhost
+IP.1 = ::1

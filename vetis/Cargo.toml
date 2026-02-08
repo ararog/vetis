@@ -22,22 +22,25 @@ default = [
 ]
 
 tokio-rt = [
-  "tokio",
-  "rt-gate/tokio-rt",
+  "dep:tokio",
   "hyper-util/tokio",
   "tokio/rt-multi-thread",
   "tokio/net",
   "tokio/signal",
   "peekable/tokio",
+  "rt-gate/tokio-rt",
+  "quinn/runtime-tokio"
 ]
 smol-rt = [
-  "smol",
-  "smol-hyper",
-  "smol-macros",
-  "rt-gate/smol-rt",
+  "dep:smol",
+  "dep:smol-hyper",
+  "dep:smol-macros",
+  "dep:macro_rules_attribute",
   "dep:async-signal",
   "dep:signal-hook",
   "peekable/future",
+  "rt-gate/smol-rt",
+  "quinn/runtime-smol"
 ]
 
 tokio-rust-tls = ["tokio-rustls", "rustls", "rustls-provider"]
@@ -46,8 +49,8 @@ smol-rust-tls = ["futures-rustls", "rustls", "rustls-provider"]
 static-files = ["mime"]
 
 reverse-proxy = ["__deboa_tokio"]
-__deboa_tokio = ["deboa/tokio-rt", "deboa/http1", "deboa/tokio-rust-tls"]
-__deboa_smol = ["deboa/smol-rt", "deboa/http1", "deboa/smol-rust-tls"]
+__deboa_tokio = ["deboa/tokio-rt", "deboa/tokio-rust-tls"]
+__deboa_smol = ["deboa/smol-rt", "deboa/smol-rust-tls"]
 
 rustls-provider = ["__rustls_awc_lc_rs"]
 __rustls_awc_lc_rs = ["futures-rustls/aws-lc-rs"]
@@ -56,12 +59,12 @@ __rustls_rustcrypto = ["dep:rustls-rustcrypto"]
 
 http1 = ["hyper/http1", "hyper/server", "hyper-util/server", "hyper-util/http1", "deboa/http1"]
 http2 = ["hyper/http2", "hyper/server", "hyper-util/server", "hyper-util/http2", "deboa/http2"]
-http3 = ["hyper/server", "hyper-util/server", "h3", "h3-quinn", "quinn", "deboa/http3"]
-mime = ["dep:mime"]
+http3 = ["hyper/server", "hyper-util/server", "dep:h3", "dep:h3-quinn", "dep:quinn", "deboa/http3"]
 
 [dependencies]
 async-signal = { version = "0.2.12", optional = true }
 bytes = "1.11.1"
+cfg-if = "1.0.4"
 clap = { version = "4.5.57", features = ["derive", "std"], default-features = false}
 deboa = { path = "../../deboa/deboa", default-features = false, optional = true }
 env_logger = "0.11.8"
@@ -75,6 +78,7 @@ http-body-util = { version = "0.1.3" }
 hyper = { version = "1.8.1", default-features = false, optional = true }
 hyper-util = { version = "0.1.20", default-features = false, optional = true }
 log = "0.4.28"
+macro_rules_attribute = { version = "0.2.2", optional = true }
 mime = { version = "0.3.17", optional = true }
 minimime = "1.0.0"
 peekable = { version = "0.4.1", optional = true, default-features = false }

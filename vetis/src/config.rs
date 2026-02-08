@@ -43,7 +43,10 @@ use std::fs;
 
 use serde::Deserialize;
 
-use crate::errors::{ConfigError, VetisError};
+use crate::{
+    default_protocol,
+    errors::{ConfigError, VetisError},
+};
 
 /// Supported HTTP protocols.
 ///
@@ -229,12 +232,7 @@ impl ListenerConfig {
         ListenerConfigBuilder {
             port: 80,
             ssl: false,
-            #[cfg(feature = "http1")]
-            protocol: Protocol::Http1,
-            #[cfg(feature = "http2")]
-            protocol: Protocol::Http2,
-            #[cfg(feature = "http3")]
-            protocol: Protocol::Http3,
+            protocol: default_protocol(),
             interface: "0.0.0.0".into(),
         }
     }
