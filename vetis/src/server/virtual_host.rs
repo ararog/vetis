@@ -28,18 +28,18 @@ use std::sync::Arc;
 
 use crate::{
     config::VirtualHostConfig,
-    errors::{VetisError, VirtualHostError},
+    errors::{FileError, VetisError, VirtualHostError},
     server::path::{HostPath, Path},
     Request, Response, VetisBody, VetisBodyExt,
 };
 
-#[cfg(all(feature = "static-files", feature = "smol-rt"))]
+#[cfg(feature = "smol-rt")]
 use smol::fs::File;
-#[cfg(all(feature = "static-files", feature = "tokio-rt"))]
+#[cfg(feature = "tokio-rt")]
 use tokio::fs::File;
 
 #[cfg(feature = "static-files")]
-use crate::{errors::FileError, server::path::StaticPath};
+use crate::server::path::StaticPath;
 
 #[cfg(feature = "reverse-proxy")]
 use crate::server::path::ProxyPath;
