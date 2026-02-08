@@ -651,46 +651,6 @@ checksum = "d7a1e2f27636f116493b8b860f5546edb47c8d8f8ea73e1d2a20be88e28d1fea"
 [[package]]
 name = "deboa"
 version = "0.1.0-beta.2"
-dependencies = [
- "async-std-resolver",
- "async-trait",
- "base64",
- "bytes",
- "cfg-if",
- "cookie",
- "futures",
- "futures-rustls",
- "http",
- "http-body",
- "http-body-util",
- "hyper",
- "hyper-util",
- "indexmap",
- "log",
- "minimime",
- "mockall",
- "quinn",
- "rand 0.9.2",
- "regex",
- "rt-gate",
- "rustls",
- "rustls-native-certs",
- "rustls-pki-types",
- "serde",
- "thiserror 2.0.18",
- "time 0.2.27",
- "tokio",
- "tokio-rustls",
- "tokio-util",
- "trust-dns-resolver",
- "url",
- "urlencoding",
- "webpki-roots",
-]
-
-[[package]]
-name = "deboa"
-version = "0.1.0-beta.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6830e9703458dd84dccc664e29b0e2b0bafe20f1803aebb6f9757f9cf94e70fe"
 dependencies = [
@@ -2735,7 +2695,7 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "clap",
- "deboa 0.1.0-beta.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "deboa",
  "env_logger",
  "http-body-util",
  "hyper",
@@ -2743,7 +2703,7 @@ dependencies = [
  "maplit",
  "smol-macros",
  "tokio",
- "vetis",
+ "vetis 0.1.4-beta.2",
 ]
 
 [[package]]
@@ -3364,13 +3324,13 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vetis"
-version = "0.1.4-beta.1"
+version = "0.1.4-beta.2"
 dependencies = [
  "async-signal",
  "bytes",
  "cfg-if",
  "clap",
- "deboa 0.1.0-beta.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "deboa",
  "env_logger",
  "futures-lite",
  "futures-rustls",
@@ -3409,14 +3369,53 @@ dependencies = [
 ]
 
 [[package]]
-name = "vetis-macros"
-version = "0.1.0"
+name = "vetis"
+version = "0.1.4-beta.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5645771537edc29b2110eb369c54b3377704529cd43e58a638b06b19c834387"
 dependencies = [
- "deboa 0.1.0-beta.2",
+ "bytes",
+ "cfg-if",
+ "clap",
+ "deboa",
+ "env_logger",
+ "futures-lite",
+ "futures-rustls",
+ "futures-util",
+ "http",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "log",
+ "mime",
+ "minimime",
+ "peekable",
+ "quinn",
+ "radix_trie",
+ "rand 0.9.2",
+ "regex",
+ "rt-gate",
+ "rustls",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "time 0.3.41",
+ "tokio",
+ "tokio-rustls",
+ "tokio-util",
+ "toml",
+ "url",
+]
+
+[[package]]
+name = "vetis-macros"
+version = "0.1.1-beta.1"
+dependencies = [
+ "deboa",
  "http",
  "http-body-util",
  "tokio",
- "vetis",
+ "vetis 0.1.4-beta.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

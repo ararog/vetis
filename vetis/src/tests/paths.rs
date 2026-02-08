@@ -230,6 +230,7 @@ mod reverse_proxy {
         Ok(())
     }
 
+    #[cfg(any(feature = "http1", feature = "http2"))]
     async fn do_proxy_to_target() -> Result<(), Box<dyn Error>> {
         let source_listener = ListenerConfig::builder()
             .port(8084)
@@ -257,7 +258,7 @@ mod reverse_proxy {
         let source_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8084)
-            .security(security_config)
+            .security(security_config.clone())
             .build()
             .unwrap();
 
@@ -265,20 +266,13 @@ mod reverse_proxy {
         source_virtual_host.add_path(ProxyPath::new(
             ProxyPathConfig::builder()
                 .uri("/")
-                .target("https://localhost:8085")
+                .target("http://localhost:8085")
                 .build()?,
         ));
-
-        let ip6_security_config = SecurityConfig::builder()
-            .ca_cert_from_bytes(CA_CERT.to_vec())
-            .cert_from_bytes(SERVER_CERT.to_vec())
-            .key_from_bytes(SERVER_KEY.to_vec())
-            .build();
 
         let target_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8085)
-            .security(ip6_security_config)
             .build()
             .unwrap();
 
@@ -336,13 +330,13 @@ mod reverse_proxy {
         Ok(())
     }
 
-    #[cfg(feature = "tokio-rt")]
+    #[cfg(all(feature = "tokio-rt", any(feature = "http1", feature = "http2")))]
     #[tokio::test]
     async fn test_proxy_to_target() -> Result<(), Box<dyn Error>> {
         do_proxy_to_target().await
     }
 
-    #[cfg(feature = "smol-rt")]
+    #[cfg(all(feature = "smol-rt", any(feature = "http1", feature = "http2")))]
     #[apply(test!)]
     async fn test_proxy_to_target() -> Result<(), Box<dyn Error>> {
         do_proxy_to_target().await

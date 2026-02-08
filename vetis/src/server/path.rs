@@ -413,11 +413,22 @@ impl Path for ProxyPath {
 
         Box::pin(async move {
             let target_url = format!("{}{}", target, uri);
-            let deboa_request = DeboaRequest::at(target_url, request_parts.method)
-                .map_err(|e| VetisError::VirtualHost(VirtualHostError::Proxy(e.to_string())))?
+            let deboa_request = match DeboaRequest::at(target_url, request_parts.method) {
+                Ok(request) => request,
+                Err(e) => {
+                    return Err(VetisError::VirtualHost(VirtualHostError::Proxy(e.to_string())))
+                }
+            };
+
+            let deboa_request = match deboa_request
                 .headers(request_parts.headers)
                 .build()
-                .map_err(|e| VetisError::VirtualHost(VirtualHostError::Proxy(e.to_string())))?;
+            {
+                Ok(request) => request,
+                Err(e) => {
+                    return Err(VetisError::VirtualHost(VirtualHostError::Proxy(e.to_string())))
+                }
+            };
 
             let client = CLIENT.get_or_init(|| {
                 Client::builder()
@@ -428,8 +439,14 @@ impl Path for ProxyPath {
             // TODO: Check errors and handle them properly by returning a proper response 500, 503 or 504
             let response = client
                 .execute(deboa_request)
-                .await
-                .map_err(|e| VetisError::VirtualHost(VirtualHostError::Proxy(e.to_string())))?;
+                .await;
+
+            let response = match response {
+                Ok(response) => response,
+                Err(e) => {
+                    return Err(VetisError::VirtualHost(VirtualHostError::Proxy(e.to_string())))
+                }
+            };
 
             let (response_parts, response_body) = response.into_parts();
 
