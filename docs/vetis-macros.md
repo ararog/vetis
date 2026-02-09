@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Vetis Macros - Procedural Macros
-nav_order: 5
+nav_order: 3
 ---
 
 # Vetis Macros

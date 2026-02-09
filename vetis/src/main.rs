@@ -53,7 +53,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                     let mut server = Vetis::new(config.server);
 
                     for virtual_host in config.virtual_hosts {
-                        let mut virtual_host = VirtualHost::new(virtual_host);
+                        let virtual_host = VirtualHost::new(virtual_host);
 
                         server
                             .add_virtual_host(virtual_host)
@@ -92,7 +92,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
             .static_paths(vec![static_path_config])
             .build()?;
 
-        let mut virtual_host = VirtualHost::new(virtual_host_config);
+        let virtual_host = VirtualHost::new(virtual_host_config);
 
         server
             .add_virtual_host(virtual_host)

@@ -45,6 +45,9 @@ vetis = { version = "0.1.0", features = ["tokio-rt", "http2", "tokio-rust-tls"] 
 - http2 (default)
 - http3
 - tokio-rust-tls (default)
+- static-files
+- reverse-proxy
+- auth
 
 ## Usage Example
 

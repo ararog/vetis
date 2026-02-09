@@ -39,8 +39,9 @@ That's why VeTiS came to reality, by taking advantage of what I started on deboa
 
 Add VeTiS to your `Cargo.toml`:
 
-```rust
-vetis = { version = "0.1.0", features = ["tokio-rt", "http2", "tokio-rust-tls"] }
+```toml
+[dependencies]
+vetis = { version = "0.1.4-beta.2", features = ["tokio-rt", "http2", "tokio-rust-tls"] }
 ```
 
 Basic usage:
@@ -130,6 +131,13 @@ You can create a new project from the template using `cargo generate`:
 
 - [API Reference](https://docs.rs/vetis)
 - [Contributing Guide](./CONTRIBUTING.md)
+
+## Other Projects
+
+- [deboa](https://crates.io/crates/deboa) - A HTTP client for Rust
+- [easyhttpmock](https://crates.io/crates/easyhttpmock) - A HTTP mock server for Rust
+- [sofie](https://crates.io/crates/sofie) - A fullstack web framework for Rust
+- [uget](https://crates.io/crates/uget) - A CLI HTTP client for Rust
 
 ## License
 
