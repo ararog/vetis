@@ -13,4 +13,6 @@ mod paths;
 #[cfg(test)]
 mod server;
 #[cfg(test)]
+mod tls;
+#[cfg(test)]
 mod virtual_host;
