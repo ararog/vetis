@@ -359,10 +359,12 @@ mod static_files {
             .build()?;
 
         let mut virtual_host = VirtualHost::new(host_config);
-        let mut auth_config = BasicAuthConfig::builder()
-            .htpasswd("src/tests/files/.htpasswd".to_string())
-            .build();
-        auth_config.cache_users();
+
+        let auth_config = BasicAuthConfig::builder()
+            .htpasswd(Some("src/tests/files/.htpasswd".to_string()))
+            .cache_users()
+            .build()?;
+
         virtual_host.add_path(StaticPath::new(
             StaticPathConfig::builder()
                 .uri("/")

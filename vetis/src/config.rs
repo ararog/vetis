@@ -702,41 +702,75 @@ impl VirtualHostConfig {
     }
 
     /// Returns the hostname.
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The hostname.
     pub fn hostname(&self) -> &str {
         &self.hostname
     }
 
     /// Returns the port.
+    ///
+    /// # Returns
+    ///
+    /// * `u16` - The port.
     pub fn port(&self) -> u16 {
         self.port
     }
 
     /// Returns the default headers.
+    ///
+    /// # Returns
+    ///
+    /// * `&Option<Vec<(String, String)>>` - The default headers.
     pub fn default_headers(&self) -> &Option<Vec<(String, String)>> {
         &self.default_headers
     }
 
     /// Returns the security configuration if present.
+    ///
+    /// # Returns
+    ///
+    /// * `&Option<SecurityConfig>` - The security configuration if present.
     pub fn security(&self) -> &Option<SecurityConfig> {
         &self.security
     }
 
     /// Returns the status pages.
+    ///
+    /// # Returns
+    ///
+    /// * `&Option<HashMap<u16, String>>` - The status pages.
     pub fn status_pages(&self) -> &Option<HashMap<u16, String>> {
         &self.status_pages
     }
 
     /// Returns the logging setting.
+    ///
+    /// # Returns
+    ///
+    /// * `bool` - The logging setting.
     pub fn enable_logging(&self) -> bool {
         self.enable_logging
     }
 
     #[cfg(feature = "static-files")]
+    /// Returns the static paths.
+    ///
+    /// # Returns
+    ///
+    /// * `&Option<Vec<StaticPathConfig>>` - The static paths.
     pub fn static_paths(&self) -> &Option<Vec<StaticPathConfig>> {
         &self.static_paths
     }
 
     #[cfg(feature = "reverse-proxy")]
+    /// Returns the proxy paths.
+    ///
+    /// # Returns
+    ///
+    /// * `&Option<Vec<ProxyPathConfig>>` - The proxy paths.
     pub fn proxy_paths(&self) -> &Option<Vec<ProxyPathConfig>> {
         &self.proxy_paths
     }
@@ -754,32 +788,67 @@ pub struct StaticPathConfigBuilder {
 
 #[cfg(feature = "static-files")]
 impl StaticPathConfigBuilder {
+    /// Allow set the URI of the static path.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
+    /// Allow set the URI of the static path.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
     pub fn uri(mut self, uri: &str) -> Self {
         self.uri = uri.to_string();
         self
     }
 
+    /// Allow set the extensions of the static path.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
     pub fn extensions(mut self, extensions: &str) -> Self {
         self.extensions = extensions.to_string();
         self
     }
 
+    /// Allow set the directory of the static path.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
     pub fn directory(mut self, directory: &str) -> Self {
         self.directory = directory.to_string();
         self
     }
 
+    /// Allow set the index files of the static path.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
     pub fn index_files(mut self, index_files: Vec<String>) -> Self {
         self.index_files = Some(index_files);
         self
     }
 
     #[cfg(feature = "auth")]
+    /// Allow set the authentication of the static path.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
     pub fn auth(mut self, auth: Auth) -> Self {
         self.auth = Some(auth);
         self
     }
 
+    /// Build the `StaticPathConfig` with the configured settings.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<StaticPathConfig, VetisError>` - The `StaticPathConfig` with the configured settings.
     pub fn build(self) -> Result<StaticPathConfig, VetisError> {
         if self.uri.is_empty() {
             return Err(VetisError::Config(ConfigError::Path("URI cannot be empty".to_string())));
@@ -825,6 +894,11 @@ pub struct StaticPathConfig {
 
 #[cfg(feature = "static-files")]
 impl StaticPathConfig {
+    /// Allow create a new `StaticPathConfigBuilder` with default settings.
+    ///
+    /// # Returns
+    ///
+    /// * `StaticPathConfigBuilder` - The builder.
     pub fn builder() -> StaticPathConfigBuilder {
         StaticPathConfigBuilder {
             uri: "/".to_string(),
@@ -836,23 +910,48 @@ impl StaticPathConfig {
         }
     }
 
+    /// Returns uri
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The uri.
     pub fn uri(&self) -> &str {
         &self.uri
     }
 
+    /// Returns extensions
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The extensions.
     pub fn extensions(&self) -> &str {
         &self.extensions
     }
 
+    /// Returns directory
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The directory.
     pub fn directory(&self) -> &str {
         &self.directory
     }
 
+    /// Returns index_files
+    ///
+    /// # Returns
+    ///
+    /// * `&Option<Vec<String>>` - The index_files.
     pub fn index_files(&self) -> &Option<Vec<String>> {
         &self.index_files
     }
 
     #[cfg(feature = "auth")]
+    /// Returns auth
+    ///
+    /// # Returns
+    ///
+    /// * `&Option<Auth>` - The auth.
     pub fn auth(&self) -> &Option<Auth> {
         &self.auth
     }
@@ -867,16 +966,31 @@ pub struct ProxyPathConfigBuilder {
 
 #[cfg(feature = "reverse-proxy")]
 impl ProxyPathConfigBuilder {
+    /// Allow set the URI of the proxy path.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
     pub fn uri(mut self, uri: &str) -> Self {
         self.uri = uri.to_string();
         self
     }
 
+    /// Allow set the target of the proxy path.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
     pub fn target(mut self, target: &str) -> Self {
         self.target = target.to_string();
         self
     }
 
+    /// Build the `ProxyPathConfig` with the configured settings.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<ProxyPathConfig, VetisError>` - The `ProxyPathConfig` with the configured settings.
     pub fn build(self) -> Result<ProxyPathConfig, VetisError> {
         if self.uri.is_empty() {
             return Err(VetisError::Config(ConfigError::Path("URI cannot be empty".to_string())));
@@ -906,6 +1020,11 @@ pub struct ProxyPathConfig {
 
 #[cfg(feature = "reverse-proxy")]
 impl ProxyPathConfig {
+    /// Creates a new `ProxyPathConfigBuilder` with default settings.
+    ///
+    /// # Returns
+    ///
+    /// * `ProxyPathConfigBuilder` - The builder.
     pub fn builder() -> ProxyPathConfigBuilder {
         ProxyPathConfigBuilder {
             uri: "/test".to_string(),
@@ -913,10 +1032,20 @@ impl ProxyPathConfig {
         }
     }
 
+    /// Returns the URI of the proxy path.
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The URI of the proxy path.
     pub fn uri(&self) -> &str {
         &self.uri
     }
 
+    /// Returns the target of the proxy path.
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The target of the proxy path.
     pub fn target(&self) -> &str {
         &self.target
     }
@@ -1087,6 +1216,10 @@ impl SecurityConfigBuilder {
     }
 
     /// Creates the `SecurityConfig` with the configured settings.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<SecurityConfig, VetisError>` - The `SecurityConfig` with the configured settings.
     pub fn build(self) -> Result<SecurityConfig, VetisError> {
         if self.cert.is_empty() {
             return Err(VetisError::Config(ConfigError::Security(
@@ -1161,27 +1294,44 @@ impl SecurityConfig {
     }
 
     /// Returns the server certificate bytes.
+    ///
+    /// # Returns
+    ///
+    /// * `&Vec<u8>` - The server certificate bytes.
     pub fn cert(&self) -> &Vec<u8> {
         &self.cert
     }
 
     /// Returns the private key bytes.
+    ///
+    /// # Returns
+    ///
+    /// * `&Vec<u8>` - The private key bytes.
     pub fn key(&self) -> &Vec<u8> {
         &self.key
     }
 
     /// Returns the CA certificate bytes if present.
+    ///
+    /// # Returns
+    ///
+    /// * `&Option<Vec<u8>>` - The CA certificate bytes if present.
     pub fn ca_cert(&self) -> &Option<Vec<u8>> {
         &self.ca_cert
     }
 
     /// Returns whether client authentication is enabled.
+    ///
+    /// # Returns
+    ///
+    /// * `bool` - Whether client authentication is enabled.
     pub fn client_auth(&self) -> bool {
         self.client_auth
     }
 }
 
 #[cfg(feature = "auth")]
+/// A module with authentication configuration.
 pub mod auth {
     use argon2::{PasswordHash, PasswordVerifier};
     use base64::Engine;
@@ -1190,10 +1340,12 @@ pub mod auth {
     use serde::Deserialize;
     use std::collections::HashMap;
     use std::fs;
+    use std::path::Path;
 
-    use crate::errors::{VetisError, VirtualHostError};
+    use crate::errors::{ConfigError, VetisError, VirtualHostError};
 
     #[derive(Clone, Deserialize)]
+    /// An enum with authentication configuration.
     pub enum Auth {
         Basic(BasicAuthConfig),
     }
@@ -1206,11 +1358,27 @@ pub mod auth {
         }
     }
 
+    /// A trait for authentication configuration.
     pub trait AuthConfig {
+        /// Authenticate method takes a reference to a `HeaderMap` and returns a `Result<bool, VetisError>`.
+        ///
+        /// # Arguments
+        ///
+        /// * `headers` - A reference to a `HeaderMap` containing the request headers.
+        ///
+        /// # Returns
+        ///
+        /// * `Result<bool, VetisError>` - A result containing a boolean indicating whether the authentication was successful, or a `VetisError` if the authentication failed.
         fn authenticate(&self, headers: &HeaderMap) -> Result<bool, VetisError>;
     }
 
     #[derive(Clone, Debug, Deserialize, PartialEq)]
+    /// An enum with authentication algorithms.
+    ///
+    /// # Variants
+    ///
+    /// * `BCrypt` - The bcrypt algorithm.
+    /// * `Argon2` - The argon2 algorithm.
     pub enum Algorithm {
         BCrypt,
         Argon2,
@@ -1219,75 +1387,157 @@ pub mod auth {
     pub struct BasicAuthConfigBuilder {
         users: HashMap<String, String>,
         algorithm: Algorithm,
-        htpasswd: String,
+        htpasswd: Option<String>,
     }
 
     impl BasicAuthConfigBuilder {
+        /// Allow manually set a hashmap of user and passowrd
+        ///
+        /// # Returns
+        ///
+        /// * `Self` - The builder.
         pub fn users(mut self, users: HashMap<String, String>) -> Self {
             self.users = users;
             self
         }
 
+        /// Allow manually set the algorithm
+        ///
+        /// # Returns
+        ///
+        /// * `Self` - The builder.
         pub fn algorithm(mut self, algorithm: Algorithm) -> Self {
             self.algorithm = algorithm;
             self
         }
 
-        pub fn htpasswd(mut self, htpasswd: String) -> Self {
+        /// Allow manually set the htpasswd file
+        ///
+        /// # Returns
+        ///
+        /// * `Self` - The builder.
+        pub fn htpasswd(mut self, htpasswd: Option<String>) -> Self {
             self.htpasswd = htpasswd;
             self
         }
 
-        pub fn build(self) -> BasicAuthConfig {
-            BasicAuthConfig {
+        /// Caches the users from the htpasswd file.
+        ///
+        /// # Note
+        ///
+        /// This will read the htpasswd file and cache the users in memory.
+        /// You must call this method before building the config.
+        ///
+        /// # Returns
+        ///
+        /// * `Self` - The builder.
+        pub fn cache_users(mut self) -> Self {
+            if self
+                .htpasswd
+                .is_none()
+            {
+                return self;
+            }
+
+            if let Some(htpasswd) = &self.htpasswd {
+                let htpasswd = fs::read_to_string(htpasswd);
+                match htpasswd {
+                    Ok(file) => {
+                        file.lines()
+                            .for_each(|line| {
+                                let (username, password) = line
+                                    .split_once(':')
+                                    .unwrap();
+                                self.users
+                                    .insert(username.to_string(), password.to_string());
+                            });
+                    }
+                    Err(e) => {
+                        error!("Failed to read htpasswd file: {}", e);
+                    }
+                }
+            }
+
+            self
+        }
+
+        /// Build the `BasicAuthConfig` with the configured settings.
+        ///
+        /// # Returns
+        ///
+        /// * `Result<BasicAuthConfig, VetisError>` - The `BasicAuthConfig` with the configured settings.
+        pub fn build(self) -> Result<BasicAuthConfig, VetisError> {
+            if let Some(htpasswd) = &self.htpasswd {
+                let htpasswd = Path::new(htpasswd);
+                if !htpasswd.exists() {
+                    return Err(VetisError::Config(ConfigError::Auth(
+                        ".htpasswd file not found".to_string(),
+                    )));
+                }
+            }
+
+            Ok(BasicAuthConfig {
                 users: self.users,
                 algorithm: self.algorithm,
                 htpasswd: self.htpasswd,
-            }
+            })
         }
     }
 
     #[derive(Clone, Deserialize)]
+    /// A struct with basic authentication configuration.
+    ///
+    /// # Fields
+    ///
+    /// * `users` - A map of username to hashed password.
+    /// * `algorithm` - The algorithm used for password hashing.
+    /// * `htpasswd` - The path to the htpasswd file.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// let auth = BasicAuthConfig::builder()
+    ///     .users(HashMap::new())
+    ///     .algorithm(Algorithm::BCrypt)
+    ///     .htpasswd(None)
+    ///     .build();
+    /// ```
     pub struct BasicAuthConfig {
         users: HashMap<String, String>,
         algorithm: Algorithm,
-        htpasswd: String,
+        htpasswd: Option<String>,
     }
 
     impl BasicAuthConfig {
+        /// Creates a new `BasicAuthConfigBuilder` with default settings.
+        ///
+        /// # Returns
+        ///
+        /// * `BasicAuthConfigBuilder` - The builder.
         pub fn builder() -> BasicAuthConfigBuilder {
             BasicAuthConfigBuilder {
                 users: HashMap::new(),
                 algorithm: Algorithm::BCrypt,
-                htpasswd: String::new(),
+                htpasswd: None,
             }
         }
 
+        /// Returns the algorithm used for password hashing.
+        ///
+        /// # Returns
+        ///
+        /// * `&Algorithm` - The algorithm used for password hashing.
         pub fn algorithm(&self) -> &Algorithm {
             &self.algorithm
         }
 
-        pub fn htpasswd(&self) -> &str {
+        /// Returns the path to the htpasswd file.
+        ///
+        /// # Returns
+        ///
+        /// * `&Option<String>` - The path to the htpasswd file.
+        pub fn htpasswd(&self) -> &Option<String> {
             &self.htpasswd
-        }
-
-        pub fn cache_users(&mut self) {
-            let htpasswd = fs::read_to_string(&self.htpasswd);
-            match htpasswd {
-                Ok(file) => {
-                    file.lines()
-                        .for_each(|line| {
-                            let (username, password) = line
-                                .split_once(':')
-                                .unwrap();
-                            self.users
-                                .insert(username.to_string(), password.to_string());
-                        });
-                }
-                Err(e) => {
-                    error!("Failed to read htpasswd file: {}", e);
-                }
-            }
         }
     }
 

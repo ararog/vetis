@@ -95,6 +95,9 @@ pub enum VetisError {
 /// ```
 #[derive(Debug, Clone, Error, PartialEq)]
 pub enum ConfigError {
+    /// Invalid auth configuration
+    #[error("Invalid auth config: {0}")]
+    Auth(String),
     /// No listeners configured
     #[error("Invalid server config: {0}")]
     Server(String),
