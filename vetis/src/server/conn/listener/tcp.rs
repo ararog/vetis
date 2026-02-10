@@ -182,7 +182,7 @@ impl TcpListener {
 
                 let mut peekable = AsyncPeekable::from(stream);
 
-                let mut peeked = [0; 16];
+                let mut peeked = [0; 2];
                 peekable
                     .peek_exact(&mut peeked)
                     .await
