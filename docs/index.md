@@ -124,6 +124,10 @@ You can create a new project from the template using `cargo generate`:
 
 `cargo generate ararog/vetis-templates`
 
+## Benchmarks
+
+Check out the [benchmarks](./benchmarks.md) for performance details.
+
 ## Documentation
 
 - [API Reference](https://docs.rs/vetis)
