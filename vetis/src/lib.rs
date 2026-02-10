@@ -187,14 +187,17 @@ pub mod utils;
 pub static CONFIG: &str = "vetis.toml";
 
 pub(crate) const fn default_protocol() -> Protocol {
-    cfg_if::cfg_if! {
-        if #[cfg(feature="http1")] {
-            Protocol::Http1
-        } else if #[cfg(feature="http2")] {
-            Protocol::Http2
-        } else {
-            Protocol::Http3
-        }
+    #[cfg(feature = "http1")]
+    {
+        Protocol::Http1
+    }
+    #[cfg(feature = "http2")]
+    {
+        Protocol::Http2
+    }
+    #[cfg(feature = "http3")]
+    {
+        Protocol::Http3
     }
 }
 
