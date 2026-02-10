@@ -183,10 +183,14 @@ impl TcpListener {
                 let mut peekable = AsyncPeekable::from(stream);
 
                 let mut peeked = [0; 2];
-                peekable
+                let result = peekable
                     .peek_exact(&mut peeked)
-                    .await
-                    .unwrap();
+                    .await;
+
+                if let Err(e) = result {
+                    error!("Cannot peek connection: {:?}", e);
+                    continue;
+                }
 
                 let is_tls = peeked.starts_with(&[0x16, 0x03]);
 

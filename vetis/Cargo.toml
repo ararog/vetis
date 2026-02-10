@@ -99,6 +99,7 @@ rustls = { version = "0.23.19", default-features = false, optional = true }
 rustls-rustcrypto = { version = "0.0.2-alpha", optional = true }
 serde = { version = "1.0.226", features = ["derive"] }
 serde_json = "1.0.145"
+serde_yaml_ng = "0.10.0"
 signal-hook = { version = "0.4.3", optional = true }
 smol = { version = "2.0.2", optional = true }
 smol-hyper = { version = "0.1.1", optional = true }
@@ -108,7 +109,6 @@ time = { version = "0.3.41", features = ["formatting"] }
 tokio = { version = "1.38.1", default-features = false, optional = true }
 tokio-rustls = { version = "0.26.0", optional = true }
 tokio-util = "0.7.18"
-toml = "0.9.6"
 url = "2.5.7"
 
 [dev-dependencies]
