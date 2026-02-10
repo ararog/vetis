@@ -41,14 +41,16 @@ struct Args {
 }
 
 async fn run() -> Result<(), Box<dyn Error>> {
-    env_logger::Builder::from_env(env_logger::Env::default().filter_or("RUST_LOG", "info")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().filter_or("RUST_LOG", "info"))
+        .format_module_path(false)
+        .init();
 
     let args = Args::parse();
     if let Some(config) = args.config {
         if Path::exists(Path::new(&config)) {
             let file = read_to_string(&config);
             if let Ok(file) = file {
-                let config = toml::from_str::<VetisServerConfig>(&file);
+                let config = serde_yaml_ng::from_str::<VetisServerConfig>(&file);
                 if let Ok(config) = config {
                     let mut server = Vetis::new(config.server);
 
@@ -64,7 +66,12 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         error!("Failed to start server: {}", e);
                     }
                 } else {
-                    error!("Failed to parse config file");
+                    error!(
+                        "Failed to parse config file: {}",
+                        config
+                            .err()
+                            .unwrap()
+                    );
                 }
             }
         }
