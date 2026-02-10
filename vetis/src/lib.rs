@@ -186,21 +186,6 @@ pub mod utils;
 
 pub static CONFIG: &str = "vetis.toml";
 
-pub(crate) const fn default_protocol() -> Protocol {
-    #[cfg(feature = "http1")]
-    {
-        Protocol::Http1
-    }
-    #[cfg(feature = "http2")]
-    {
-        Protocol::Http2
-    }
-    #[cfg(feature = "http3")]
-    {
-        Protocol::Http3
-    }
-}
-
 /// Main server instance that manages virtual hosts and listeners.
 ///
 /// The `Vetis` struct is the core of the VeTiS server. It handles:

@@ -48,6 +48,8 @@ vetis = { version = "0.1.0", features = ["tokio-rt", "http2", "tokio-rust-tls"] 
 - reverse-proxy
 - auth
 
+Note: To avoid build issues, do not disable http1.
+
 ## Usage Example
 
 Here's how simple it is to create a web server with VeTiS:

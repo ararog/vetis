@@ -9,12 +9,11 @@ mod handler {
 
     use crate::{
         config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
-        default_protocol,
         server::{
             path::HandlerPath,
             virtual_host::{handler_fn, VirtualHost},
         },
-        tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
+        tests::{default_protocol, CA_CERT, SERVER_CERT, SERVER_KEY},
     };
 
     async fn do_test_handler() -> Result<(), Box<dyn std::error::Error>> {
@@ -112,10 +111,9 @@ mod static_files {
         config::{
             ListenerConfig, SecurityConfig, ServerConfig, StaticPathConfig, VirtualHostConfig,
         },
-        default_protocol,
         errors::{ConfigError, VetisError},
         server::{path::StaticPath, virtual_host::VirtualHost},
-        tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
+        tests::{default_protocol, CA_CERT, SERVER_CERT, SERVER_KEY},
     };
 
     #[test]
@@ -462,7 +460,6 @@ mod reverse_proxy {
         config::{
             ListenerConfig, ProxyPathConfig, SecurityConfig, ServerConfig, VirtualHostConfig,
         },
-        default_protocol,
         errors::{ConfigError, VetisError},
         server::{
             path::HandlerPath,
@@ -520,6 +517,8 @@ mod reverse_proxy {
 
     #[cfg(any(feature = "http1", feature = "http2"))]
     async fn do_proxy_to_target() -> Result<(), Box<dyn Error>> {
+        use crate::tests::default_protocol;
+
         let source_listener = ListenerConfig::builder()
             .port(8084)
             .protocol(default_protocol())

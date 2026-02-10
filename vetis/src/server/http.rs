@@ -64,6 +64,9 @@ impl Server for HttpServer {
                     );
                     listener
                 }
+                _ => {
+                    panic!("Unsupported protocol");
+                }
             })
             .collect();
 

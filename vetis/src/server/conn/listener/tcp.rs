@@ -229,6 +229,9 @@ impl TcpListener {
                         Protocol::Http3 => {
                             // HTTP/3 is handled by UDP listener
                         }
+                        _ => {
+                            panic!("Unsupported protocol");
+                        }
                     }
                 } else {
                     let io = VetisIo::new(peekable);
@@ -254,6 +257,9 @@ impl TcpListener {
                         #[cfg(feature = "http3")]
                         Protocol::Http3 => {
                             // HTTP/3 is handled by UDP listener
+                        }
+                        _ => {
+                            panic!("Unsupported protocol");
                         }
                     }
                 }

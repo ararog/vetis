@@ -46,10 +46,7 @@ use serde::Deserialize;
 #[cfg(feature = "auth")]
 use crate::config::auth::Auth;
 
-use crate::{
-    default_protocol,
-    errors::{ConfigError, VetisError},
-};
+use crate::errors::{ConfigError, VetisError};
 
 /// Supported HTTP protocols.
 ///
@@ -71,14 +68,12 @@ use crate::{
 /// let protocol = Protocol::Http3;
 /// ```
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
+#[non_exhaustive]
 pub enum Protocol {
-    #[cfg(feature = "http1")]
     /// HTTP/1.1 protocol
     Http1,
-    #[cfg(feature = "http2")]
     /// HTTP/2 protocol (requires TLS)
     Http2,
-    #[cfg(feature = "http3")]
     /// HTTP/3 protocol over QUIC (requires TLS)
     Http3,
 }
@@ -246,7 +241,7 @@ impl ListenerConfig {
         ListenerConfigBuilder {
             port: 80,
             ssl: false,
-            protocol: default_protocol(),
+            protocol: Protocol::Http1,
             interface: "0.0.0.0".into(),
         }
     }

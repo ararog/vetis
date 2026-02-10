@@ -12,26 +12,25 @@ mod server_tests {
 
     use crate::{
         config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
-        default_protocol,
         server::{
             path::HandlerPath,
             virtual_host::{handler_fn, VirtualHost},
         },
-        tests::{CA_CERT, IP6_SERVER_CERT, IP6_SERVER_KEY, SERVER_CERT, SERVER_KEY},
+        tests::{
+            default_protocol, CA_CERT, IP6_SERVER_CERT, IP6_SERVER_KEY, SERVER_CERT, SERVER_KEY,
+        },
     };
 
     async fn do_multiple_interfaces() -> Result<(), Box<dyn Error>> {
-        let protocol = default_protocol();
-
         let ipv4 = ListenerConfig::builder()
             .port(8080)
-            .protocol(protocol.clone())
+            .protocol(default_protocol())
             .interface("0.0.0.0")
             .build()?;
 
         let ipv6 = ListenerConfig::builder()
             .port(8081)
-            .protocol(protocol.clone())
+            .protocol(default_protocol())
             .interface("::")
             .build()?;
 
