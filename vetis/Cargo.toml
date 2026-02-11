@@ -23,9 +23,14 @@ default = [
   "tokio-rt",
   "http1",
   "tokio-rust-tls",
+  # Leaving them enable for testing purposes, 
+  # they must be disabled at time of publish/release.
   "static-files",
   "reverse-proxy",
-  "auth"
+  "auth",
+  "python",
+  "php",
+  "rsgi"
 ]
 
 tokio-rt = [
@@ -58,6 +63,17 @@ tokio-rust-tls = ["tokio-rustls", "rustls", "rustls-provider"]
 smol-rust-tls = ["futures-rustls", "rustls", "rustls-provider"]
 
 auth = ["argon2", "bcrypt", "base64"]
+
+# TODO: Implement ASGI/WSGI support
+python = ["asgi", "wsgi"]
+asgi = []
+wsgi = []
+
+# TODO: Implement PHP support
+php = []
+
+# RSGI is a separated feature which might not be limited to Python
+rsgi = []
 
 static-files = ["dep:mime", "dep:minimime", "dep:regex"]
 
