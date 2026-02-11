@@ -123,9 +123,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Core Features
 
+- **Standalone Server** - Run as a standalone HTTP/HTTPS server
+- **Multi-Protocol** - Support for HTTP/1, HTTP/2 and HTTP/3 are disabled by default
 - **Virtual Hosts** - Host multiple domains on a single server
 - **SNI Support** - Server Name Indication for TLS
-- **Reverse Proxy** - Route requests to backend services
+- **Reverse Proxy** - Route requests to backend services (feature gated, disabled by default)
 
 ### Content & Security
 
