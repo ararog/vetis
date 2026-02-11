@@ -146,6 +146,12 @@ VeTiS is continuously evolving! Here's what we're working on:
 - **Authorization** - Fine-grained access control
 - **Logging** - Comprehensive request and error logging
 
+### Languages
+
+- **Python** - Support for ASGI/WSGI applications
+- **PHP** - Support for PHP applications
+- **RSGI** - Support for RSGI applications (separated feature)
+
 ## License
 
 MIT

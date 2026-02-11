@@ -30,6 +30,8 @@ That's why VeTiS came to reality, by taking advantage of what I started on deboa
 - **Protocol Support**: Full HTTP/1, HTTP/2, and HTTP/3 implementation
 - **Secure by Default**: Built-in TLS support with modern cryptography
 - **Zero-Cost Abstractions**: Leverage Rust's performance without overhead
+- **Language Support**: Built-in support for Python, PHP, and RSGI applications
+- **Standalone server**: Can be used as a standalone server or as a library
 - **Feature-Gated**: Include only what you need for optimal binary size
 
 ## Quick Start
@@ -113,6 +115,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 |-------|-------------|---------------|
 | [vetis](./vetis) | Core HTTP server library | [![docs.rs](https://img.shields.io/docsrs/vetis/latest)](https://docs.rs/vetis) |
 | [vetis-macros](./vetis-macros) | Macros for Vetis | [![docs.rs](https://img.shields.io/docsrs/vetis-macros/latest)](https://docs.rs/vetis-macros) |
+
+
+## Standalone Server
+
+Check out the [standalone server](./standalone-server.md) for complete examples of how to use Vetis as a standalone server.
+
 
 ## Examples
 
