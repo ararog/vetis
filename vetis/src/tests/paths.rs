@@ -35,6 +35,7 @@ mod handler {
 
         let localhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
+            .root_directory("src/tests")
             .port(8082)
             .security(security_config)
             .build()?;
@@ -193,6 +194,7 @@ mod static_files {
         let host_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(9100)
+            .root_directory("src/tests")
             .security(security_config.clone())
             .build()?;
 
@@ -269,6 +271,7 @@ mod static_files {
         let host_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(9000)
+            .root_directory("src/tests")
             .security(security_config.clone())
             .status_pages(status_pages)
             .build()?;
@@ -302,7 +305,7 @@ mod static_files {
             request.err(),
             Some(deboa::errors::DeboaError::Response(deboa::errors::ResponseError::Receive {
                 status_code: StatusCode::NOT_FOUND,
-                message: "Could not process request (404 Not Found): ".to_string()
+                message: "Could not process request (404 Not Found): Not Found".to_string()
             }))
         );
 
@@ -353,6 +356,7 @@ mod static_files {
         let host_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(port)
+            .root_directory("src/tests")
             .security(security_config.clone())
             .build()?;
 
@@ -545,6 +549,7 @@ mod reverse_proxy {
         let source_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8084)
+            .root_directory("src/tests")
             .security(security_config.clone())
             .build()?;
 
@@ -559,6 +564,7 @@ mod reverse_proxy {
         let target_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8085)
+            .root_directory("src/tests")
             .build()?;
 
         let mut target_virtual_host = VirtualHost::new(target_config);

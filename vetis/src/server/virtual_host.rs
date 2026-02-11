@@ -183,8 +183,12 @@ impl VirtualHost {
             .config
             .status_pages()
         {
+            let root_directory = PathBuf::from(
+                self.config
+                    .root_directory(),
+            );
             if let Some(page) = status_pages.get(&status) {
-                let file = PathBuf::from(page);
+                let file = root_directory.join(page);
                 if file.exists() {
                     let result = File::open(file).await;
                     if let Ok(data) = result {
