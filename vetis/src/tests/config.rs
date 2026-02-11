@@ -80,7 +80,7 @@ fn test_default_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> 
     assert_eq!(
         virtual_host_config.err(),
         Some(VetisError::Config(ConfigError::VirtualHost(
-            "root_directory does not exist: /var/www".to_string()
+            "root_directory does not exist: /var/vetis/www".to_string()
         )))
     );
     Ok(())
@@ -109,12 +109,12 @@ mod static_files_tests {
         let static_files_config = StaticPathConfig::builder()
             .uri("/static")
             .extensions("html,css,js")
-            .directory("/var/www")
+            .directory("/var/vetis/www")
             .index_files(vec!["index.html".to_string(), "index.htm".to_string()])
             .build()?;
         assert_eq!(static_files_config.uri(), "/static");
         assert_eq!(static_files_config.extensions(), "html,css,js");
-        assert_eq!(static_files_config.directory(), "/var/www");
+        assert_eq!(static_files_config.directory(), "/var/vetis/www");
         assert_eq!(
             static_files_config.index_files(),
             &Some(vec!["index.html".to_string(), "index.htm".to_string()])

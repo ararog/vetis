@@ -689,7 +689,7 @@ impl VirtualHostConfig {
         VirtualHostConfigBuilder {
             hostname: "localhost".to_string(),
             port: 80,
-            root_directory: "/var/www".to_string(),
+            root_directory: "/var/vetis/www".to_string(),
             default_headers: None,
             security: None,
             status_pages: None,
