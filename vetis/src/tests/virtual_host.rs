@@ -19,6 +19,7 @@ mod virtual_host_tests {
     async fn do_add_virtual_host() -> Result<(), Box<dyn std::error::Error>> {
         let config = VirtualHostConfig::builder()
             .hostname("localhost")
+            .root_directory("src/tests")
             .build()
             .unwrap();
 
@@ -60,6 +61,7 @@ mod virtual_host_tests {
     async fn do_handle_request() -> Result<(), Box<dyn std::error::Error>> {
         let config = VirtualHostConfig::builder()
             .hostname("localhost")
+            .root_directory("src/tests")
             .build()
             .unwrap();
 

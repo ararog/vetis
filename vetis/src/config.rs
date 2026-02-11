@@ -38,8 +38,8 @@
 //!     .build()?;
 //! ```
 
-use std::collections::HashMap;
 use std::fs;
+use std::{collections::HashMap, path::Path};
 
 use serde::Deserialize;
 
@@ -96,7 +96,6 @@ pub enum Protocol {
 #[derive(Clone)]
 pub struct ListenerConfigBuilder {
     port: u16,
-    ssl: bool,
     protocol: Protocol,
     interface: String,
 }
@@ -115,22 +114,6 @@ impl ListenerConfigBuilder {
     /// ```
     pub fn port(mut self, port: u16) -> Self {
         self.port = port;
-        self
-    }
-
-    /// Sets whether SSL/TLS is enabled for this listener.
-    ///
-    /// # Examples
-    ///
-    /// ```rust,ignore
-    /// use vetis::config::ListenerConfig;
-    ///
-    /// let config = ListenerConfig::builder()
-    ///     .ssl(true)
-    ///     .build();
-    /// ```
-    pub fn ssl(mut self, ssl: bool) -> Self {
-        self.ssl = ssl;
         self
     }
 
@@ -185,12 +168,7 @@ impl ListenerConfigBuilder {
             return Err(ConfigError::Listener("Interface cannot be empty".to_string()));
         }
 
-        Ok(ListenerConfig {
-            port: self.port,
-            ssl: self.ssl,
-            protocol: self.protocol,
-            interface: self.interface,
-        })
+        Ok(ListenerConfig { port: self.port, protocol: self.protocol, interface: self.interface })
     }
 }
 
@@ -215,7 +193,6 @@ impl ListenerConfigBuilder {
 #[derive(Clone, Deserialize)]
 pub struct ListenerConfig {
     port: u16,
-    ssl: bool,
     protocol: Protocol,
     interface: String,
 }
@@ -238,22 +215,12 @@ impl ListenerConfig {
     /// let config = builder.port(8080).build();
     /// ```
     pub fn builder() -> ListenerConfigBuilder {
-        ListenerConfigBuilder {
-            port: 80,
-            ssl: false,
-            protocol: Protocol::Http1,
-            interface: "0.0.0.0".into(),
-        }
+        ListenerConfigBuilder { port: 80, protocol: Protocol::Http1, interface: "0.0.0.0".into() }
     }
 
     /// Returns the port number.
     pub fn port(&self) -> u16 {
         self.port
-    }
-
-    /// Returns whether SSL/TLS is enabled.
-    pub fn ssl(&self) -> bool {
-        self.ssl
     }
 
     /// Returns the HTTP protocol.
@@ -285,7 +252,6 @@ impl ListenerConfig {
 /// let https_listener = ListenerConfig::builder()
 ///     .port(443)
 ///     .protocol(Protocol::Http1)
-///     .ssl(true)
 ///     .build();
 ///
 /// let config = ServerConfig::builder()
@@ -416,6 +382,7 @@ impl ServerConfig {
 pub struct VirtualHostConfigBuilder {
     hostname: String,
     port: u16,
+    root_directory: String,
     default_headers: Option<Vec<(String, String)>>,
     security: Option<SecurityConfig>,
     status_pages: Option<HashMap<u16, String>>,
@@ -460,6 +427,24 @@ impl VirtualHostConfigBuilder {
     /// ```
     pub fn port(mut self, port: u16) -> Self {
         self.port = port;
+        self
+    }
+
+    /// Sets the root directory for the virtual host.
+    ///
+    /// This is the base directory for all static file paths.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// use vetis::config::VirtualHostConfig;
+    ///
+    /// let config = VirtualHostConfig::builder()
+    ///     .root_directory("/var/www")
+    ///     .build()?;
+    /// ```
+    pub fn root_directory(mut self, root_directory: &str) -> Self {
+        self.root_directory = root_directory.to_string();
         self
     }
 
@@ -610,13 +595,31 @@ impl VirtualHostConfigBuilder {
             .is_empty()
         {
             return Err(VetisError::Config(ConfigError::VirtualHost(
-                "hostname is empty".to_string(),
+                "hostname is not provided".to_string(),
             )));
+        }
+
+        if self
+            .root_directory
+            .is_empty()
+        {
+            return Err(VetisError::Config(ConfigError::VirtualHost(
+                "root_directory is not provided".to_string(),
+            )));
+        } else {
+            let root_path = Path::new(&self.root_directory);
+            if !root_path.exists() {
+                return Err(VetisError::Config(ConfigError::VirtualHost(format!(
+                    "root_directory does not exist: {}",
+                    self.root_directory
+                ))));
+            }
         }
 
         Ok(VirtualHostConfig {
             hostname: self.hostname,
             port: self.port,
+            root_directory: self.root_directory,
             default_headers: self.default_headers,
             security: self.security,
             status_pages: self.status_pages,
@@ -653,6 +656,7 @@ impl VirtualHostConfigBuilder {
 pub struct VirtualHostConfig {
     hostname: String,
     port: u16,
+    root_directory: String,
     default_headers: Option<Vec<(String, String)>>,
     security: Option<SecurityConfig>,
     status_pages: Option<HashMap<u16, String>>,
@@ -685,6 +689,7 @@ impl VirtualHostConfig {
         VirtualHostConfigBuilder {
             hostname: "localhost".to_string(),
             port: 80,
+            root_directory: "/var/www".to_string(),
             default_headers: None,
             security: None,
             status_pages: None,
@@ -712,6 +717,15 @@ impl VirtualHostConfig {
     /// * `u16` - The port.
     pub fn port(&self) -> u16 {
         self.port
+    }
+
+    /// Returns the root directory.
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The root directory.
+    pub fn root_directory(&self) -> &str {
+        &self.root_directory
     }
 
     /// Returns the default headers.

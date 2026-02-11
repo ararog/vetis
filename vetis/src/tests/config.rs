@@ -16,12 +16,10 @@ fn test_listener_config() -> Result<(), Box<dyn Error>> {
 
     let listener_config = ListenerConfig::builder()
         .port(8080)
-        .ssl(false)
         .protocol(protocol.clone())
         .interface("127.0.0.1")
         .build()?;
     assert_eq!(listener_config.port(), 8080);
-    assert!(!listener_config.ssl());
     assert_eq!(listener_config.protocol(), &protocol);
     assert_eq!(listener_config.interface(), "127.0.0.1");
 
@@ -68,6 +66,7 @@ fn test_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
     let virtual_host_config = VirtualHostConfig::builder()
         .hostname("localhost")
         .port(8080)
+        .root_directory("src/tests")
         .build()?;
     assert_eq!(virtual_host_config.hostname(), "localhost");
     assert_eq!(virtual_host_config.port(), 8080);
@@ -77,9 +76,13 @@ fn test_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_default_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
-    let virtual_host_config = VirtualHostConfig::builder().build()?;
-    assert_eq!(virtual_host_config.hostname(), "localhost");
-    assert_eq!(virtual_host_config.port(), 80);
+    let virtual_host_config = VirtualHostConfig::builder().build();
+    assert_eq!(
+        virtual_host_config.err(),
+        Some(VetisError::Config(ConfigError::VirtualHost(
+            "root_directory does not exist: /var/www".to_string()
+        )))
+    );
     Ok(())
 }
 
@@ -87,11 +90,12 @@ fn test_default_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> 
 fn test_invalid_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
     let virtual_host_config = VirtualHostConfig::builder()
         .hostname("")
+        .root_directory("src/tests")
         .build();
 
     assert_eq!(
         virtual_host_config.err(),
-        Some(VetisError::Config(ConfigError::VirtualHost("hostname is empty".to_string())))
+        Some(VetisError::Config(ConfigError::VirtualHost("hostname is not provided".to_string())))
     );
     Ok(())
 }

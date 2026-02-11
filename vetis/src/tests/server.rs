@@ -48,6 +48,7 @@ mod server_tests {
         let localhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8080)
+            .root_directory("src/tests")
             .security(security_config)
             .build()?;
 
@@ -60,6 +61,7 @@ mod server_tests {
         let ip6_localhost_config = VirtualHostConfig::builder()
             .hostname("ip6-localhost")
             .port(8081)
+            .root_directory("src/tests")
             .security(ip6_security_config)
             .build()?;
 

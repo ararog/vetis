@@ -36,6 +36,7 @@ mod tls_tests {
         let vhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8443)
+            .root_directory("src/tests")
             .security(security_config)
             .build()
             .expect("Failed to create virtual host config");
@@ -65,6 +66,7 @@ mod tls_tests {
         let vhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8443)
+            .root_directory("src/tests")
             .build()
             .expect("Failed to create virtual host config");
 
@@ -99,6 +101,7 @@ mod tls_tests {
         let vhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8443)
+            .root_directory("src/tests")
             .security(security_config)
             .build()
             .expect("Failed to create virtual host config");
@@ -248,6 +251,7 @@ mod tls_tests {
         let vhost_config1 = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8443)
+            .root_directory("src/tests")
             .security(security_config1)
             .build()
             .expect("Failed to create virtual host config");
@@ -271,6 +275,7 @@ mod tls_tests {
         let vhost_config2 = VirtualHostConfig::builder()
             .hostname("test.com")
             .port(8443)
+            .root_directory("src/tests")
             .build()
             .expect("Failed to create virtual host config");
 
