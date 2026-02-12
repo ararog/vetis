@@ -18,7 +18,7 @@ use log::{debug, error, info};
 use rt_gate::{spawn_server, spawn_worker, GateTask};
 
 use crate::{
-    config::ListenerConfig,
+    config::server::ListenerConfig,
     errors::{StartError::Tls, VetisError},
     server::{
         conn::listener::{Listener, ListenerResult},

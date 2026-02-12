@@ -14,7 +14,7 @@ mod tls_tests {
     use tokio::sync::RwLock;
 
     use crate::{
-        config::{SecurityConfig, VirtualHostConfig},
+        config::server::virtual_host::{SecurityConfig, VirtualHostConfig},
         errors::VetisError,
         server::{
             path::HandlerPath,

@@ -35,11 +35,13 @@
 
 use std::future::Future;
 
-use crate::{config::ServerConfig, errors::VetisError, VetisVirtualHosts};
+use crate::{config::server::ServerConfig, errors::VetisError, VetisVirtualHosts};
 
 #[cfg(feature = "auth")]
 pub mod auth;
 pub mod conn;
+#[cfg(feature = "gate")]
+pub mod gate;
 pub mod http;
 pub mod path;
 pub mod tls;

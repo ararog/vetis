@@ -4,7 +4,7 @@ use http::HeaderMap;
 use serde::Deserialize;
 
 #[cfg(feature = "auth")]
-use crate::config::{Algorithm, BasicAuthConfig};
+use crate::config::server::virtual_host::path::auth::{Algorithm, BasicAuthConfig};
 
 use crate::errors::{VetisError, VirtualHostError};
 

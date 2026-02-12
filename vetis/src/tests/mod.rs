@@ -1,4 +1,4 @@
-use crate::config::Protocol;
+use crate::config::server::Protocol;
 
 pub(crate) const CA_CERT: &[u8] = include_bytes!("certs/ca.der");
 

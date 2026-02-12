@@ -8,7 +8,10 @@ mod handler {
     use smol_macros::test;
 
     use crate::{
-        config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
+        config::server::{
+            virtual_host::{SecurityConfig, VirtualHostConfig},
+            ListenerConfig, ServerConfig,
+        },
         server::{
             path::HandlerPath,
             virtual_host::{handler_fn, VirtualHost},
@@ -101,7 +104,7 @@ mod static_files {
     use http::StatusCode;
 
     #[cfg(feature = "auth")]
-    use crate::config::BasicAuthConfig;
+    use crate::config::server::virtual_host::path::auth::BasicAuthConfig;
     #[cfg(feature = "auth")]
     use crate::server::auth::Auth;
 
@@ -111,8 +114,11 @@ mod static_files {
     use smol_macros::test;
 
     use crate::{
-        config::{
-            ListenerConfig, SecurityConfig, ServerConfig, StaticPathConfig, VirtualHostConfig,
+        config::server::{
+            virtual_host::{
+                path::static_files::StaticPathConfig, SecurityConfig, VirtualHostConfig,
+            },
+            ListenerConfig, ServerConfig,
         },
         errors::{ConfigError, VetisError},
         server::{path::StaticPath, virtual_host::VirtualHost},
@@ -465,8 +471,9 @@ mod reverse_proxy {
     use smol_macros::test;
 
     use crate::{
-        config::{
-            ListenerConfig, ProxyPathConfig, SecurityConfig, ServerConfig, VirtualHostConfig,
+        config::server::{
+            virtual_host::{path::proxy::ProxyPathConfig, SecurityConfig, VirtualHostConfig},
+            ListenerConfig, ServerConfig,
         },
         errors::{ConfigError, VetisError},
         server::{

@@ -7,7 +7,10 @@ use serde::Deserialize;
 use smol_macros::main;
 use std::{error::Error, fs::read_to_string, path::Path};
 use vetis::{
-    config::{ListenerConfig, ServerConfig, StaticPathConfig, VirtualHostConfig},
+    config::server::{
+        virtual_host::{path::static_files::StaticPathConfig, VirtualHostConfig},
+        ListenerConfig, ServerConfig,
+    },
     server::virtual_host::VirtualHost,
     Vetis,
 };

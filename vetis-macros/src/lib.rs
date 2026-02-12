@@ -1,9 +1,9 @@
 #[macro_export]
 macro_rules! http {
-    (hostname => $hostname:expr, port => $port:expr, interface => $interface:expr, handler => $handler:ident) => {
+    (hostname => $hostname:expr, root_directory => $root_directory:expr, port => $port:expr, interface => $interface:expr, handler => $handler:ident) => {
         async move {
             use vetis::{
-                config::{ListenerConfig, ServerConfig, VirtualHostConfig},
+                config::server::{virtual_host::VirtualHostConfig, ListenerConfig, ServerConfig},
                 errors::VetisError,
                 server::path::HandlerPath,
                 server::virtual_host::VirtualHost,
@@ -13,14 +13,17 @@ macro_rules! http {
             let listener = ListenerConfig::builder()
                 .port($port)
                 .interface($interface)
-                .build();
+                .build()
+                .expect("Failed to configure listener");
 
             let config = ServerConfig::builder()
                 .add_listener(listener)
-                .build();
+                .build()
+                .expect("Failed to configure server");
 
             let virtual_host_config = VirtualHostConfig::builder()
                 .hostname($hostname)
+                .root_directory($root_directory)
                 .port($port)
                 .build()?;
 
@@ -47,7 +50,7 @@ macro_rules! http {
     (hostname => $hostname:literal, port => $port:literal, interface => $interface:literal, handler => $handler:ident) => {
         async move {
             use vetis::{
-                config::{ListenerConfig, ServerConfig, VirtualHostConfig},
+                config::server::{virtual_host::VirtualHostConfig, ListenerConfig, ServerConfig},
                 errors::VetisError,
                 server::{path::HandlerPath, virtual_host::VirtualHost},
                 Vetis,

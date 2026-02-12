@@ -11,7 +11,10 @@ mod server_tests {
     use std::error::Error;
 
     use crate::{
-        config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
+        config::server::{
+            virtual_host::{SecurityConfig, VirtualHostConfig},
+            ListenerConfig, ServerConfig,
+        },
         server::{
             path::HandlerPath,
             virtual_host::{handler_fn, VirtualHost},

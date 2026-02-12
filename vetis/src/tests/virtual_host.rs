@@ -8,7 +8,7 @@ mod virtual_host_tests {
     use smol_macros::test;
 
     use crate::{
-        config::VirtualHostConfig,
+        config::server::virtual_host::VirtualHostConfig,
         server::{
             path::HandlerPath,
             virtual_host::{handler_fn, VirtualHost},

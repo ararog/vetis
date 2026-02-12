@@ -6,7 +6,7 @@ use crate::server::conn::listener::tcp::TcpListener;
 use crate::server::conn::listener::udp::UdpListener;
 
 use crate::{
-    config::{ListenerConfig, Protocol},
+    config::server::{ListenerConfig, Protocol},
     errors::VetisError,
     VetisVirtualHosts,
 };

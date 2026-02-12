@@ -6,9 +6,12 @@ use macro_rules_attribute::apply;
 use smol_macros::main;
 
 use vetis::{
-    config::{
-        ListenerConfig, Protocol, ProxyPathConfig, SecurityConfig, ServerConfig, StaticPathConfig,
-        VirtualHostConfig,
+    config::server::{
+        virtual_host::{
+            path::proxy::ProxyPathConfig, path::static_files::StaticPathConfig, SecurityConfig,
+            VirtualHostConfig,
+        },
+        ListenerConfig, Protocol, ServerConfig,
     },
     server::{
         path::{HandlerPath, ProxyPath, StaticPath},

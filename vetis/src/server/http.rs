@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use http::HeaderMap;
 
 use crate::{
-    config::{Protocol, ServerConfig},
+    config::server::{Protocol, ServerConfig},
     errors::VetisError,
     server::{
         conn::listener::{Listener, ServerListener},

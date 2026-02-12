@@ -43,7 +43,7 @@ use futures_rustls::TlsAcceptor;
 use smol_hyper::rt::FuturesIo;
 
 use crate::{
-    config::{ListenerConfig, Protocol},
+    config::server::{ListenerConfig, Protocol},
     errors::VetisError,
     server::{
         conn::listener::{Listener, ListenerResult},

@@ -27,7 +27,7 @@ use radix_trie::Trie;
 use std::sync::Arc;
 
 use crate::{
-    config::VirtualHostConfig,
+    config::server::virtual_host::VirtualHostConfig,
     errors::{FileError, VetisError, VirtualHostError},
     server::path::{HostPath, Path},
     Request, Response, VetisBody, VetisBodyExt,
@@ -84,8 +84,8 @@ pub type BoxedHandlerClosure = Box<
 ///
 /// ```rust,ignore
 /// use vetis::{
-///     server::virtual_host::{handler_fn, VirtualHost, DefaultVirtualHost},
-///     config::VirtualHostConfig,
+///     server::virtual_host::{handler_fn, VirtualHost},
+///     config::server::virtual_host::VirtualHostConfig,
 ///     Request, Response,
 /// };
 ///
@@ -100,7 +100,7 @@ pub type BoxedHandlerClosure = Box<
 ///     .port(80)
 ///     .build()?;
 ///
-/// let mut vhost = DefaultVirtualHost::new(config);
+/// let mut vhost = VirtualHost::new(config);
 /// vhost.set_handler(handler_fn(hello_handler));
 /// ```
 pub fn handler_fn<F, Fut>(f: F) -> BoxedHandlerClosure

@@ -3,7 +3,7 @@
 use std::{future::Future, pin::Pin};
 
 #[cfg(feature = "reverse-proxy")]
-use crate::config::ProxyPathConfig;
+use crate::config::server::virtual_host::path::proxy::ProxyPathConfig;
 #[cfg(feature = "reverse-proxy")]
 use deboa::{client::conn::pool::HttpConnectionPool, request::DeboaRequest, Client};
 #[cfg(feature = "reverse-proxy")]
@@ -18,7 +18,8 @@ use tokio::{fs::File, io::AsyncSeekExt};
 
 #[cfg(feature = "static-files")]
 use crate::{
-    config::StaticPathConfig, errors::FileError, server::http::static_response, VetisBodyExt,
+    config::server::virtual_host::path::static_files::StaticPathConfig, errors::FileError,
+    server::http::static_response, VetisBodyExt,
 };
 #[cfg(feature = "static-files")]
 use http::{HeaderMap, HeaderValue};

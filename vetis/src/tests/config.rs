@@ -1,7 +1,10 @@
 use std::error::Error;
 
 use crate::{
-    config::{ListenerConfig, Protocol, SecurityConfig, ServerConfig, VirtualHostConfig},
+    config::server::{
+        virtual_host::{SecurityConfig, VirtualHostConfig},
+        ListenerConfig, Protocol, ServerConfig,
+    },
     errors::{ConfigError, VetisError},
 };
 
@@ -102,7 +105,7 @@ fn test_invalid_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> 
 
 #[cfg(feature = "static-files")]
 mod static_files_tests {
-    use crate::config::StaticPathConfig;
+    use crate::config::server::virtual_host::path::static_files::StaticPathConfig;
 
     #[test]
     fn test_static_files_config() -> Result<(), Box<dyn std::error::Error>> {
@@ -125,7 +128,7 @@ mod static_files_tests {
 
 #[cfg(feature = "reverse-proxy")]
 mod reverse_proxy_tests {
-    use crate::config::ProxyPathConfig;
+    use crate::config::server::virtual_host::path::proxy::ProxyPathConfig;
 
     #[test]
     fn test_reverse_proxy_config() -> Result<(), Box<dyn std::error::Error>> {
@@ -141,7 +144,7 @@ mod reverse_proxy_tests {
 
 #[cfg(feature = "auth")]
 mod auth_tests {
-    use crate::config::{Algorithm, BasicAuthConfig};
+    use crate::config::server::virtual_host::path::auth::{Algorithm, BasicAuthConfig};
 
     #[test]
     fn test_auth_config() -> Result<(), Box<dyn std::error::Error>> {
