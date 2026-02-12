@@ -18,7 +18,7 @@ use http::{HeaderMap, HeaderValue};
 use std::{future::Future, path::PathBuf, pin::Pin, sync::Arc};
 
 #[cfg(feature = "auth")]
-use crate::server::auth::Auth;
+use crate::server::virtual_host::path::auth::Auth;
 
 pub struct StaticPath {
     config: StaticPathConfig,

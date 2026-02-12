@@ -15,6 +15,8 @@ use crate::{
     Request, Response,
 };
 
+#[cfg(feature = "auth")]
+pub mod auth;
 #[cfg(feature = "gate")]
 pub mod gate;
 #[cfg(feature = "reverse-proxy")]

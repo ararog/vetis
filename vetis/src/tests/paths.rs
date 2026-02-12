@@ -102,8 +102,6 @@ mod static_files {
 
     #[cfg(feature = "auth")]
     use crate::config::server::virtual_host::path::auth::BasicAuthConfig;
-    #[cfg(feature = "auth")]
-    use crate::server::auth::Auth;
 
     #[cfg(feature = "smol-rt")]
     use macro_rules_attribute::apply;
@@ -338,7 +336,7 @@ mod static_files {
         username: Option<String>,
         password: Option<String>,
     ) -> Result<(), Box<dyn Error>> {
-        use crate::server::auth::{AuthType, BasicAuth};
+        use crate::server::virtual_host::path::auth::{basic_auth::BasicAuth, AuthType};
 
         let has_auth = username.is_some() && password.is_some();
 
