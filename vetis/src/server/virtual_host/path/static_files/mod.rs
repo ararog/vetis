@@ -20,20 +20,26 @@ use std::{future::Future, path::PathBuf, pin::Pin, sync::Arc};
 #[cfg(feature = "auth")]
 use crate::server::virtual_host::path::auth::Auth;
 
+/// Static path
 pub struct StaticPath {
     config: StaticPathConfig,
 }
 
 impl StaticPath {
+    /// Create a new static path with provided configuration
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - The configuration for the static path
+    ///
+    /// # Returns
+    ///
+    /// * `StaticPath` - The static path
     pub fn new(config: StaticPathConfig) -> StaticPath {
         StaticPath { config }
     }
 
-    pub async fn serve_file(
-        &self,
-        file: PathBuf,
-        range: Option<&str>,
-    ) -> Result<Response, VetisError> {
+    async fn serve_file(&self, file: PathBuf, range: Option<&str>) -> Result<Response, VetisError> {
         let result = File::open(file).await;
         if let Ok(mut data) = result {
             let filesize = match data
@@ -176,16 +182,35 @@ impl StaticPath {
 }
 
 impl From<StaticPath> for HostPath {
+    /// Convert static path to host path
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The static path to convert
+    ///
+    /// # Returns
+    ///
+    /// * `HostPath` - The host path
     fn from(value: StaticPath) -> Self {
         HostPath::Static(value)
     }
 }
 
 impl Path for StaticPath {
+    /// Returns the uri of the static path
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The uri of the static path
     fn uri(&self) -> &str {
         self.config.uri()
     }
 
+    /// Handles the request for the static path
+    ///
+    /// # Returns
+    ///
+    /// * `Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>>` - The response to the request
     fn handle(
         &self,
         request: Request,
