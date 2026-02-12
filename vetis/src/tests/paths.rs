@@ -101,7 +101,9 @@ mod static_files {
     use http::StatusCode;
 
     #[cfg(feature = "auth")]
-    use crate::config::auth::{Auth, BasicAuthConfig};
+    use crate::config::BasicAuthConfig;
+    #[cfg(feature = "auth")]
+    use crate::server::auth::Auth;
 
     #[cfg(feature = "smol-rt")]
     use macro_rules_attribute::apply;
@@ -333,6 +335,8 @@ mod static_files {
         username: Option<String>,
         password: Option<String>,
     ) -> Result<(), Box<dyn Error>> {
+        use crate::server::auth::{AuthType, BasicAuth};
+
         let has_auth = username.is_some() && password.is_some();
 
         let port = if has_auth { 9200 } else { 9201 };
@@ -371,7 +375,7 @@ mod static_files {
             StaticPathConfig::builder()
                 .uri("/")
                 .directory("src/tests/files")
-                .auth(Auth::Basic(auth_config))
+                .auth(AuthType::Basic(BasicAuth::new(auth_config)))
                 .build()?,
         ));
 

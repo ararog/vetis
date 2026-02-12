@@ -26,7 +26,7 @@ use http::{HeaderMap, HeaderValue};
 use std::path::PathBuf;
 
 #[cfg(all(feature = "static-files", feature = "auth"))]
-use crate::config::auth::AuthConfig;
+use crate::server::auth::Auth;
 
 use std::sync::Arc;
 

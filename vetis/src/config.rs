@@ -43,10 +43,10 @@ use std::{collections::HashMap, path::Path};
 
 use serde::Deserialize;
 
-#[cfg(feature = "auth")]
-use crate::config::auth::Auth;
-
 use crate::errors::{ConfigError, VetisError};
+#[cfg(feature = "static-files")]
+#[cfg(feature = "auth")]
+use crate::server::auth::AuthType;
 
 /// Supported HTTP protocols.
 ///
@@ -792,7 +792,7 @@ pub struct StaticPathConfigBuilder {
     directory: String,
     index_files: Option<Vec<String>>,
     #[cfg(feature = "auth")]
-    auth: Option<Auth>,
+    auth: Option<AuthType>,
 }
 
 #[cfg(feature = "static-files")]
@@ -848,7 +848,7 @@ impl StaticPathConfigBuilder {
     /// # Returns
     ///
     /// * `Self` - The builder.
-    pub fn auth(mut self, auth: Auth) -> Self {
+    pub fn auth(mut self, auth: AuthType) -> Self {
         self.auth = Some(auth);
         self
     }
@@ -898,7 +898,7 @@ pub struct StaticPathConfig {
     directory: String,
     index_files: Option<Vec<String>>,
     #[cfg(feature = "auth")]
-    auth: Option<Auth>,
+    auth: Option<AuthType>,
 }
 
 #[cfg(feature = "static-files")]
@@ -961,7 +961,7 @@ impl StaticPathConfig {
     /// # Returns
     ///
     /// * `&Option<Auth>` - The auth.
-    pub fn auth(&self) -> &Option<Auth> {
+    pub fn auth(&self) -> &Option<AuthType> {
         &self.auth
     }
 }
@@ -1340,276 +1340,186 @@ impl SecurityConfig {
 }
 
 #[cfg(feature = "auth")]
-/// A module with authentication configuration.
-pub mod auth {
-    use argon2::{PasswordHash, PasswordVerifier};
-    use base64::Engine;
-    use http::HeaderMap;
-    use log::error;
-    use serde::Deserialize;
-    use std::collections::HashMap;
-    use std::fs;
-    use std::path::Path;
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+/// An enum with authentication algorithms.
+///
+/// # Variants
+///
+/// * `BCrypt` - The bcrypt algorithm.
+/// * `Argon2` - The argon2 algorithm.
+pub enum Algorithm {
+    BCrypt,
+    Argon2,
+}
 
-    use crate::errors::{ConfigError, VetisError, VirtualHostError};
+#[cfg(feature = "auth")]
+pub struct BasicAuthConfigBuilder {
+    users: HashMap<String, String>,
+    algorithm: Algorithm,
+    htpasswd: Option<String>,
+}
 
-    #[derive(Clone, Deserialize)]
-    /// An enum with authentication configuration.
-    pub enum Auth {
-        Basic(BasicAuthConfig),
-    }
-
-    impl AuthConfig for Auth {
-        fn authenticate(&self, headers: &HeaderMap) -> Result<bool, VetisError> {
-            match self {
-                Auth::Basic(config) => config.authenticate(headers),
-            }
-        }
-    }
-
-    /// A trait for authentication configuration.
-    pub trait AuthConfig {
-        /// Authenticate method takes a reference to a `HeaderMap` and returns a `Result<bool, VetisError>`.
-        ///
-        /// # Arguments
-        ///
-        /// * `headers` - A reference to a `HeaderMap` containing the request headers.
-        ///
-        /// # Returns
-        ///
-        /// * `Result<bool, VetisError>` - A result containing a boolean indicating whether the authentication was successful, or a `VetisError` if the authentication failed.
-        fn authenticate(&self, headers: &HeaderMap) -> Result<bool, VetisError>;
-    }
-
-    #[derive(Clone, Debug, Deserialize, PartialEq)]
-    /// An enum with authentication algorithms.
+#[cfg(feature = "auth")]
+impl BasicAuthConfigBuilder {
+    /// Allow manually set a hashmap of user and passowrd
     ///
-    /// # Variants
+    /// # Returns
     ///
-    /// * `BCrypt` - The bcrypt algorithm.
-    /// * `Argon2` - The argon2 algorithm.
-    pub enum Algorithm {
-        BCrypt,
-        Argon2,
+    /// * `Self` - The builder.
+    pub fn users(mut self, users: HashMap<String, String>) -> Self {
+        self.users = users;
+        self
     }
 
-    pub struct BasicAuthConfigBuilder {
-        users: HashMap<String, String>,
-        algorithm: Algorithm,
-        htpasswd: Option<String>,
+    /// Allow manually set the algorithm
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
+    pub fn algorithm(mut self, algorithm: Algorithm) -> Self {
+        self.algorithm = algorithm;
+        self
     }
 
-    impl BasicAuthConfigBuilder {
-        /// Allow manually set a hashmap of user and passowrd
-        ///
-        /// # Returns
-        ///
-        /// * `Self` - The builder.
-        pub fn users(mut self, users: HashMap<String, String>) -> Self {
-            self.users = users;
-            self
+    /// Allow manually set the htpasswd file
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
+    pub fn htpasswd(mut self, htpasswd: Option<String>) -> Self {
+        self.htpasswd = htpasswd;
+        self
+    }
+
+    /// Caches the users from the htpasswd file.
+    ///
+    /// # Note
+    ///
+    /// This will read the htpasswd file and cache the users in memory.
+    /// You must call this method before building the config.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
+    pub fn cache_users(mut self) -> Self {
+        if self
+            .htpasswd
+            .is_none()
+        {
+            return self;
         }
 
-        /// Allow manually set the algorithm
-        ///
-        /// # Returns
-        ///
-        /// * `Self` - The builder.
-        pub fn algorithm(mut self, algorithm: Algorithm) -> Self {
-            self.algorithm = algorithm;
-            self
-        }
+        if let Some(htpasswd) = &self.htpasswd {
+            let htpasswd = fs::read_to_string(htpasswd);
+            match htpasswd {
+                Ok(file) => {
+                    file.lines()
+                        .for_each(|line| {
+                            let (username, password) = line
+                                .split_once(':')
+                                .unwrap();
+                            self.users
+                                .insert(username.to_string(), password.to_string());
+                        });
+                }
+                Err(e) => {
+                    use log::error;
 
-        /// Allow manually set the htpasswd file
-        ///
-        /// # Returns
-        ///
-        /// * `Self` - The builder.
-        pub fn htpasswd(mut self, htpasswd: Option<String>) -> Self {
-            self.htpasswd = htpasswd;
-            self
-        }
-
-        /// Caches the users from the htpasswd file.
-        ///
-        /// # Note
-        ///
-        /// This will read the htpasswd file and cache the users in memory.
-        /// You must call this method before building the config.
-        ///
-        /// # Returns
-        ///
-        /// * `Self` - The builder.
-        pub fn cache_users(mut self) -> Self {
-            if self
-                .htpasswd
-                .is_none()
-            {
-                return self;
-            }
-
-            if let Some(htpasswd) = &self.htpasswd {
-                let htpasswd = fs::read_to_string(htpasswd);
-                match htpasswd {
-                    Ok(file) => {
-                        file.lines()
-                            .for_each(|line| {
-                                let (username, password) = line
-                                    .split_once(':')
-                                    .unwrap();
-                                self.users
-                                    .insert(username.to_string(), password.to_string());
-                            });
-                    }
-                    Err(e) => {
-                        error!("Failed to read htpasswd file: {}", e);
-                    }
+                    error!("Failed to read htpasswd file: {}", e);
                 }
             }
-
-            self
         }
 
-        /// Build the `BasicAuthConfig` with the configured settings.
-        ///
-        /// # Returns
-        ///
-        /// * `Result<BasicAuthConfig, VetisError>` - The `BasicAuthConfig` with the configured settings.
-        pub fn build(self) -> Result<BasicAuthConfig, VetisError> {
-            if let Some(htpasswd) = &self.htpasswd {
-                let htpasswd = Path::new(htpasswd);
-                if !htpasswd.exists() {
-                    return Err(VetisError::Config(ConfigError::Auth(
-                        ".htpasswd file not found".to_string(),
-                    )));
-                }
-            }
-
-            Ok(BasicAuthConfig {
-                users: self.users,
-                algorithm: self.algorithm,
-                htpasswd: self.htpasswd,
-            })
-        }
+        self
     }
 
-    #[derive(Clone, Deserialize)]
-    /// A struct with basic authentication configuration.
+    /// Build the `BasicAuthConfig` with the configured settings.
     ///
-    /// # Fields
+    /// # Returns
     ///
-    /// * `users` - A map of username to hashed password.
-    /// * `algorithm` - The algorithm used for password hashing.
-    /// * `htpasswd` - The path to the htpasswd file.
-    ///
-    /// # Examples
-    ///
-    /// ```rust,ignore
-    /// let auth = BasicAuthConfig::builder()
-    ///     .users(HashMap::new())
-    ///     .algorithm(Algorithm::BCrypt)
-    ///     .htpasswd(None)
-    ///     .build();
-    /// ```
-    pub struct BasicAuthConfig {
-        users: HashMap<String, String>,
-        algorithm: Algorithm,
-        htpasswd: Option<String>,
-    }
-
-    impl BasicAuthConfig {
-        /// Creates a new `BasicAuthConfigBuilder` with default settings.
-        ///
-        /// # Returns
-        ///
-        /// * `BasicAuthConfigBuilder` - The builder.
-        pub fn builder() -> BasicAuthConfigBuilder {
-            BasicAuthConfigBuilder {
-                users: HashMap::new(),
-                algorithm: Algorithm::BCrypt,
-                htpasswd: None,
+    /// * `Result<BasicAuthConfig, VetisError>` - The `BasicAuthConfig` with the configured settings.
+    pub fn build(self) -> Result<BasicAuthConfig, VetisError> {
+        if let Some(htpasswd) = &self.htpasswd {
+            let htpasswd = Path::new(htpasswd);
+            if !htpasswd.exists() {
+                return Err(VetisError::Config(ConfigError::Auth(
+                    ".htpasswd file not found".to_string(),
+                )));
             }
         }
 
-        /// Returns the algorithm used for password hashing.
-        ///
-        /// # Returns
-        ///
-        /// * `&Algorithm` - The algorithm used for password hashing.
-        pub fn algorithm(&self) -> &Algorithm {
-            &self.algorithm
-        }
+        Ok(BasicAuthConfig {
+            users: self.users,
+            algorithm: self.algorithm,
+            htpasswd: self.htpasswd,
+        })
+    }
+}
 
-        /// Returns the path to the htpasswd file.
-        ///
-        /// # Returns
-        ///
-        /// * `&Option<String>` - The path to the htpasswd file.
-        pub fn htpasswd(&self) -> &Option<String> {
-            &self.htpasswd
+#[cfg(feature = "auth")]
+#[derive(Clone, Deserialize)]
+/// A struct with basic authentication configuration.
+///
+/// # Fields
+///
+/// * `users` - A map of username to hashed password.
+/// * `algorithm` - The algorithm used for password hashing.
+/// * `htpasswd` - The path to the htpasswd file.
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// let auth = BasicAuthConfig::builder()
+///     .users(HashMap::new())
+///     .algorithm(Algorithm::BCrypt)
+///     .htpasswd(None)
+///     .build();
+/// ```
+pub struct BasicAuthConfig {
+    users: HashMap<String, String>,
+    algorithm: Algorithm,
+    htpasswd: Option<String>,
+}
+
+#[cfg(feature = "auth")]
+impl BasicAuthConfig {
+    /// Creates a new `BasicAuthConfigBuilder` with default settings.
+    ///
+    /// # Returns
+    ///
+    /// * `BasicAuthConfigBuilder` - The builder.
+    pub fn builder() -> BasicAuthConfigBuilder {
+        BasicAuthConfigBuilder {
+            users: HashMap::new(),
+            algorithm: Algorithm::BCrypt,
+            htpasswd: None,
         }
     }
 
-    impl AuthConfig for BasicAuthConfig {
-        fn authenticate(&self, headers: &HeaderMap) -> Result<bool, VetisError> {
-            let auth_header = headers
-                .get(http::header::AUTHORIZATION)
-                .ok_or(VetisError::VirtualHost(VirtualHostError::Auth(
-                    "Missing Authorization header".to_string(),
-                )))?;
-
-            let auth_header = auth_header
-                .to_str()
-                .map_err(|_| {
-                    VetisError::VirtualHost(VirtualHostError::Auth(
-                        "Invalid Authorization header".to_string(),
-                    ))
-                })?
-                .strip_prefix("Basic ")
-                .ok_or(VetisError::VirtualHost(VirtualHostError::Auth(
-                    "Expected basic authentication".to_string(),
-                )))?;
-
-            let auth_header = base64::engine::general_purpose::STANDARD.decode(auth_header);
-            let auth_header = auth_header.map_err(|e| {
-                VetisError::VirtualHost(VirtualHostError::Auth(format!(
-                    "Could not decode header: {}",
-                    e
-                )))
-            })?;
-
-            let auth_header = String::from_utf8(auth_header).map_err(|_| {
-                VetisError::VirtualHost(VirtualHostError::Auth(
-                    "Invalid Authorization header".to_string(),
-                ))
-            })?;
-
-            let (username, password) = auth_header
-                .split_once(':')
-                .ok_or(VetisError::VirtualHost(VirtualHostError::Auth(
-                    "Invalid credentials".to_string(),
-                )))?;
-
-            if let Some(hashed_password) = self
-                .users
-                .get(username)
-            {
-                return Ok(verify_password(password, hashed_password, &self.algorithm));
-            }
-
-            Ok(false)
-        }
+    /// Returns users
+    ///
+    /// # Returns
+    ///
+    /// * `&HashMap<String, String>` - The users.
+    pub fn users(&self) -> &HashMap<String, String> {
+        &self.users
     }
 
-    fn verify_password(password: &str, hashed_password: &str, algorithm: &Algorithm) -> bool {
-        match algorithm {
-            Algorithm::BCrypt => bcrypt::verify(password, hashed_password).unwrap_or(false),
-            Algorithm::Argon2 => {
-                let argon2 = argon2::Argon2::default();
-                let parsed_hash = PasswordHash::new(hashed_password).unwrap();
-                let result = argon2.verify_password(password.as_bytes(), &parsed_hash);
-                result.is_ok()
-            }
-        }
+    /// Returns the algorithm used for password hashing.
+    ///
+    /// # Returns
+    ///
+    /// * `&Algorithm` - The algorithm used for password hashing.
+    pub fn algorithm(&self) -> &Algorithm {
+        &self.algorithm
+    }
+
+    /// Returns the path to the htpasswd file.
+    ///
+    /// # Returns
+    ///
+    /// * `&Option<String>` - The path to the htpasswd file.
+    pub fn htpasswd(&self) -> &Option<String> {
+        &self.htpasswd
     }
 }

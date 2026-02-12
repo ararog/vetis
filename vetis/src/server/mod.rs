@@ -37,6 +37,8 @@ use std::future::Future;
 
 use crate::{config::ServerConfig, errors::VetisError, VetisVirtualHosts};
 
+#[cfg(feature = "auth")]
+pub mod auth;
 pub mod conn;
 pub mod http;
 pub mod path;

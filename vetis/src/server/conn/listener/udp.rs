@@ -28,6 +28,7 @@ use crate::{
     VetisRwLock, VetisVirtualHosts,
 };
 
+/// UDP listener
 pub struct UdpListener {
     config: ListenerConfig,
     task: Option<GateTask>,
@@ -35,14 +36,33 @@ pub struct UdpListener {
 }
 
 impl Listener for UdpListener {
+    /// Create a new listener
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - A `ListenerConfig` instance containing the listener configuration.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `UdpListener` instance.
     fn new(config: ListenerConfig) -> Self {
         Self { config, task: None, virtual_hosts: Arc::new(VetisRwLock::new(HashMap::new())) }
     }
 
+    /// Allow set virtual hosts
+    ///
+    /// # Arguments
+    ///
+    /// * `virtual_hosts` - A `VetisVirtualHosts` instance containing the virtual hosts.
     fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts) {
         self.virtual_hosts = virtual_hosts;
     }
 
+    /// Listen for incoming connections
+    ///
+    /// # Returns
+    ///
+    /// * `ListenerResult<'_, ()>` - A `ListenerResult` instance containing the result of the listener.
     fn listen(&mut self) -> ListenerResult<'_, ()> {
         let future = async move {
             let addr = if let Ok(ip) = self
@@ -95,6 +115,11 @@ impl Listener for UdpListener {
         Box::pin(future)
     }
 
+    /// Stop the listener
+    ///
+    /// # Returns
+    ///
+    /// * `ListenerResult<'_, ()>` - A `ListenerResult` instance containing the result of the listener.
     fn stop(&mut self) -> ListenerResult<'_, ()> {
         Box::pin(async move {
             if let Some(mut task) = self.task.take() {

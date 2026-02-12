@@ -118,6 +118,15 @@ pub struct VirtualHost {
 }
 
 impl VirtualHost {
+    /// Create a new virtual host
+    ///
+    /// # Arguments
+    ///
+    /// * `host_config` - A `VirtualHostConfig` instance containing the virtual host configuration.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `VirtualHost` instance.
     pub fn new(host_config: VirtualHostConfig) -> Self {
         let mut host = Self { config: host_config.clone(), paths: Trie::new() };
 
@@ -138,6 +147,11 @@ impl VirtualHost {
         host
     }
 
+    /// Add a path to the virtual host
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - A `HostPath` instance containing the path configuration.
     pub fn add_path<P>(&mut self, path: P)
     where
         P: Into<HostPath>,
@@ -150,26 +164,46 @@ impl VirtualHost {
         );
     }
 
+    /// Returns virtual host configuration
+    ///
+    /// # Returns
+    ///
+    /// * `&VirtualHostConfig` - A reference to the virtual host configuration.
     pub fn config(&self) -> &VirtualHostConfig {
         &self.config
     }
 
+    /// Returns virtual host hostname
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - A reference to the virtual host hostname.
     pub fn hostname(&self) -> &str {
         self.config
             .hostname()
     }
 
+    /// Returns virtual host port number
+    ///
+    /// # Returns
+    ///
+    /// * `u16` - The virtual host port number.
     pub fn port(&self) -> u16 {
         self.config.port()
     }
 
+    /// Returns virtual host security configuration
+    ///
+    /// # Returns
+    ///
+    /// * `bool` - Whether the virtual host is secure or not.
     pub fn is_secure(&self) -> bool {
         self.config
             .security()
             .is_some()
     }
 
-    pub async fn serve_status_page(&self, status: u16) -> Result<Response, VetisError> {
+    async fn serve_status_page(&self, status: u16) -> Result<Response, VetisError> {
         let status_code = http::StatusCode::from_u16(status).unwrap();
         let static_status_response = Response::builder()
             .status(status_code)
@@ -202,6 +236,15 @@ impl VirtualHost {
         Ok(static_status_response)
     }
 
+    /// Route request to the appropriate handler
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - A `Request` instance containing the request information.
+    ///
+    /// # Returns
+    ///
+    /// * `Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>>` - A pinned box containing the future that will resolve to a `Result<Response, VetisError>`.
     pub fn route(
         &self,
         request: Request,
