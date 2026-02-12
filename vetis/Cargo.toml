@@ -42,6 +42,7 @@ tokio-rt = [
   "quinn/runtime-tokio",
   "__deboa_tokio",
   "dep:tokio-util",
+  "pyo3-async-runtimes/tokio-runtime",
 ]
 smol-rt = [
   "dep:smol",
@@ -55,19 +56,19 @@ smol-rt = [
   "quinn/runtime-smol",
   "__deboa_smol",
   "dep:futures-lite",
+  "pyo3-async-runtimes/async-std-runtime",
+  "dep:blocking",
 ]
 
 tokio-rust-tls = [
   "tokio-rustls",
   "rustls",
   "rustls-provider",
-  "pyo3-async-runtimes/tokio-runtime",
 ]
 smol-rust-tls = [
   "futures-rustls",
   "rustls",
   "rustls-provider",
-  "pyo3-async-runtimes/async-std-runtime",
 ]
 
 auth = ["argon2", "bcrypt", "base64"]
@@ -124,6 +125,7 @@ argon2 = { version = "0.5.3", optional = true }
 async-signal = { version = "0.2.12", optional = true }
 base64 = { version = "0.22.1", optional = true }
 bcrypt = { version = "0.18.0", optional = true }
+blocking = { version = "1.6.2", optional = true }
 bytes = "1.11.1"
 cfg-if = "1.0.4"
 clap = { version = "4.5.59", features = ["derive", "std"], default-features = false}

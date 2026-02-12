@@ -1,3 +1,5 @@
+use std::future::Future;
+
 use crate::{errors::VetisError, server::virtual_host::path::auth::basic_auth::BasicAuth};
 
 use http::HeaderMap;
@@ -17,7 +19,7 @@ pub trait Auth {
     /// # Returns
     ///
     /// * `Result<bool, VetisError>` - A result containing a boolean indicating whether the authentication was successful, or a `VetisError` if the authentication failed.
-    fn authenticate(&self, headers: &HeaderMap) -> Result<bool, VetisError>;
+    fn authenticate(&self, headers: &HeaderMap) -> impl Future<Output = Result<bool, VetisError>>;
 }
 
 #[derive(Clone, Deserialize)]
@@ -27,7 +29,7 @@ pub enum AuthType {
 }
 
 impl Auth for AuthType {
-    fn authenticate(&self, headers: &HeaderMap) -> Result<bool, VetisError> {
+    fn authenticate(&self, headers: &HeaderMap) -> impl Future<Output = Result<bool, VetisError>> {
         match self {
             AuthType::Basic(auth) => auth.authenticate(headers),
         }
