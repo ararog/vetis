@@ -231,6 +231,7 @@ impl Path for StaticPath {
             if let Some(auth) = self.config.auth() {
                 if !auth
                     .authenticate(request.headers())
+                    .await
                     .unwrap_or(false)
                 {
                     return Err(VetisError::VirtualHost(VirtualHostError::Auth(

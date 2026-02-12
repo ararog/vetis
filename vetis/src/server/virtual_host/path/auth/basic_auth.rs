@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use argon2::{PasswordHash, PasswordVerifier};
 use base64::Engine;
 use http::HeaderMap;
@@ -43,7 +45,7 @@ impl Auth for BasicAuth {
     /// # Returns
     ///
     /// * `Result<bool, VetisError>` - A result containing a boolean indicating whether the request is authenticated, or a `VetisError` if authentication fails.
-    fn authenticate(&self, headers: &HeaderMap) -> Result<bool, VetisError> {
+    async fn authenticate(&self, headers: &HeaderMap) -> Result<bool, VetisError> {
         let auth_header = headers
             .get(http::header::AUTHORIZATION)
             .ok_or(VetisError::VirtualHost(VirtualHostError::Auth(
@@ -87,24 +89,43 @@ impl Auth for BasicAuth {
             .users()
             .get(username)
         {
-            return Ok(verify_password(
-                password,
-                hashed_password,
-                self.config
-                    .algorithm(),
-            ));
+            let algorithm = self
+                .config
+                .algorithm()
+                .clone();
+            let algorithm = Arc::new(algorithm);
+            let password = Arc::new(password.to_string());
+            let hashed_password = Arc::new(hashed_password.to_string());
+
+            #[cfg(feature = "tokio-rt")]
+            let verify_task = tokio::task::spawn_blocking(move || {
+                verify_password(password, hashed_password, algorithm)
+            })
+            .await;
+
+            #[cfg(feature = "smol-rt")]
+            let verify_task =
+                blocking::unblock(|| verify_password(password, hashed_password, algorithm)).await;
+
+            return Ok(verify_task.unwrap());
         }
 
         Ok(false)
     }
 }
 
-fn verify_password(password: &str, hashed_password: &str, algorithm: &Algorithm) -> bool {
-    match algorithm {
-        Algorithm::BCrypt => bcrypt::verify(password, hashed_password).unwrap_or(false),
+fn verify_password(
+    password: Arc<String>,
+    hashed_password: Arc<String>,
+    algorithm: Arc<Algorithm>,
+) -> bool {
+    match *algorithm {
+        Algorithm::BCrypt => {
+            bcrypt::verify(password.as_str(), hashed_password.as_str()).unwrap_or(false)
+        }
         Algorithm::Argon2 => {
             let argon2 = argon2::Argon2::default();
-            let parsed_hash = PasswordHash::new(hashed_password).unwrap();
+            let parsed_hash = PasswordHash::new(hashed_password.as_str()).unwrap();
             let result = argon2.verify_password(password.as_bytes(), &parsed_hash);
             result.is_ok()
         }
