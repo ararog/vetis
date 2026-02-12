@@ -24,8 +24,25 @@ pub mod proxy;
 #[cfg(feature = "static-files")]
 pub mod static_files;
 
+/// Trait for handling different types of paths in the server
 pub trait Path {
+    /// Returns the URI of the path
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The URI of the path
     fn uri(&self) -> &str;
+
+    /// Handles the request for the path
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - The request to handle
+    /// * `uri` - The URI of the path
+    ///
+    /// # Returns
+    ///
+    /// * `Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>>` - The future that will handle the request
     fn handle(
         &self,
         request: Request,
@@ -33,15 +50,24 @@ pub trait Path {
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>>;
 }
 
+/// Enum for different types of paths in the server
 pub enum HostPath {
+    /// Handler path
     Handler(HandlerPath),
     #[cfg(feature = "reverse-proxy")]
+    /// Proxy path
     Proxy(ProxyPath),
     #[cfg(feature = "static-files")]
+    /// Static path
     Static(StaticPath),
 }
 
 impl Path for HostPath {
+    /// Returns the URI of the path
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The URI of the path
     fn uri(&self) -> &str {
         match self {
             HostPath::Handler(handler) => handler.uri(),
@@ -52,6 +78,16 @@ impl Path for HostPath {
         }
     }
 
+    /// Handles the request for the path
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - The request to handle
+    /// * `uri` - The URI of the path
+    ///
+    /// # Returns
+    ///
+    /// * `Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>>` - The future that will handle the request
     fn handle(
         &self,
         request: Request,
@@ -67,22 +103,46 @@ impl Path for HostPath {
     }
 }
 
+/// Builder for handler path
 pub struct HandlerPathBuilder {
     uri: Arc<String>,
     handler: Option<BoxedHandlerClosure>,
 }
 
 impl HandlerPathBuilder {
+    /// Allow set handler uri path
+    ///
+    /// # Arguments
+    ///
+    /// * `uri` - The uri of the handler path
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder
     pub fn uri(mut self, uri: &str) -> Self {
         self.uri = Arc::from(uri.to_string());
         self
     }
 
+    /// Allow set handler function
+    ///
+    /// # Arguments
+    ///
+    /// * `handler` - The handler function
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder
     pub fn handler(mut self, handler: BoxedHandlerClosure) -> Self {
         self.handler = Some(handler);
         self
     }
 
+    /// Build the handler path
+    ///
+    /// # Returns
+    ///
+    /// * `Result<HostPath, VetisError>` - The handler path or error
     pub fn build(self) -> Result<HostPath, VetisError> {
         if self.uri.is_empty() {
             return Err(VetisError::VirtualHost(VirtualHostError::Handler(HandlerError::Uri(
@@ -108,22 +168,43 @@ impl HandlerPathBuilder {
     }
 }
 
+/// Handler path
 pub struct HandlerPath {
     uri: Arc<String>,
     handler: BoxedHandlerClosure,
 }
 
 impl HandlerPath {
+    /// Allow create a new handler path builder
+    ///
+    /// # Returns
+    ///
+    /// * `HandlerPathBuilder` - The builder
     pub fn builder() -> HandlerPathBuilder {
         HandlerPathBuilder { uri: Arc::from("/".to_string()), handler: None }
     }
 }
 
 impl Path for HandlerPath {
+    /// Allow get handler uri path
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The uri of the handler path
     fn uri(&self) -> &str {
         self.uri.as_ref()
     }
 
+    /// Handles the request for the path
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - The request to handle
+    /// * `uri` - The URI of the path
+    ///
+    /// # Returns
+    ///
+    /// * `Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>>` - The future that will handle the request
     fn handle(
         &self,
         request: Request,

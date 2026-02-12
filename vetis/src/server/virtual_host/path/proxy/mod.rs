@@ -13,27 +13,61 @@ use std::{
 
 static CLIENT: OnceLock<Client> = OnceLock::new();
 
+/// Proxy path
 pub struct ProxyPath {
     config: ProxyPathConfig,
 }
 
 impl ProxyPath {
+    /// Create a new proxy path with provided configuration
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - The proxy path configuration
+    ///
+    /// # Returns
+    ///
+    /// * `ProxyPath` - The proxy path
     pub fn new(config: ProxyPathConfig) -> ProxyPath {
         ProxyPath { config }
     }
 }
 
 impl From<ProxyPath> for HostPath {
+    /// Convert proxy path to host path
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The proxy path to convert
+    ///
+    /// # Returns
+    ///
+    /// * `HostPath` - The host path
     fn from(value: ProxyPath) -> Self {
         HostPath::Proxy(value)
     }
 }
 
 impl Path for ProxyPath {
+    /// Get the URI of the proxy path
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The URI of the proxy path
     fn uri(&self) -> &str {
         self.config.uri()
     }
 
+    /// Handle proxy request
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - The request to handle
+    /// * `uri` - The URI of the request
+    ///
+    /// # Returns
+    ///
+    /// * `Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>>` - The future that will resolve to the response
     fn handle(
         &self,
         request: Request,

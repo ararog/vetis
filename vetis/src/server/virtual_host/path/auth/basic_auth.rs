@@ -11,6 +11,7 @@ use crate::{
     server::virtual_host::path::auth::Auth,
 };
 
+/// Basic authentication
 #[derive(Clone, Deserialize)]
 pub struct BasicAuth {
     config: BasicAuthConfig,
@@ -32,6 +33,16 @@ impl BasicAuth {
 }
 
 impl Auth for BasicAuth {
+    /// Authenticates the request using basic authentication on header field
+    /// Authorization
+    ///
+    /// # Arguments
+    ///
+    /// * `headers` - A reference to a `HeaderMap` containing the request headers.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<bool, VetisError>` - A result containing a boolean indicating whether the request is authenticated, or a `VetisError` if authentication fails.
     fn authenticate(&self, headers: &HeaderMap) -> Result<bool, VetisError> {
         let auth_header = headers
             .get(http::header::AUTHORIZATION)
