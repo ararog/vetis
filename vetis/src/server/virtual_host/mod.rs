@@ -29,7 +29,7 @@ use std::sync::Arc;
 use crate::{
     config::server::virtual_host::VirtualHostConfig,
     errors::{FileError, VetisError, VirtualHostError},
-    server::path::{HostPath, Path},
+    server::virtual_host::path::{HostPath, Path},
     Request, Response, VetisBody, VetisBodyExt,
 };
 
@@ -39,10 +39,12 @@ use smol::fs::File;
 use tokio::fs::File;
 
 #[cfg(feature = "static-files")]
-use crate::server::path::StaticPath;
+use crate::server::virtual_host::path::static_files::StaticPath;
 
 #[cfg(feature = "reverse-proxy")]
-use crate::server::path::ProxyPath;
+use crate::server::virtual_host::path::proxy::ProxyPath;
+
+pub mod path;
 
 /// Type alias for boxed handler closures.
 ///

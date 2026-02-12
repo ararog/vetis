@@ -5,8 +5,7 @@ macro_rules! http {
             use vetis::{
                 config::server::{virtual_host::VirtualHostConfig, ListenerConfig, ServerConfig},
                 errors::VetisError,
-                server::path::HandlerPath,
-                server::virtual_host::VirtualHost,
+                server::virtual_host::{path::HandlerPath, VirtualHost},
                 Vetis,
             };
 

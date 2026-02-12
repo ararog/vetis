@@ -13,9 +13,10 @@ use vetis::{
         },
         ListenerConfig, Protocol, ServerConfig,
     },
-    server::{
-        path::{HandlerPath, ProxyPath, StaticPath},
-        virtual_host::{handler_fn, VirtualHost},
+    server::virtual_host::{
+        handler_fn,
+        path::{proxy::ProxyPath, static_files::StaticPath, HandlerPath},
+        VirtualHost,
     },
     Vetis,
 };

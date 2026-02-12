@@ -9,10 +9,7 @@ mod virtual_host_tests {
 
     use crate::{
         config::server::virtual_host::VirtualHostConfig,
-        server::{
-            path::HandlerPath,
-            virtual_host::{handler_fn, VirtualHost},
-        },
+        server::virtual_host::{handler_fn, path::HandlerPath, VirtualHost},
         Request,
     };
 

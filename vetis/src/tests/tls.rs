@@ -17,9 +17,8 @@ mod tls_tests {
         config::server::virtual_host::{SecurityConfig, VirtualHostConfig},
         errors::VetisError,
         server::{
-            path::HandlerPath,
             tls::TlsFactory,
-            virtual_host::{handler_fn, VirtualHost},
+            virtual_host::{handler_fn, path::HandlerPath, VirtualHost},
         },
         tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
         VetisVirtualHosts,

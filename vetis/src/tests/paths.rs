@@ -12,10 +12,7 @@ mod handler {
             virtual_host::{SecurityConfig, VirtualHostConfig},
             ListenerConfig, ServerConfig,
         },
-        server::{
-            path::HandlerPath,
-            virtual_host::{handler_fn, VirtualHost},
-        },
+        server::virtual_host::{handler_fn, path::HandlerPath, VirtualHost},
         tests::{default_protocol, CA_CERT, SERVER_CERT, SERVER_KEY},
     };
 
@@ -121,7 +118,7 @@ mod static_files {
             ListenerConfig, ServerConfig,
         },
         errors::{ConfigError, VetisError},
-        server::{path::StaticPath, virtual_host::VirtualHost},
+        server::virtual_host::{path::static_files::StaticPath, VirtualHost},
         tests::{default_protocol, CA_CERT, SERVER_CERT, SERVER_KEY},
     };
 
@@ -476,14 +473,13 @@ mod reverse_proxy {
             ListenerConfig, ServerConfig,
         },
         errors::{ConfigError, VetisError},
-        server::{
-            path::HandlerPath,
-            virtual_host::{handler_fn, VirtualHost},
+        server::virtual_host::{
+            handler_fn,
+            path::{proxy::ProxyPath, HandlerPath},
+            VirtualHost,
         },
         tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
     };
-
-    use crate::server::path::ProxyPath;
 
     #[test]
     fn test_proxy_path() -> Result<(), Box<dyn Error>> {

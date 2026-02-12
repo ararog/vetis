@@ -15,10 +15,7 @@ mod server_tests {
             virtual_host::{SecurityConfig, VirtualHostConfig},
             ListenerConfig, ServerConfig,
         },
-        server::{
-            path::HandlerPath,
-            virtual_host::{handler_fn, VirtualHost},
-        },
+        server::virtual_host::{handler_fn, path::HandlerPath, VirtualHost},
         tests::{
             default_protocol, CA_CERT, IP6_SERVER_CERT, IP6_SERVER_KEY, SERVER_CERT, SERVER_KEY,
         },
