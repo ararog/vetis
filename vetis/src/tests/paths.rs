@@ -639,7 +639,7 @@ mod reverse_proxy {
     }
 }
 
-#[cfg(feature = "wsgi")]
+#[cfg(all(feature = "interface", feature = "python", feature = "wsgi"))]
 mod wsgi_interface_tests {
     use std::error::Error;
 
