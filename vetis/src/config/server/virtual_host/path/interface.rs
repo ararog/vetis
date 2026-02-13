@@ -17,7 +17,7 @@ pub enum InterfaceType {
 pub struct InterfacePathConfigBuilder {
     uri: String,
     target: String,
-    params: HashMap<String, String>,
+    params: Option<HashMap<String, String>>,
     interface_type: InterfaceType,
 }
 
@@ -48,7 +48,7 @@ impl InterfacePathConfigBuilder {
     ///
     /// * `Self` - The builder.
     pub fn params(mut self, params: HashMap<String, String>) -> Self {
-        self.params = params;
+        self.params = Some(params);
         self
     }
 
@@ -86,7 +86,7 @@ impl InterfacePathConfigBuilder {
 pub struct InterfacePathConfig {
     uri: String,
     target: String,
-    params: HashMap<String, String>,
+    params: Option<HashMap<String, String>>,
     interface_type: InterfaceType,
 }
 
@@ -100,7 +100,7 @@ impl InterfacePathConfig {
         InterfacePathConfigBuilder {
             uri: "/".to_string(),
             target: "main".to_string(),
-            params: HashMap::new(),
+            params: None,
             interface_type: InterfaceType::Wsgi,
         }
     }
@@ -127,8 +127,8 @@ impl InterfacePathConfig {
     ///
     /// # Returns
     ///
-    /// * `&HashMap<String, String>` - The params.
-    pub fn params(&self) -> &HashMap<String, String> {
+    /// * `&Option<HashMap<String, String>>` - The params.
+    pub fn params(&self) -> &Option<HashMap<String, String>> {
         &self.params
     }
 
