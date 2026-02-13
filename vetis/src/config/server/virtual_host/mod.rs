@@ -2,6 +2,8 @@ use std::{collections::HashMap, fs};
 
 use serde::Deserialize;
 
+#[cfg(feature = "interface")]
+use crate::config::server::virtual_host::path::interface::InterfacePathConfig;
 #[cfg(feature = "reverse-proxy")]
 use crate::config::server::virtual_host::path::proxy::ProxyPathConfig;
 #[cfg(feature = "static-files")]
@@ -44,6 +46,8 @@ pub struct VirtualHostConfigBuilder {
     static_paths: Option<Vec<StaticPathConfig>>,
     #[cfg(feature = "reverse-proxy")]
     proxy_paths: Option<Vec<ProxyPathConfig>>,
+    #[cfg(feature = "interface")]
+    interface_paths: Option<Vec<InterfacePathConfig>>,
 }
 
 impl VirtualHostConfigBuilder {
@@ -207,9 +211,9 @@ impl VirtualHostConfigBuilder {
     }
 
     #[cfg(feature = "reverse-proxy")]
-    /// Sets the status pages for the virtual host.
+    /// Sets the reverse proxy paths for the virtual host.
     ///
-    /// These status pages will be used to serve custom error pages.
+    /// These reverse proxy paths will be used to serve custom error pages.
     ///
     /// # Examples
     ///
@@ -222,6 +226,25 @@ impl VirtualHostConfigBuilder {
     /// ```
     pub fn proxy_paths(mut self, proxy_paths: Vec<ProxyPathConfig>) -> Self {
         self.proxy_paths = Some(proxy_paths);
+        self
+    }
+
+    #[cfg(feature = "interface")]
+    /// Sets the interface paths for the virtual host.
+    ///
+    /// These interface paths will be used to serve custom error pages.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// use vetis::config::VirtualHostConfig;
+    ///
+    /// let config = VirtualHostConfig::builder()
+    ///     .proxy_paths(vec![(404, "404.html".to_string())])
+    ///     .build()?;
+    /// ```
+    pub fn interface_paths(mut self, interface_paths: Vec<InterfacePathConfig>) -> Self {
+        self.interface_paths = Some(interface_paths);
         self
     }
 
@@ -281,6 +304,8 @@ impl VirtualHostConfigBuilder {
             static_paths: self.static_paths,
             #[cfg(feature = "reverse-proxy")]
             proxy_paths: self.proxy_paths,
+            #[cfg(feature = "interface")]
+            interface_paths: self.interface_paths,
         })
     }
 }
@@ -318,6 +343,8 @@ pub struct VirtualHostConfig {
     static_paths: Option<Vec<StaticPathConfig>>,
     #[cfg(feature = "reverse-proxy")]
     proxy_paths: Option<Vec<ProxyPathConfig>>,
+    #[cfg(feature = "interface")]
+    interface_paths: Option<Vec<InterfacePathConfig>>,
 }
 
 impl VirtualHostConfig {
@@ -351,6 +378,8 @@ impl VirtualHostConfig {
             static_paths: None,
             #[cfg(feature = "reverse-proxy")]
             proxy_paths: None,
+            #[cfg(feature = "interface")]
+            interface_paths: None,
         }
     }
 
@@ -435,6 +464,16 @@ impl VirtualHostConfig {
     /// * `&Option<Vec<ProxyPathConfig>>` - The proxy paths.
     pub fn proxy_paths(&self) -> &Option<Vec<ProxyPathConfig>> {
         &self.proxy_paths
+    }
+
+    #[cfg(feature = "interface")]
+    /// Returns the interface paths.
+    ///
+    /// # Returns
+    ///
+    /// * `&Option<Vec<InterfacePathConfig>>` - The interface paths.
+    pub fn interface_paths(&self) -> &Option<Vec<InterfacePathConfig>> {
+        &self.interface_paths
     }
 }
 

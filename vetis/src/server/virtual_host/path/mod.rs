@@ -4,6 +4,8 @@ use std::{future::Future, pin::Pin};
 
 use std::sync::Arc;
 
+#[cfg(feature = "interface")]
+use crate::server::virtual_host::path::interface::InterfacePath;
 #[cfg(feature = "reverse-proxy")]
 use crate::server::virtual_host::path::proxy::ProxyPath;
 #[cfg(feature = "static-files")]
@@ -17,8 +19,8 @@ use crate::{
 
 #[cfg(feature = "auth")]
 pub mod auth;
-#[cfg(feature = "gate")]
-pub mod gate;
+#[cfg(feature = "interface")]
+pub mod interface;
 #[cfg(feature = "reverse-proxy")]
 pub mod proxy;
 #[cfg(feature = "static-files")]
@@ -60,6 +62,9 @@ pub enum HostPath {
     #[cfg(feature = "static-files")]
     /// Static path
     Static(StaticPath),
+    #[cfg(feature = "interface")]
+    /// Interface path
+    Interface(InterfacePath),
 }
 
 impl Path for HostPath {
@@ -75,6 +80,8 @@ impl Path for HostPath {
             HostPath::Proxy(proxy) => proxy.uri(),
             #[cfg(feature = "static-files")]
             HostPath::Static(static_path) => static_path.uri(),
+            #[cfg(feature = "interface")]
+            HostPath::Interface(interface_path) => interface_path.uri(),
         }
     }
 
@@ -99,6 +106,8 @@ impl Path for HostPath {
             HostPath::Proxy(proxy) => proxy.handle(request, uri),
             #[cfg(feature = "static-files")]
             HostPath::Static(static_path) => static_path.handle(request, uri),
+            #[cfg(feature = "interface")]
+            HostPath::Interface(interface_path) => interface_path.handle(request, uri),
         }
     }
 }

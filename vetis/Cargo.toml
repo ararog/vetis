@@ -28,7 +28,7 @@ default = [
   "static-files",
   "reverse-proxy",
   "auth",
-  "gate",
+  "interface",
 ]
 
 tokio-rt = [
@@ -73,7 +73,7 @@ smol-rust-tls = [
 
 auth = ["argon2", "bcrypt", "base64"]
 
-gate = ["python", "php", "rsgi"]
+interface = ["python", "php"]
 
 # TODO: Implement ASGI/WSGI support
 python = ["asgi", "wsgi"]
