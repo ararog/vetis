@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
 use crate::errors::{ConfigError, VetisError};
+
 #[cfg(feature = "auth")]
 use crate::server::virtual_host::path::auth::AuthType;
 

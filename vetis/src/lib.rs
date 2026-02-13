@@ -172,7 +172,7 @@ pub(crate) type VetisRwLock<T> = RwLock<T>;
 pub(crate) type VetisVirtualHosts = Arc<VetisRwLock<HashMap<(Arc<str>, u16), VirtualHost>>>;
 
 use crate::{
-    config::server::{Protocol, ServerConfig},
+    config::server::ServerConfig,
     errors::{VetisError, VirtualHostError},
     server::{virtual_host::VirtualHost, Server},
 };

@@ -3,7 +3,7 @@
 /// ```rust,ignore
 /// use vetis::{
 ///     config::VirtualHostConfig,
-///     server::virtual_host::{DefaultVirtualHost, VirtualHost, handler_fn},
+///     server::virtual_host::{VirtualHost, handler_fn},
 ///     Request, Response,
 /// };
 ///
@@ -13,7 +13,7 @@
 ///     .port(80)
 ///     .build()?;
 ///
-/// let mut vhost = DefaultVirtualHost::new(config);
+/// let mut vhost = VirtualHost::new(config);
 /// vhost.set_handler(handler_fn(|request: Request| async move {
 ///     let response = Response::builder()
 ///         .status(http::StatusCode::OK)
