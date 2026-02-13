@@ -1,12 +1,15 @@
-use std::{collections::HashMap, ffi::CString, fs, future::Future, pin::Pin, sync::Arc};
+use std::{
+    collections::HashMap, ffi::CString, fs, future::Future, pin::Pin, str::FromStr, sync::Arc,
+};
 
-use http::StatusCode;
+use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use log::error;
 use pyo3::{
     pyclass, pymethods,
     types::{PyAnyMethods, PyBytes, PyBytesMethods, PyIterator, PyModule, PyModuleMethods},
     Bound, PyAny, PyErr, PyResult, Python,
 };
+use tokio::sync::oneshot;
 
 use crate::{
     errors::{VetisError, VirtualHostError},
@@ -47,6 +50,8 @@ impl InterfaceWorker for WsgiWorker {
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
         let mut response_body: Option<Vec<u8>> = None;
 
+        let (tx, rx) = oneshot::channel::<(CString, Vec<(CString, CString)>)>();
+
         let result = Python::attach(|py| {
             let code = fs::read_to_string(&self.file).expect("Failed to read script.py");
 
@@ -78,7 +83,7 @@ impl InterfaceWorker for WsgiWorker {
                 None => "0",
             };
 
-            let callback = StartResponse { status: None, headers: None };
+            let callback = StartResponse { sender: Some(tx) };
             let app = script_module.getattr("app")?;
             let handler_func = app.getattr("wsgi_app")?;
             let result: Bound<'_, PyAny> = if handler_func.is_callable() {
@@ -119,15 +124,9 @@ impl InterfaceWorker for WsgiWorker {
 
             script_module.add_class::<StartResponse>()?;
 
-            println!("{}", 0);
-
             py.run(c_code, Some(&script_module.dict()), None)?;
 
-            println!("{}", 1);
-
             let iter = PyIterator::from_object(&result)?;
-
-            println!("{}", 2);
 
             let bytes = iter
                 .map(|item| item?.extract::<Vec<u8>>())
@@ -139,9 +138,41 @@ impl InterfaceWorker for WsgiWorker {
         });
 
         Box::pin(async move {
+            let channel_result = rx.await;
+            let (status, headers) = match channel_result {
+                Ok(data) => data,
+                Err(_) => {
+                    return Err(VetisError::VirtualHost(VirtualHostError::Interface(
+                        "Failed to run script".to_string(),
+                    )))
+                }
+            };
+
+            let binding = status
+                .into_string()
+                .unwrap();
+            let status_str = binding
+                .split_whitespace()
+                .next()
+                .unwrap();
+            let status_code = status_str
+                .parse::<StatusCode>()
+                .unwrap();
+
+            let headers = headers
+                .into_iter()
+                .fold(HeaderMap::new(), |mut map, (key, value)| {
+                    map.insert(
+                        HeaderName::from_bytes(key.as_bytes()).unwrap(),
+                        HeaderValue::from_bytes(value.as_bytes()).unwrap(),
+                    );
+                    map
+                });
+
             match result {
                 Ok(_) => Ok(Response::builder()
-                    .status(StatusCode::OK)
+                    .status(status_code)
+                    .headers(headers)
                     .body(VetisBody::body_from_bytes(&response_body.unwrap()))),
                 Err(e) => {
                     error!("Failed to run script: {}", e);
@@ -169,23 +200,15 @@ impl Write {
 
 #[pyclass]
 struct StartResponse {
-    status: Option<CString>,
-    headers: Option<Vec<(CString, CString)>>,
+    sender: Option<oneshot::Sender<(CString, Vec<(CString, CString)>)>>,
 }
 
 #[pymethods]
 impl StartResponse {
     fn __call__(&mut self, status: CString, headers: Vec<(CString, CString)>) -> PyResult<()> {
-        self.status = Some(status);
-        self.headers = Some(headers);
+        if let Some(sender) = self.sender.take() {
+            sender.send((status, headers));
+        }
         Ok(())
-    }
-
-    fn status(&self) -> Option<CString> {
-        self.status.clone()
-    }
-
-    fn headers(&self) -> Option<Vec<(CString, CString)>> {
-        self.headers.clone()
     }
 }
