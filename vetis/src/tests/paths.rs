@@ -661,21 +661,14 @@ mod wsgi_interface_tests {
     async fn do_wsgi_to_target() -> Result<(), Box<dyn Error>> {
         use crate::tests::{CA_CERT, SERVER_CERT, SERVER_KEY};
 
-        let source_listener = ListenerConfig::builder()
+        let listener = ListenerConfig::builder()
             .port(8084)
             .protocol(default_protocol())
             .interface("0.0.0.0")
             .build()?;
 
-        let target_listener = ListenerConfig::builder()
-            .port(8085)
-            .protocol(default_protocol())
-            .interface("0.0.0.0")
-            .build()?;
-
         let config = ServerConfig::builder()
-            .add_listener(source_listener)
-            .add_listener(target_listener)
+            .add_listener(listener)
             .build()?;
 
         let security_config = SecurityConfig::builder()
@@ -684,15 +677,15 @@ mod wsgi_interface_tests {
             .key_from_bytes(SERVER_KEY.to_vec())
             .build()?;
 
-        let source_config = VirtualHostConfig::builder()
+        let host_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8084)
             .root_directory("src/tests")
             .security(security_config.clone())
             .build()?;
 
-        let mut source_virtual_host = VirtualHost::new(source_config);
-        source_virtual_host.add_path(InterfacePath::new(
+        let mut virtual_host = VirtualHost::new(host_config);
+        virtual_host.add_path(InterfacePath::new(
             InterfacePathConfig::builder()
                 .uri("/")
                 .target("/home/rogerio/Projetos/python/flask-app/app.py")
@@ -700,7 +693,7 @@ mod wsgi_interface_tests {
         ));
 
         assert_eq!(
-            source_virtual_host
+            virtual_host
                 .config()
                 .hostname(),
             "localhost"
@@ -708,7 +701,7 @@ mod wsgi_interface_tests {
 
         let mut server = crate::Vetis::new(config);
         server
-            .add_virtual_host(source_virtual_host)
+            .add_virtual_host(virtual_host)
             .await;
 
         server
