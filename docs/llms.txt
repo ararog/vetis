@@ -155,6 +155,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 - **Protocol Support**: Full HTTP/1, HTTP/2, and HTTP/3 implementation
 - **Secure by Default**: Built-in TLS support with modern cryptography
 - **Zero-Cost Abstractions**: Leverage Rust's performance without overhead
+- **Language Support**: Support for Python (WSGI/ASGI), PHP (SAPI), and RSGI applications
 - **Feature-Gated**: Include only what you need for optimal binary size
 
 ## Blog Posts

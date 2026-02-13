@@ -194,8 +194,17 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Content & Security
 
-- **Static File Serving** - Efficient static asset delivery (feature gated, disabled by default)
+- **Authentication** - Multiple auth methods support
+- **Authorization** - Fine-grained access control
 - **Dynamic Content** - Template rendering and content generation
+- **Logging** - Comprehensive request and error logging
+- **Static File Serving** - Efficient static asset delivery (feature gated, disabled by default)
+
+### Languages
+
+- **Python** - Support for ASGI/WSGI applications
+- **PHP** - Support for PHP applications
+- **RSGI** - Support for RSGI applications (separated feature)
 
 ## Roadmap
 
@@ -205,18 +214,6 @@ VeTiS is continuously evolving! Here's what we're working on:
 
 - **WebSockets** - Real-time bidirectional communication
 - **Load Balancing** - Distribute traffic across multiple servers
-
-### Content & Security
-
-- **Authentication** - Multiple auth methods support
-- **Authorization** - Fine-grained access control
-- **Logging** - Comprehensive request and error logging
-
-### Languages
-
-- **Python** - Support for ASGI/WSGI applications
-- **PHP** - Support for PHP applications
-- **RSGI** - Support for RSGI applications (separated feature)
 
 ## License
 
