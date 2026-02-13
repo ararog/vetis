@@ -103,11 +103,15 @@ impl Auth for BasicAuth {
             })
             .await;
 
+            #[cfg(feature = "tokio-rt")]
+            return Ok(verify_task.unwrap());
+
             #[cfg(feature = "smol-rt")]
             let verify_task =
                 blocking::unblock(|| verify_password(password, hashed_password, algorithm)).await;
 
-            return Ok(verify_task.unwrap());
+            #[cfg(feature = "smol-rt")]
+            return Ok(verify_task);
         }
 
         Ok(false)
