@@ -172,7 +172,7 @@ pub(crate) type VetisRwLock<T> = RwLock<T>;
 pub(crate) type VetisVirtualHosts = Arc<VetisRwLock<HashMap<(Arc<str>, u16), VirtualHost>>>;
 
 use crate::{
-    config::{Protocol, ServerConfig},
+    config::server::ServerConfig,
     errors::{VetisError, VirtualHostError},
     server::{virtual_host::VirtualHost, Server},
 };
@@ -185,18 +185,6 @@ mod tests;
 pub mod utils;
 
 pub static CONFIG: &str = "vetis.toml";
-
-pub(crate) const fn default_protocol() -> Protocol {
-    cfg_if::cfg_if! {
-        if #[cfg(feature="http1")] {
-            Protocol::Http1
-        } else if #[cfg(feature="http2")] {
-            Protocol::Http2
-        } else {
-            Protocol::Http3
-        }
-    }
-}
 
 /// Main server instance that manages virtual hosts and listeners.
 ///
@@ -471,12 +459,17 @@ pub type VetisBody = Either<Incoming, BoxBody<Bytes, std::io::Error>>;
 
 pub trait VetisBodyExt {
     fn body_from_text(text: &str) -> VetisBody;
+    fn body_from_bytes(bytes: &[u8]) -> VetisBody;
     fn body_from_file(file: File) -> VetisBody;
 }
 
 impl VetisBodyExt for VetisBody {
     fn body_from_text(text: &str) -> VetisBody {
-        let all_bytes = Bytes::copy_from_slice(text.as_bytes());
+        Self::body_from_bytes(text.as_bytes())
+    }
+
+    fn body_from_bytes(bytes: &[u8]) -> VetisBody {
+        let all_bytes = Bytes::copy_from_slice(bytes);
         let content = stream::iter(vec![Ok(all_bytes)]).map_ok(Frame::data);
         let body = StreamBody::new(content);
         Either::Right(BodyExt::boxed(body))
@@ -794,11 +787,29 @@ impl ResponseBuilder {
         self.body(VetisBody::body_from_text(text))
     }
 
+    /// Sets the body with bytes and creates the final `Response`.
+    ///
+    /// # Arguments
+    ///
+    /// * `bytes` - The response body as a `Bytes`
+    ///
+    /// # Examples
+    ///
+    /// ```rust,ignore
+    /// use vetis::Response;
+    ///
+    /// let response = Response::builder()
+    ///     .bytes(b"Hello, World!");
+    /// ```
+    pub fn bytes(self, bytes: &[u8]) -> Response {
+        self.body(VetisBody::body_from_bytes(bytes))
+    }
+
     /// Sets the body and creates the final `Response`.
     ///
     /// # Arguments
     ///
-    /// * `body` - The response body as a byte slice
+    /// * `body` - The response body as a `VetisBody`
     ///
     /// # Examples
     ///

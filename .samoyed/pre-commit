@@ -4,16 +4,20 @@
 # exit 0
 cargo fmt --check
 
-cargo test
-
 cd vetis
 
-cargo test --features "http1 tokio-rt tokio-rust-tls static-files reverse-proxy" --no-default-features
-cargo test --features "http2 tokio-rt tokio-rust-tls static-files reverse-proxy" --no-default-features
-cargo test --features "http3 tokio-rt tokio-rust-tls static-files reverse-proxy" --no-default-features
+cargo test --features "http1 tokio-rt tokio-rust-tls static-files reverse-proxy auth" --no-default-features
+cargo test --features "http2 tokio-rt tokio-rust-tls static-files reverse-proxy auth" --no-default-features
+cargo test --features "http3 tokio-rt tokio-rust-tls static-files reverse-proxy auth" --no-default-features
 
-cargo test --features "http1 smol-rt smol-rust-tls static-files reverse-proxy" --no-default-features
-cargo test --features "http2 smol-rt smol-rust-tls static-files reverse-proxy" --no-default-features
-cargo test --features "http3 smol-rt smol-rust-tls static-files reverse-proxy" --no-default-features
+cargo test --features "http1 smol-rt smol-rust-tls static-files reverse-proxy auth" --no-default-features
+cargo test --features "http2 smol-rt smol-rust-tls static-files reverse-proxy auth" --no-default-features
+cargo test --features "http3 smol-rt smol-rust-tls static-files reverse-proxy auth" --no-default-features
+
+cd ..
+
+cd vetis-macros
+
+cargo test
 
 cd ..

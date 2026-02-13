@@ -6,7 +6,7 @@ use crate::server::conn::listener::tcp::TcpListener;
 use crate::server::conn::listener::udp::UdpListener;
 
 use crate::{
-    config::{ListenerConfig, Protocol},
+    config::server::{ListenerConfig, Protocol},
     errors::VetisError,
     VetisVirtualHosts,
 };
@@ -50,6 +50,7 @@ impl Listener for ServerListener {
             Protocol::Http2 => ServerListener::Tcp(TcpListener::new(config)),
             #[cfg(feature = "http3")]
             Protocol::Http3 => ServerListener::Udp(UdpListener::new(config)),
+            _ => panic!("Unsupported protocol"),
         }
     }
 

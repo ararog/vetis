@@ -43,7 +43,7 @@ use futures_rustls::TlsAcceptor;
 use smol_hyper::rt::FuturesIo;
 
 use crate::{
-    config::{ListenerConfig, Protocol},
+    config::server::{ListenerConfig, Protocol},
     errors::VetisError,
     server::{
         conn::listener::{Listener, ListenerResult},
@@ -71,6 +71,7 @@ type VetisIo<T> = FuturesIo<T>;
 #[cfg(all(feature = "smol-rt", feature = "http2"))]
 type VetisExecutor = SmolExecutor;
 
+/// TCP listener
 pub struct TcpListener {
     task: Option<GateTask>,
     config: ListenerConfig,
@@ -78,14 +79,33 @@ pub struct TcpListener {
 }
 
 impl Listener for TcpListener {
+    /// Create a new listener
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - A `ListenerConfig` instance containing the listener configuration.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `TcpListener` instance.
     fn new(config: ListenerConfig) -> Self {
         Self { task: None, config, virtual_hosts: Arc::new(VetisRwLock::new(HashMap::new())) }
     }
 
+    /// Set the virtual hosts
+    ///
+    /// # Arguments
+    ///
+    /// * `virtual_hosts` - A `VetisVirtualHosts` instance containing the virtual hosts.
     fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts) {
         self.virtual_hosts = virtual_hosts;
     }
 
+    /// Listen for incoming connections
+    ///
+    /// # Returns
+    ///
+    /// * `ListenerResult<'_, ()>` - A `ListenerResult` instance containing the result of the listener.
     fn listen(&mut self) -> ListenerResult<'_, ()> {
         let future = async move {
             let addr = if let Ok(ip) = self
@@ -129,6 +149,11 @@ impl Listener for TcpListener {
         Box::pin(future)
     }
 
+    /// Stop the listener
+    ///
+    /// # Returns
+    ///
+    /// * `ListenerResult<'_, ()>` - A `ListenerResult` instance containing the result of the listener.
     fn stop(&mut self) -> ListenerResult<'_, ()> {
         let future = async move {
             if let Some(mut task) = self.task.take() {
@@ -183,10 +208,14 @@ impl TcpListener {
                 let mut peekable = AsyncPeekable::from(stream);
 
                 let mut peeked = [0; 2];
-                peekable
+                let result = peekable
                     .peek_exact(&mut peeked)
-                    .await
-                    .unwrap();
+                    .await;
+
+                if let Err(e) = result {
+                    error!("Cannot peek connection: {:?}", e);
+                    continue;
+                }
 
                 let is_tls = peeked.starts_with(&[0x16, 0x03]);
 
@@ -225,6 +254,9 @@ impl TcpListener {
                         Protocol::Http3 => {
                             // HTTP/3 is handled by UDP listener
                         }
+                        _ => {
+                            panic!("Unsupported protocol");
+                        }
                     }
                 } else {
                     let io = VetisIo::new(peekable);
@@ -250,6 +282,9 @@ impl TcpListener {
                         #[cfg(feature = "http3")]
                         Protocol::Http3 => {
                             // HTTP/3 is handled by UDP listener
+                        }
+                        _ => {
+                            panic!("Unsupported protocol");
                         }
                     }
                 }
