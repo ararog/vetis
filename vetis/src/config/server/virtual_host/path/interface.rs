@@ -10,7 +10,8 @@ pub enum InterfaceType {
     Php,
     Asgi,
     Wsgi,
-    Rsgi,
+    RsgiPython,
+    RsgiRuby,
 }
 
 /// Builder for creating `InterfacePathConfig` instances.

@@ -8,7 +8,9 @@ use crate::{
     Request, Response, VetisBody, VetisBodyExt,
 };
 
-impl From<RsgiWorker> for Interface {
+pub mod callback;
+
+impl From<RsgiPythonWorker> for Interface {
     /// Convert static path to host path
     ///
     /// # Arguments
@@ -18,20 +20,22 @@ impl From<RsgiWorker> for Interface {
     /// # Returns
     ///
     /// * `Interface` - The interface
-    fn from(value: RsgiWorker) -> Self {
-        Interface::Rsgi(value)
+    fn from(value: RsgiPythonWorker) -> Self {
+        Interface::RsgiPython(value)
     }
 }
 
-pub struct RsgiWorker {}
+pub struct RsgiPythonWorker {
+    file: String,
+}
 
-impl RsgiWorker {
-    pub fn new() -> RsgiWorker {
-        RsgiWorker {}
+impl RsgiPythonWorker {
+    pub fn new(file: String) -> RsgiPythonWorker {
+        RsgiPythonWorker { file }
     }
 }
 
-impl InterfaceWorker for RsgiWorker {
+impl InterfaceWorker for RsgiPythonWorker {
     fn handle(
         &self,
         request: Arc<Request>,

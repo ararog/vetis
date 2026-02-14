@@ -73,18 +73,21 @@ smol-rust-tls = [
 
 auth = ["argon2", "bcrypt", "base64"]
 
-interface = ["python", "php"]
+interface = ["python", "php", "ruby"]
 
 # TODO: Implement ASGI/WSGI support
-python = ["asgi", "wsgi"]
+python = ["asgi", "rsgi_python", "wsgi"]
 asgi = ["dep:pyo3", "dep:pyo3-async-runtimes"]
+rsgi_python = []
 wsgi = ["dep:pyo3", "dep:pyo3-async-runtimes"]
 
 # TODO: Implement PHP support
 php = []
 
 # RSGI is a separated feature which might not be limited to Python
-rsgi = []
+ruby = ["rsgi"]
+rsgi = ["rsgi_ruby"]
+rsgi_ruby = []
 
 static-files = ["dep:mime", "dep:minimime", "dep:regex"]
 

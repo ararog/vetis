@@ -1,19 +1,20 @@
-use std::{
-    collections::HashMap, ffi::CString, fs, future::Future, pin::Pin, str::FromStr, sync::Arc,
-};
+use std::{collections::HashMap, ffi::CString, fs, future::Future, pin::Pin, sync::Arc};
 
 use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use log::error;
 use pyo3::{
-    pyclass, pymethods,
-    types::{PyAnyMethods, PyBytes, PyBytesMethods, PyIterator, PyModule, PyModuleMethods},
+    types::{PyAnyMethods, PyIterator, PyModule, PyModuleMethods},
     Bound, PyAny, PyErr, PyResult, Python,
 };
 use tokio::sync::oneshot;
 
+pub mod callback;
+
 use crate::{
     errors::{VetisError, VirtualHostError},
-    server::virtual_host::path::interface::{Interface, InterfaceWorker},
+    server::virtual_host::path::interface::{
+        python::wsgi::callback::StartResponse, Interface, InterfaceWorker,
+    },
     Request, Response, VetisBody, VetisBodyExt,
 };
 
@@ -52,38 +53,63 @@ impl InterfaceWorker for WsgiWorker {
 
         let (tx, rx) = oneshot::channel::<(CString, Vec<(CString, CString)>)>();
 
+        let code = fs::read_to_string(&self.file);
+        let code = match code {
+            Ok(code) => code,
+            Err(e) => {
+                error!("Failed to read script from file: {}", e);
+                return Box::pin(async move {
+                    Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())))
+                });
+            }
+        };
+
+        let code = CString::new(code);
+        let code = match code {
+            Ok(code) => code,
+            Err(e) => {
+                error!("Failed to initialize script: {}", e);
+                return Box::pin(async move {
+                    Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())))
+                });
+            }
+        };
+
+        let file = CString::new(self.file.as_str());
+        let file = match file {
+            Ok(file) => file,
+            Err(e) => {
+                error!("Failed to initialize file: {}", e);
+                return Box::pin(async move {
+                    Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())))
+                });
+            }
+        };
+
+        let content_type = match request
+            .headers()
+            .get(http::header::CONTENT_TYPE)
+        {
+            Some(content_type) => content_type
+                .to_str()
+                .unwrap_or_default(),
+            None => "application/json",
+        };
+
+        let content_length = match request
+            .headers()
+            .get(http::header::CONTENT_LENGTH)
+        {
+            Some(content_length) => content_length
+                .to_str()
+                .unwrap_or_default(),
+            None => "0",
+        };
+
+        let callback = StartResponse::new(Some(tx));
+
         let result = Python::attach(|py| {
-            let code = fs::read_to_string(&self.file).expect("Failed to read script.py");
-
-            let binding = CString::new(code)?;
-            let c_code = binding.as_c_str();
-
-            let binding = CString::new(self.file.as_str())?;
-            let c_file = binding.as_c_str();
-
-            let script_module = PyModule::from_code(py, c_code, c_file, c"main")?;
-
-            let content_type = match request
-                .headers()
-                .get(http::header::CONTENT_TYPE)
-            {
-                Some(content_type) => content_type
-                    .to_str()
-                    .unwrap_or_default(),
-                None => "application/json",
-            };
-
-            let content_length = match request
-                .headers()
-                .get(http::header::CONTENT_LENGTH)
-            {
-                Some(content_length) => content_length
-                    .to_str()
-                    .unwrap_or_default(),
-                None => "0",
-            };
-
-            let callback = StartResponse { sender: Some(tx) };
+            let script_module = PyModule::from_code(py, &code, &file, c"main")?;
             let app = script_module.getattr("app")?;
             let handler_func = app.getattr("wsgi_app")?;
             let result: Bound<'_, PyAny> = if handler_func.is_callable() {
@@ -124,7 +150,7 @@ impl InterfaceWorker for WsgiWorker {
 
             script_module.add_class::<StartResponse>()?;
 
-            py.run(c_code, Some(&script_module.dict()), None)?;
+            py.run(&code, Some(&script_module.dict()), None)?;
 
             let iter = PyIterator::from_object(&result)?;
 
@@ -181,34 +207,5 @@ impl InterfaceWorker for WsgiWorker {
                 }
             }
         })
-    }
-}
-
-#[pyclass]
-struct Write {
-    data: Vec<u8>,
-}
-
-#[pymethods]
-impl Write {
-    fn __call__(&mut self, data: Bound<'_, PyBytes>) -> PyResult<()> {
-        self.data
-            .extend_from_slice(data.as_bytes());
-        Ok(())
-    }
-}
-
-#[pyclass]
-struct StartResponse {
-    sender: Option<oneshot::Sender<(CString, Vec<(CString, CString)>)>>,
-}
-
-#[pymethods]
-impl StartResponse {
-    fn __call__(&mut self, status: CString, headers: Vec<(CString, CString)>) -> PyResult<()> {
-        if let Some(sender) = self.sender.take() {
-            sender.send((status, headers));
-        }
-        Ok(())
     }
 }
