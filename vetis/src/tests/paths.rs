@@ -645,6 +645,10 @@ mod wsgi_interface_tests {
 
     use deboa::{cert::Certificate, request};
     use http::StatusCode;
+    #[cfg(feature = "smol-rt")]
+    use macro_rules_attribute::apply;
+    #[cfg(feature = "smol-rt")]
+    use smol_macros::test;
 
     use crate::{
         config::server::{

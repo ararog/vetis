@@ -1,12 +1,12 @@
 use std::{collections::HashMap, ffi::CString, fs, future::Future, pin::Pin, sync::Arc};
 
+use crossfire::oneshot;
 use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use log::error;
 use pyo3::{
     types::{PyAnyMethods, PyIterator, PyModule, PyModuleMethods},
     Bound, PyAny, PyErr, PyResult, Python,
 };
-use tokio::sync::oneshot;
 
 use crate::{
     errors::{VetisError, VirtualHostError},
@@ -51,7 +51,7 @@ impl InterfaceWorker for AsgiWorker {
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
         let mut response_body: Option<Vec<u8>> = None;
 
-        let (tx, rx) = oneshot::channel::<(CString, Vec<(CString, CString)>)>();
+        let (tx, rx) = oneshot::oneshot::<(CString, Vec<(CString, CString)>)>();
         let code = fs::read_to_string(&self.file);
         let code = match code {
             Ok(code) => code,

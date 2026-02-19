@@ -4,10 +4,10 @@ use pyo3::{
     Bound, PyResult,
 };
 
+use crossfire::oneshot;
 use std::ffi::CString;
-use tokio::sync::oneshot;
 
-pub(crate) type WsgiMessageSender = oneshot::Sender<(CString, Vec<(CString, CString)>)>;
+pub(crate) type WsgiMessageSender = oneshot::TxOneshot<(CString, Vec<(CString, CString)>)>;
 
 #[pyclass]
 pub(crate) struct Write {
