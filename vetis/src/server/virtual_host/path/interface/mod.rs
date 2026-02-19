@@ -114,7 +114,15 @@ impl InterfacePath {
             #[cfg(all(feature = "python", feature = "asgi"))]
             InterfaceType::Asgi => Interface::Asgi(AsgiWorker::new(file)),
             #[cfg(all(feature = "python", feature = "wsgi"))]
-            InterfaceType::Wsgi => Interface::Wsgi(WsgiWorker::new(file)),
+            InterfaceType::Wsgi => {
+                let worker = WsgiWorker::new(file);
+                match worker {
+                    Ok(worker) => Interface::Wsgi(worker),
+                    Err(e) => {
+                        panic!("Could not initialize worker: {}", e);
+                    }
+                }
+            }
             #[cfg(all(feature = "python", feature = "rsgi_python"))]
             InterfaceType::RsgiPython => Interface::RsgiPython(RsgiPythonWorker::new(file)),
             #[cfg(all(feature = "ruby", feature = "rsgi_ruby"))]

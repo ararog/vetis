@@ -1,10 +1,10 @@
-use std::{collections::HashMap, ffi::CString, fs, future::Future, pin::Pin, sync::Arc};
+use std::{ffi::CString, fs, future::Future, pin::Pin, sync::Arc, vec};
 
 use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use log::error;
 use pyo3::{
-    types::{PyAnyMethods, PyIterator, PyModule, PyModuleMethods},
-    Bound, PyAny, PyErr, PyResult, Python,
+    types::{PyAnyMethods, PyDict, PyIterator, PyModule, PyModuleMethods},
+    Py, PyAny, PyErr, PyResult, Python,
 };
 use tokio::sync::oneshot;
 
@@ -34,12 +34,46 @@ impl From<WsgiWorker> for Interface {
 }
 
 pub struct WsgiWorker {
-    file: String,
+    func: Py<PyAny>,
 }
 
 impl WsgiWorker {
-    pub fn new(file: String) -> WsgiWorker {
-        WsgiWorker { file }
+    pub fn new(file: String) -> Result<WsgiWorker, VetisError> {
+        let code = fs::read_to_string(&file);
+        let code = match code {
+            Ok(code) => code,
+            Err(e) => {
+                error!("Failed to read script from file: {}", e);
+                return Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())));
+            }
+        };
+
+        let code = CString::new(code);
+        let code = match code {
+            Ok(code) => code,
+            Err(e) => {
+                error!("Failed to initialize script: {}", e);
+                return Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())));
+            }
+        };
+
+        let file = CString::new(file.as_str());
+        let file = match file {
+            Ok(file) => file,
+            Err(e) => {
+                error!("Failed to initialize file: {}", e);
+                return Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())));
+            }
+        };
+
+        let app = Python::attach(|py| {
+            let script_module = PyModule::from_code(py, &code, &file, c"main")?;
+            let app = script_module.getattr("app")?;
+            script_module.add_class::<StartResponse>()?;
+            Ok::<Py<PyAny>, PyErr>(app.unbind())
+        });
+
+        Ok(WsgiWorker { func: app.unwrap() })
     }
 }
 
@@ -49,42 +83,7 @@ impl InterfaceWorker for WsgiWorker {
         request: Arc<Request>,
         _uri: Arc<String>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
-        let mut response_body: Option<Vec<u8>> = None;
-
         let (tx, rx) = oneshot::channel::<(CString, Vec<(CString, CString)>)>();
-
-        let code = fs::read_to_string(&self.file);
-        let code = match code {
-            Ok(code) => code,
-            Err(e) => {
-                error!("Failed to read script from file: {}", e);
-                return Box::pin(async move {
-                    Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())))
-                });
-            }
-        };
-
-        let code = CString::new(code);
-        let code = match code {
-            Ok(code) => code,
-            Err(e) => {
-                error!("Failed to initialize script: {}", e);
-                return Box::pin(async move {
-                    Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())))
-                });
-            }
-        };
-
-        let file = CString::new(self.file.as_str());
-        let file = match file {
-            Ok(file) => file,
-            Err(e) => {
-                error!("Failed to initialize file: {}", e);
-                return Box::pin(async move {
-                    Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())))
-                });
-            }
-        };
 
         let content_type = match request
             .headers()
@@ -108,59 +107,46 @@ impl InterfaceWorker for WsgiWorker {
 
         let callback = StartResponse::new(Some(tx));
 
-        let result = Python::attach(|py| {
-            let script_module = PyModule::from_code(py, &code, &file, c"main")?;
-            let app = script_module.getattr("app")?;
-            let handler_func = app.getattr("wsgi_app")?;
-            let result: Bound<'_, PyAny> = if handler_func.is_callable() {
-                let mut environ = HashMap::new();
-                environ.insert("wsgi.url_scheme", "https");
-                environ.insert("wsgi.version", "1.0");
-                environ.insert("wsgi.input", "");
-                environ.insert("wsgi.errors", "");
-                environ.insert("wsgi.multithread", "false");
-                environ.insert("wsgi.multiprocess", "false");
-                environ.insert("wsgi.run_once", "false");
-                environ.insert(
-                    "REQUEST_METHOD",
-                    request
-                        .method()
-                        .as_str(),
-                );
-                environ.insert("PATH_INFO", request.uri().path());
-                environ.insert(
-                    "QUERY_STRING",
-                    request
-                        .uri()
-                        .query()
-                        .unwrap_or_default(),
-                );
-                environ.insert("CONTENT_TYPE", content_type);
-                environ.insert("CONTENT_LENGTH", content_length);
-                environ.insert("SERVER_NAME", "localhost");
-                environ.insert("SERVER_PORT", "8080");
-                environ.insert("SERVER_PROTOCOL", "HTTP/1.1");
-                environ.insert("SERVER_SOFTWARE", "Vetis");
-                handler_func
-                    .call1((environ, callback))?
-                    .extract()?
-            } else {
-                handler_func.extract()?
-            };
+        let response_body = Python::attach(|py| {
+            let func = self.func.bind(py);
+            let environ = PyDict::new(py);
+            environ.set_item("wsgi.url_scheme", "https")?;
+            environ.set_item("wsgi.version", [1, 0])?;
+            environ.set_item("wsgi.input", "")?;
+            environ.set_item("wsgi.errors", "")?;
+            environ.set_item("wsgi.multithread", "false")?;
+            environ.set_item("wsgi.multiprocess", "false")?;
+            environ.set_item("wsgi.run_once", "false")?;
+            environ.set_item(
+                "REQUEST_METHOD",
+                request
+                    .method()
+                    .as_str(),
+            )?;
+            environ.set_item(
+                "QUERY_STRING",
+                request
+                    .uri()
+                    .query()
+                    .unwrap_or_default(),
+            )?;
+            environ.set_item("PATH_INFO", request.uri().path())?;
+            environ.set_item("CONTENT_TYPE", content_type)?;
+            environ.set_item("CONTENT_LENGTH", content_length)?;
+            environ.set_item("SERVER_NAME", "localhost")?;
+            environ.set_item("SERVER_PORT", "8080")?;
+            environ.set_item("SERVER_PROTOCOL", "HTTP/1.1")?;
+            environ.set_item("SERVER_SOFTWARE", "Vetis")?;
 
-            script_module.add_class::<StartResponse>()?;
+            let response_body = func.call1((environ, callback))?;
 
-            py.run(&code, Some(&script_module.dict()), None)?;
-
-            let iter = PyIterator::from_object(&result)?;
-
+            let iter = response_body.cast::<PyIterator>()?;
             let bytes = iter
+                .clone()
                 .map(|item| item?.extract::<Vec<u8>>())
                 .collect::<PyResult<Vec<Vec<u8>>>>()?;
 
-            response_body = Some(bytes[0].clone());
-
-            Ok::<(), PyErr>(())
+            Ok::<Vec<u8>, PyErr>(bytes[0].clone())
         });
 
         Box::pin(async move {
@@ -185,6 +171,7 @@ impl InterfaceWorker for WsgiWorker {
                 .parse::<StatusCode>()
                 .unwrap();
 
+            // Need performance improvement, maybe specialize?
             let headers = headers
                 .into_iter()
                 .fold(HeaderMap::new(), |mut map, (key, value)| {
@@ -195,11 +182,11 @@ impl InterfaceWorker for WsgiWorker {
                     map
                 });
 
-            match result {
-                Ok(_) => Ok(Response::builder()
+            match response_body {
+                Ok(body) => Ok(Response::builder()
                     .status(status_code)
                     .headers(headers)
-                    .body(VetisBody::body_from_bytes(&response_body.unwrap()))),
+                    .body(VetisBody::body_from_bytes(&body))),
                 Err(e) => {
                     error!("Failed to run script: {}", e);
                     println!("Failed to run script: {}", e);

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs};
 
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 
 #[cfg(feature = "interface")]
 use crate::config::server::virtual_host::path::interface::InterfacePathConfig;
@@ -336,6 +336,7 @@ pub struct VirtualHostConfig {
     port: u16,
     root_directory: String,
     default_headers: Option<Vec<(String, String)>>,
+    #[serde(deserialize_with = "deserialize_security_from_file")]
     security: Option<SecurityConfig>,
     status_pages: Option<HashMap<u16, String>>,
     enable_logging: bool,
@@ -754,4 +755,42 @@ impl SecurityConfig {
     pub fn client_auth(&self) -> bool {
         self.client_auth
     }
+}
+
+#[derive(Clone, Deserialize)]
+pub struct SecurityConfigFromFile {
+    cert_from_file: String,
+    key_from_file: String,
+    ca_cert_from_file: Option<String>,
+    client_auth: Option<bool>,
+}
+
+fn deserialize_security_from_file<'de, D>(
+    deserializer: D,
+) -> Result<Option<SecurityConfig>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let security = SecurityConfigFromFile::deserialize(deserializer);
+    if let Err(e) = security {
+        return Err(e);
+    }
+
+    let security = security.unwrap();
+    let mut builder = SecurityConfig::builder()
+        .cert_from_file(&security.cert_from_file)
+        .key_from_file(&security.key_from_file);
+
+    if let Some(ca_cert_from_file) = security.ca_cert_from_file {
+        builder = builder.ca_cert_from_file(&ca_cert_from_file);
+    }
+
+    if let Some(client_auth) = security.client_auth {
+        builder = builder.client_auth(client_auth);
+    }
+
+    builder
+        .build()
+        .map_err(serde::de::Error::custom)
+        .map(Some)
 }

@@ -23,6 +23,8 @@
 /// ```
 use std::{future::Future, path::PathBuf, pin::Pin};
 
+#[cfg(all(feature = "python", feature = "rsgi_python"))]
+use pyo3::Python;
 use radix_trie::Trie;
 use std::sync::Arc;
 
@@ -43,6 +45,9 @@ use crate::server::virtual_host::path::static_files::StaticPath;
 
 #[cfg(feature = "reverse-proxy")]
 use crate::server::virtual_host::path::proxy::ProxyPath;
+
+#[cfg(feature = "interface")]
+use crate::server::virtual_host::path::interface::InterfacePath;
 
 pub mod path;
 
@@ -132,6 +137,9 @@ impl VirtualHost {
     pub fn new(host_config: VirtualHostConfig) -> Self {
         let mut host = Self { config: host_config.clone(), paths: Trie::new() };
 
+        #[cfg(feature = "python")]
+        Python::initialize();
+
         #[cfg(feature = "static-files")]
         if let Some(static_paths) = &host_config.static_paths() {
             for static_path in static_paths {
@@ -143,6 +151,13 @@ impl VirtualHost {
         if let Some(proxy_paths) = &host_config.proxy_paths() {
             for proxy_path in proxy_paths {
                 host.add_path(ProxyPath::new(proxy_path.clone()));
+            }
+        }
+
+        #[cfg(feature = "interface")]
+        if let Some(interface_paths) = &host_config.interface_paths() {
+            for interface_path in interface_paths {
+                host.add_path(InterfacePath::new(interface_path.clone()));
             }
         }
 
