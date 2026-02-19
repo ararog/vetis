@@ -1,4 +1,4 @@
-use std::{ffi::CString, fs, future::Future, pin::Pin, sync::Arc, vec};
+use std::{ffi::CString, fs, future::Future, pin::Pin, sync::Arc};
 
 use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use log::error;
@@ -6,7 +6,7 @@ use pyo3::{
     types::{PyAnyMethods, PyDict, PyIterator, PyModule, PyModuleMethods},
     Py, PyAny, PyErr, PyResult, Python,
 };
-use tokio::sync::oneshot;
+use tokio::{sync::oneshot, task::spawn_blocking};
 
 pub mod callback;
 
@@ -34,7 +34,7 @@ impl From<WsgiWorker> for Interface {
 }
 
 pub struct WsgiWorker {
-    func: Py<PyAny>,
+    func: Arc<Py<PyAny>>,
 }
 
 impl WsgiWorker {
@@ -73,7 +73,7 @@ impl WsgiWorker {
             Ok::<Py<PyAny>, PyErr>(app.unbind())
         });
 
-        Ok(WsgiWorker { func: app.unwrap() })
+        Ok(WsgiWorker { func: Arc::new(app.unwrap()) })
     }
 }
 
@@ -84,79 +84,95 @@ impl InterfaceWorker for WsgiWorker {
         _uri: Arc<String>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
         let (tx, rx) = oneshot::channel::<(CString, Vec<(CString, CString)>)>();
-
-        let content_type = match request
-            .headers()
-            .get(http::header::CONTENT_TYPE)
-        {
-            Some(content_type) => content_type
-                .to_str()
-                .unwrap_or_default(),
-            None => "application/json",
-        };
-
-        let content_length = match request
-            .headers()
-            .get(http::header::CONTENT_LENGTH)
-        {
-            Some(content_length) => content_length
-                .to_str()
-                .unwrap_or_default(),
-            None => "0",
-        };
-
-        let callback = StartResponse::new(Some(tx));
-
-        let response_body = Python::attach(|py| {
-            let func = self.func.bind(py);
-            let environ = PyDict::new(py);
-            environ.set_item("wsgi.url_scheme", "https")?;
-            environ.set_item("wsgi.version", [1, 0])?;
-            environ.set_item("wsgi.input", "")?;
-            environ.set_item("wsgi.errors", "")?;
-            environ.set_item("wsgi.multithread", "false")?;
-            environ.set_item("wsgi.multiprocess", "false")?;
-            environ.set_item("wsgi.run_once", "false")?;
-            environ.set_item(
-                "REQUEST_METHOD",
-                request
-                    .method()
-                    .as_str(),
-            )?;
-            environ.set_item(
-                "QUERY_STRING",
-                request
-                    .uri()
-                    .query()
-                    .unwrap_or_default(),
-            )?;
-            environ.set_item("PATH_INFO", request.uri().path())?;
-            environ.set_item("CONTENT_TYPE", content_type)?;
-            environ.set_item("CONTENT_LENGTH", content_length)?;
-            environ.set_item("SERVER_NAME", "localhost")?;
-            environ.set_item("SERVER_PORT", "8080")?;
-            environ.set_item("SERVER_PROTOCOL", "HTTP/1.1")?;
-            environ.set_item("SERVER_SOFTWARE", "Vetis")?;
-
-            let response_body = func.call1((environ, callback))?;
-
-            let iter = response_body.cast::<PyIterator>()?;
-            let bytes = iter
-                .clone()
-                .map(|item| item?.extract::<Vec<u8>>())
-                .collect::<PyResult<Vec<Vec<u8>>>>()?;
-
-            Ok::<Vec<u8>, PyErr>(bytes[0].clone())
-        });
+        let request = request.clone();
+        let func = self.func.clone();
 
         Box::pin(async move {
+            let python_task = spawn_blocking(move || {
+                let content_type = match request
+                    .headers()
+                    .get(http::header::CONTENT_TYPE)
+                {
+                    Some(content_type) => content_type
+                        .to_str()
+                        .unwrap_or_default(),
+                    None => "application/json",
+                };
+
+                let content_length = match request
+                    .headers()
+                    .get(http::header::CONTENT_LENGTH)
+                {
+                    Some(content_length) => content_length
+                        .to_str()
+                        .unwrap_or_default(),
+                    None => "0",
+                };
+
+                let callback = StartResponse::new(Some(tx));
+
+                Python::attach(|py| {
+                    let func = func.bind(py);
+                    let environ = PyDict::new(py);
+                    environ.set_item("wsgi.url_scheme", "https")?;
+                    environ.set_item("wsgi.version", [1, 0])?;
+                    environ.set_item("wsgi.input", "")?;
+                    environ.set_item("wsgi.errors", "")?;
+                    environ.set_item("wsgi.multithread", "false")?;
+                    environ.set_item("wsgi.multiprocess", "false")?;
+                    environ.set_item("wsgi.run_once", "false")?;
+                    environ.set_item(
+                        "REQUEST_METHOD",
+                        request
+                            .method()
+                            .as_str(),
+                    )?;
+                    environ.set_item(
+                        "QUERY_STRING",
+                        request
+                            .uri()
+                            .query()
+                            .unwrap_or_default(),
+                    )?;
+                    environ.set_item("PATH_INFO", request.uri().path())?;
+                    environ.set_item("CONTENT_TYPE", content_type)?;
+                    environ.set_item("CONTENT_LENGTH", content_length)?;
+                    environ.set_item("SERVER_NAME", "localhost")?;
+                    environ.set_item("SERVER_PORT", "8080")?;
+                    environ.set_item("SERVER_PROTOCOL", "HTTP/1.1")?;
+                    environ.set_item("SERVER_SOFTWARE", "Vetis")?;
+
+                    let response_body = func.call1((environ, callback))?;
+
+                    let iter = response_body.cast::<PyIterator>()?;
+                    let bytes = iter
+                        .clone()
+                        .map(|item| item?.extract::<Vec<u8>>())
+                        .collect::<PyResult<Vec<Vec<u8>>>>()?;
+
+                    Ok::<Vec<u8>, PyErr>(bytes[0].clone())
+                })
+            })
+            .await;
+
+            let response_body = match python_task {
+                Ok(body) => body,
+                Err(e) => {
+                    error!("Failed to run script: {}", e);
+                    return Err(VetisError::VirtualHost(VirtualHostError::Interface(
+                        e.to_string(),
+                    )));
+                }
+            };
+
             let channel_result = rx.await;
             let (status, headers) = match channel_result {
                 Ok(data) => data,
-                Err(_) => {
+                Err(e) => {
+                    error!("Failed to run script: {}", e);
                     return Err(VetisError::VirtualHost(VirtualHostError::Interface(
-                        "Failed to run script".to_string(),
-                    )))
+                        e.to_string(),
+                    )));
                 }
             };
 
@@ -189,7 +205,6 @@ impl InterfaceWorker for WsgiWorker {
                     .body(VetisBody::body_from_bytes(&body))),
                 Err(e) => {
                     error!("Failed to run script: {}", e);
-                    println!("Failed to run script: {}", e);
                     Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())))
                 }
             }
