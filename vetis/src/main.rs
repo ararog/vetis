@@ -86,12 +86,20 @@ fn init_runtime() -> Result<(), Box<dyn Error>> {
                     .format_module_path(false)
                     .init();
 
-                    let rt = tokio::runtime::Builder::new_multi_thread()
-                        .enable_all()
-                        .worker_threads(config.workers)
-                        .max_blocking_threads(config.max_blocking_threads)
-                        .build()?;
-                    rt.block_on(async { run(config.server, config.virtual_hosts).await })?;
+                    #[cfg(feature = "tokio-rt")]
+                    {
+                        let rt = tokio::runtime::Builder::new_multi_thread()
+                            .enable_all()
+                            .worker_threads(config.workers)
+                            .max_blocking_threads(config.max_blocking_threads)
+                            .build()?;
+                        rt.block_on(async { run(config.server, config.virtual_hosts).await })?;
+                    }
+
+                    #[cfg(feature = "smol-rt")]
+                    {
+                        smol::block_on(async { run(config.server, config.virtual_hosts).await })?;
+                    }
                 } else {
                     eprintln!(
                         "Failed to parse config file: {}",

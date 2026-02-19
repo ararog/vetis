@@ -132,6 +132,7 @@ blocking = { version = "1.6.2", optional = true }
 bytes = "1.11.1"
 cfg-if = "1.0.4"
 clap = { version = "4.5.59", features = ["derive", "std"], default-features = false}
+crossfire = "3.0.4"
 deboa = { version = "0.1.0-beta.2", default-features = false, optional = true }
 env_logger = "0.11.9"
 futures-lite = "2.6.1"

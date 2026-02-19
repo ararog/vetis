@@ -3,10 +3,16 @@ use std::{ffi::CString, fs, future::Future, pin::Pin, sync::Arc};
 use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use log::error;
 use pyo3::{
-    types::{PyAnyMethods, PyDict, PyIterator, PyModule, PyModuleMethods},
+    types::{PyAnyMethods, PyDict, PyDictMethods, PyIterator, PyModule, PyModuleMethods},
     Py, PyAny, PyErr, PyResult, Python,
 };
-use tokio::{sync::oneshot, task::spawn_blocking};
+
+#[cfg(feature = "smol-rt")]
+use smol::unblock as spawn_blocking;
+#[cfg(feature = "tokio-rt")]
+use tokio::task::spawn_blocking;
+
+use crossfire::oneshot;
 
 pub mod callback;
 
@@ -35,6 +41,7 @@ impl From<WsgiWorker> for Interface {
 
 pub struct WsgiWorker {
     func: Arc<Py<PyAny>>,
+    env: Arc<Py<PyDict>>,
 }
 
 impl WsgiWorker {
@@ -70,10 +77,21 @@ impl WsgiWorker {
             let script_module = PyModule::from_code(py, &code, &file, c"main")?;
             let app = script_module.getattr("app")?;
             script_module.add_class::<StartResponse>()?;
-            Ok::<Py<PyAny>, PyErr>(app.unbind())
+
+            let environ = PyDict::new(py);
+            environ.set_item("wsgi.version", [1, 0])?;
+            environ.set_item("wsgi.multithread", "false")?;
+            environ.set_item("wsgi.multiprocess", "false")?;
+            environ.set_item("wsgi.run_once", "false")?;
+            environ.set_item("SERVER_NAME", "localhost")?;
+            environ.set_item("SERVER_PORT", "8080")?;
+            environ.set_item("SERVER_PROTOCOL", "HTTP/1.1")?;
+            environ.set_item("SERVER_SOFTWARE", "Vetis")?;
+            Ok::<(Py<PyAny>, Py<PyDict>), PyErr>((app.unbind(), environ.unbind()))
         });
 
-        Ok(WsgiWorker { func: Arc::new(app.unwrap()) })
+        let (func, env) = app.unwrap();
+        Ok(WsgiWorker { func: Arc::new(func), env: Arc::new(env) })
     }
 }
 
@@ -83,12 +101,24 @@ impl InterfaceWorker for WsgiWorker {
         request: Arc<Request>,
         _uri: Arc<String>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
-        let (tx, rx) = oneshot::channel::<(CString, Vec<(CString, CString)>)>();
+        let (tx, rx) = oneshot::oneshot::<(CString, Vec<(CString, CString)>)>();
         let request = request.clone();
         let func = self.func.clone();
+        let env = self.env.clone();
 
         Box::pin(async move {
-            let python_task = spawn_blocking(move || {
+            let response_body = spawn_blocking(move || {
+                let path = request.uri().path();
+
+                let method = request
+                    .method()
+                    .as_str();
+
+                let query_string = request
+                    .uri()
+                    .query()
+                    .unwrap_or_default();
+
                 let content_type = match request
                     .headers()
                     .get(http::header::CONTENT_TYPE)
@@ -113,49 +143,34 @@ impl InterfaceWorker for WsgiWorker {
 
                 Python::attach(|py| {
                     let func = func.bind(py);
-                    let environ = PyDict::new(py);
+                    let environ = env.bind(py);
                     environ.set_item("wsgi.url_scheme", "https")?;
-                    environ.set_item("wsgi.version", [1, 0])?;
                     environ.set_item("wsgi.input", "")?;
                     environ.set_item("wsgi.errors", "")?;
-                    environ.set_item("wsgi.multithread", "false")?;
-                    environ.set_item("wsgi.multiprocess", "false")?;
-                    environ.set_item("wsgi.run_once", "false")?;
-                    environ.set_item(
-                        "REQUEST_METHOD",
-                        request
-                            .method()
-                            .as_str(),
-                    )?;
-                    environ.set_item(
-                        "QUERY_STRING",
-                        request
-                            .uri()
-                            .query()
-                            .unwrap_or_default(),
-                    )?;
-                    environ.set_item("PATH_INFO", request.uri().path())?;
+                    environ.set_item("REQUEST_METHOD", method)?;
+                    environ.set_item("QUERY_STRING", query_string)?;
+                    environ.set_item("PATH_INFO", path)?;
                     environ.set_item("CONTENT_TYPE", content_type)?;
                     environ.set_item("CONTENT_LENGTH", content_length)?;
-                    environ.set_item("SERVER_NAME", "localhost")?;
-                    environ.set_item("SERVER_PORT", "8080")?;
-                    environ.set_item("SERVER_PROTOCOL", "HTTP/1.1")?;
-                    environ.set_item("SERVER_SOFTWARE", "Vetis")?;
-
                     let response_body = func.call1((environ, callback))?;
-
-                    let iter = response_body.cast::<PyIterator>()?;
+                    let iter = response_body
+                        .cast::<PyIterator>()?
+                        .into_iter();
                     let bytes = iter
-                        .clone()
                         .map(|item| item?.extract::<Vec<u8>>())
                         .collect::<PyResult<Vec<Vec<u8>>>>()?;
-
-                    Ok::<Vec<u8>, PyErr>(bytes[0].clone())
+                    Ok::<Vec<u8>, PyErr>(
+                        bytes
+                            .first()
+                            .cloned()
+                            .unwrap_or_default(),
+                    )
                 })
             })
             .await;
 
-            let response_body = match python_task {
+            #[cfg(feature = "tokio-rt")]
+            let response_body = match response_body {
                 Ok(body) => body,
                 Err(e) => {
                     error!("Failed to run script: {}", e);
