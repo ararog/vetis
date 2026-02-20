@@ -159,21 +159,16 @@ impl HandlerPathBuilder {
             ))));
         }
 
-        if self
-            .handler
-            .is_none()
-        {
-            return Err(VetisError::VirtualHost(VirtualHostError::Handler(HandlerError::Handler(
-                "Handler cannot be empty".to_string(),
-            ))));
-        }
+        let handler = match self.handler {
+            Some(handler) => handler,
+            None => {
+                return Err(VetisError::VirtualHost(VirtualHostError::Handler(
+                    HandlerError::Handler("Handler must be set".to_string()),
+                )))
+            }
+        };
 
-        Ok(HostPath::Handler(HandlerPath {
-            uri: self.uri,
-            handler: self
-                .handler
-                .unwrap(),
-        }))
+        Ok(HostPath::Handler(HandlerPath { uri: self.uri, handler }))
     }
 }
 

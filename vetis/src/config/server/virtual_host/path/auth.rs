@@ -88,11 +88,18 @@ impl BasicAuthConfigBuilder {
                 Ok(file) => {
                     file.lines()
                         .for_each(|line| {
-                            let (username, password) = line
-                                .split_once(':')
-                                .unwrap();
-                            self.users
-                                .insert(username.to_string(), password.to_string());
+                            let credentials = line.split_once(':');
+
+                            if let Some(credentials) = credentials {
+                                self.users.insert(
+                                    credentials
+                                        .0
+                                        .to_string(),
+                                    credentials
+                                        .1
+                                        .to_string(),
+                                );
+                            }
                         });
                 }
                 Err(e) => {

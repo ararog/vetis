@@ -192,13 +192,26 @@ impl InterfaceWorker for WsgiWorker {
                 }
             };
 
-            let status_str = status
+            let status_str = match status
                 .split_whitespace()
                 .next()
-                .unwrap();
-            let status_code = status_str
-                .parse::<StatusCode>()
-                .unwrap();
+            {
+                Some(str) => str,
+                None => {
+                    return Err(VetisError::VirtualHost(VirtualHostError::Interface(
+                        "Invalid status message".to_string(),
+                    )))
+                }
+            };
+
+            let status_code = match status_str.parse::<StatusCode>() {
+                Ok(code) => code,
+                Err(_) => {
+                    return Err(VetisError::VirtualHost(VirtualHostError::Interface(
+                        "Invalid status code".to_string(),
+                    )))
+                }
+            };
 
             // Need performance improvement, maybe specialize?
             let headers = headers

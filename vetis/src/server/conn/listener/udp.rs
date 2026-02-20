@@ -147,10 +147,14 @@ impl UdpListener {
                 spawn_worker(async move {
                     match new_conn.await {
                         Ok(conn) => {
-                            let mut h3_conn: Connection<QuinnConnection, Bytes> =
-                                Connection::new(QuinnConnection::new(conn))
-                                    .await
-                                    .unwrap();
+                            let mut h3_conn: Connection<QuinnConnection, Bytes> = match
+                                Connection::new(QuinnConnection::new(conn)).await {
+                                    Ok(conn) => conn,
+                                    Err(err) => {
+                                        error!("Cannot create connection: {:?}", err);
+                                        return;
+                                    }
+                                };
 
                             loop {
                                 match h3_conn
