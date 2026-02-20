@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fs};
 
+use log::error;
 use serde::{Deserialize, Deserializer};
 
 #[cfg(feature = "interface")]
@@ -540,9 +541,11 @@ impl SecurityConfigBuilder {
     /// ```
     pub fn cert_from_file(mut self, path: &str) -> Self {
         let cert = fs::read(path);
-        // TODO: Handle error properly
-        if let Ok(cert) = cert {
-            self.cert = cert;
+        match cert {
+            Ok(cert) => self.cert = cert,
+            Err(e) => {
+                error!("Failed to read certificate file: {}", e);
+            }
         }
         self
     }
@@ -584,9 +587,11 @@ impl SecurityConfigBuilder {
     /// ```
     pub fn key_from_file(mut self, path: &str) -> Self {
         let key = fs::read(path);
-        // TODO: Handle error properly
-        if let Ok(key) = key {
-            self.key = key;
+        match key {
+            Ok(key) => self.key = key,
+            Err(e) => {
+                error!("Failed to read key file: {}", e);
+            }
         }
         self
     }
@@ -628,9 +633,11 @@ impl SecurityConfigBuilder {
     /// ```
     pub fn ca_cert_from_file(mut self, path: &str) -> Self {
         let ca_cert = fs::read(path);
-        // TODO: Handle error properly
-        if let Ok(ca_cert) = ca_cert {
-            self.ca_cert = Some(ca_cert);
+        match ca_cert {
+            Ok(ca_cert) => self.ca_cert = Some(ca_cert),
+            Err(e) => {
+                error!("Failed to read CA certificate file: {}", e);
+            }
         }
         self
     }
@@ -661,12 +668,12 @@ impl SecurityConfigBuilder {
     pub fn build(self) -> Result<SecurityConfig, VetisError> {
         if self.cert.is_empty() {
             return Err(VetisError::Config(ConfigError::Security(
-                "Certificate is empty".to_string(),
+                "Missing certificate".to_string(),
             )));
         }
 
         if self.key.is_empty() {
-            return Err(VetisError::Config(ConfigError::Security("Key is empty".to_string())));
+            return Err(VetisError::Config(ConfigError::Security("Missing key".to_string())));
         }
 
         Ok(SecurityConfig {

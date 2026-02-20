@@ -58,7 +58,7 @@ fn test_security_config() -> Result<(), Box<dyn Error>> {
 
     assert_eq!(
         security_config.err(),
-        Some(VetisError::Config(ConfigError::Security("Certificate is empty".to_string())))
+        Some(VetisError::Config(ConfigError::Security("Missing certificate".to_string())))
     );
 
     Ok(())
