@@ -3,6 +3,7 @@ use std::{ffi::CString, fs, future::Future, pin::Pin, sync::Arc};
 use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use log::error;
 use pyo3::{
+    intern,
     types::{PyAnyMethods, PyDict, PyDictMethods, PyIterator, PyModule, PyModuleMethods},
     Py, PyAny, PyErr, PyResult, Python,
 };
@@ -79,14 +80,14 @@ impl WsgiWorker {
             script_module.add_class::<StartResponse>()?;
 
             let environ = PyDict::new(py);
-            environ.set_item("wsgi.version", [1, 0])?;
-            environ.set_item("wsgi.multithread", "false")?;
-            environ.set_item("wsgi.multiprocess", "false")?;
-            environ.set_item("wsgi.run_once", "false")?;
-            environ.set_item("SERVER_NAME", "localhost")?;
-            environ.set_item("SERVER_PORT", "8080")?;
-            environ.set_item("SERVER_PROTOCOL", "HTTP/1.1")?;
-            environ.set_item("SERVER_SOFTWARE", "Vetis")?;
+            environ.set_item(intern!(py, "wsgi.version"), [1, 0])?;
+            environ.set_item(intern!(py, "wsgi.multithread"), "false")?;
+            environ.set_item(intern!(py, "wsgi.multiprocess"), "false")?;
+            environ.set_item(intern!(py, "wsgi.run_once"), "false")?;
+            environ.set_item(intern!(py, "SERVER_NAME"), "localhost")?;
+            environ.set_item(intern!(py, "SERVER_PORT"), "8080")?;
+            environ.set_item(intern!(py, "SERVER_PROTOCOL"), "HTTP/1.1")?;
+            environ.set_item(intern!(py, "SERVER_SOFTWARE"), "Vetis")?;
             Ok::<(Py<PyAny>, Py<PyDict>), PyErr>((app.unbind(), environ.unbind()))
         });
 
@@ -101,7 +102,7 @@ impl InterfaceWorker for WsgiWorker {
         request: Arc<Request>,
         _uri: Arc<String>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
-        let (tx, rx) = oneshot::oneshot::<(CString, Vec<(CString, CString)>)>();
+        let (tx, rx) = oneshot::oneshot::<(String, Vec<(String, String)>)>();
         let request = request.clone();
         let func = self.func.clone();
         let env = self.env.clone();
@@ -144,14 +145,14 @@ impl InterfaceWorker for WsgiWorker {
                 Python::attach(|py| {
                     let func = func.bind(py);
                     let environ = env.bind(py);
-                    environ.set_item("wsgi.url_scheme", "https")?;
-                    environ.set_item("wsgi.input", "")?;
-                    environ.set_item("wsgi.errors", "")?;
-                    environ.set_item("REQUEST_METHOD", method)?;
-                    environ.set_item("QUERY_STRING", query_string)?;
-                    environ.set_item("PATH_INFO", path)?;
-                    environ.set_item("CONTENT_TYPE", content_type)?;
-                    environ.set_item("CONTENT_LENGTH", content_length)?;
+                    environ.set_item(intern!(py, "wsgi.url_scheme"), "https")?;
+                    environ.set_item(intern!(py, "wsgi.input"), "")?;
+                    environ.set_item(intern!(py, "wsgi.errors"), "")?;
+                    environ.set_item(intern!(py, "REQUEST_METHOD"), method)?;
+                    environ.set_item(intern!(py, "QUERY_STRING"), query_string)?;
+                    environ.set_item(intern!(py, "PATH_INFO"), path)?;
+                    environ.set_item(intern!(py, "CONTENT_TYPE"), content_type)?;
+                    environ.set_item(intern!(py, "CONTENT_LENGTH"), content_length)?;
                     let response_body = func.call1((environ, callback))?;
                     let iter = response_body
                         .cast::<PyIterator>()?
@@ -191,10 +192,7 @@ impl InterfaceWorker for WsgiWorker {
                 }
             };
 
-            let binding = status
-                .into_string()
-                .unwrap();
-            let status_str = binding
+            let status_str = status
                 .split_whitespace()
                 .next()
                 .unwrap();

@@ -51,7 +51,7 @@ impl InterfaceWorker for AsgiWorker {
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
         let mut response_body: Option<Vec<u8>> = None;
 
-        let (tx, rx) = oneshot::oneshot::<(CString, Vec<(CString, CString)>)>();
+        let (tx, rx) = oneshot::oneshot::<(String, Vec<(String, String)>)>();
         let code = fs::read_to_string(&self.file);
         let code = match code {
             Ok(code) => code,
@@ -174,10 +174,7 @@ impl InterfaceWorker for AsgiWorker {
                 }
             };
 
-            let binding = status
-                .into_string()
-                .unwrap();
-            let status_str = binding
+            let status_str = status
                 .split_whitespace()
                 .next()
                 .unwrap();

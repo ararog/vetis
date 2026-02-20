@@ -5,9 +5,8 @@ use pyo3::{
 };
 
 use crossfire::oneshot;
-use std::ffi::CString;
 
-pub(crate) type WsgiMessageSender = oneshot::TxOneshot<(CString, Vec<(CString, CString)>)>;
+pub(crate) type WsgiMessageSender = oneshot::TxOneshot<(String, Vec<(String, String)>)>;
 
 #[pyclass]
 pub(crate) struct Write {
@@ -36,7 +35,7 @@ impl StartResponse {
 
 #[pymethods]
 impl StartResponse {
-    fn __call__(&mut self, status: CString, headers: Vec<(CString, CString)>) -> PyResult<()> {
+    fn __call__(&mut self, status: String, headers: Vec<(String, String)>) -> PyResult<()> {
         if let Some(sender) = self.sender.take() {
             sender.send((status, headers));
         }
