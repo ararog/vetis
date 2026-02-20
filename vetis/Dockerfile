@@ -3,7 +3,8 @@ FROM rust:alpine AS build
 RUN apk update && \
     apk upgrade --no-cache && \
     apk add --no-cache lld mold musl musl-dev libc-dev cmake clang clang-dev openssl file \
-        libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++  zstd binutils ca-certificates upx
+        libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd \
+        binutils ca-certificates upx python3 py3-pip
 
 WORKDIR /vetis
 COPY . ./

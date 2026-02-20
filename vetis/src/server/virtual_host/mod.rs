@@ -24,7 +24,7 @@
 use std::{future::Future, path::PathBuf, pin::Pin};
 
 use http::StatusCode;
-#[cfg(all(feature = "python", feature = "rsgi_python"))]
+#[cfg(feature = "python")]
 use pyo3::Python;
 use radix_trie::Trie;
 use std::sync::Arc;
