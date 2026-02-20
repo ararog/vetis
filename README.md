@@ -203,9 +203,9 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Languages
 
-- **Python** - Support for ASGI/WSGI applications
+- **Python** - Support for ASGI/WSGI/RSGI applications
 - **PHP** - Support for PHP applications
-- **RSGI** - Support for RSGI applications (separated feature)
+- **Ruby** - Support for Ruby applications
 
 ## Roadmap
 

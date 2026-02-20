@@ -204,6 +204,7 @@ Check out the [benchmarks](./benchmarks.md) for performance details.
 
 - [API Reference](https://docs.rs/vetis)
 - [Contributing Guide](./CONTRIBUTING.md)
+- [Language Support](./LANGUAGE_SUPPORT.md)
 
 ## Other Projects
 
