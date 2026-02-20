@@ -119,16 +119,15 @@ impl VirtualHostConfigBuilder {
     ///     .build()?;
     /// ```
     pub fn header(mut self, key: &str, value: &str) -> Self {
-        if self
-            .default_headers
-            .is_none()
-        {
-            self.default_headers = Some(Vec::new());
+        match self.default_headers {
+            None => {
+                let vec = vec![(key.to_string(), value.to_string())];
+                self.default_headers = Some(vec);
+            }
+            Some(ref mut headers) => {
+                headers.push((key.to_string(), value.to_string()));
+            }
         }
-        self.default_headers
-            .as_mut()
-            .unwrap()
-            .push((key.to_string(), value.to_string()));
         self
     }
 
@@ -540,7 +539,11 @@ impl SecurityConfigBuilder {
     ///     .build();
     /// ```
     pub fn cert_from_file(mut self, path: &str) -> Self {
-        self.cert = fs::read(path).unwrap();
+        let cert = fs::read(path);
+        // TODO: Handle error properly
+        if let Ok(cert) = cert {
+            self.cert = cert;
+        }
         self
     }
 
@@ -580,7 +583,11 @@ impl SecurityConfigBuilder {
     ///     .build();
     /// ```
     pub fn key_from_file(mut self, path: &str) -> Self {
-        self.key = fs::read(path).unwrap();
+        let key = fs::read(path);
+        // TODO: Handle error properly
+        if let Ok(key) = key {
+            self.key = key;
+        }
         self
     }
 
@@ -620,7 +627,11 @@ impl SecurityConfigBuilder {
     ///     .build();
     /// ```
     pub fn ca_cert_from_file(mut self, path: &str) -> Self {
-        self.ca_cert = Some(fs::read(path).unwrap());
+        let ca_cert = fs::read(path);
+        // TODO: Handle error properly
+        if let Ok(ca_cert) = ca_cert {
+            self.ca_cert = Some(ca_cert);
+        }
         self
     }
 
@@ -771,12 +782,9 @@ fn deserialize_security_from_file<'de, D>(
 where
     D: Deserializer<'de>,
 {
-    let security = SecurityConfigFromFile::deserialize(deserializer);
-    if let Err(e) = security {
-        return Err(e);
-    }
+    let security =
+        SecurityConfigFromFile::deserialize(deserializer).map_err(serde::de::Error::custom)?;
 
-    let security = security.unwrap();
     let mut builder = SecurityConfig::builder()
         .cert_from_file(&security.cert_from_file)
         .key_from_file(&security.key_from_file);

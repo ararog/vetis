@@ -4,7 +4,7 @@ macro_rules! http {
         async move {
             use vetis::{
                 config::server::{virtual_host::VirtualHostConfig, ListenerConfig, ServerConfig},
-                errors::VetisError,
+                errors::{ConfigError, VetisError},
                 server::virtual_host::{path::HandlerPath, VirtualHost},
                 Vetis,
             };
@@ -12,13 +12,11 @@ macro_rules! http {
             let listener = ListenerConfig::builder()
                 .port($port)
                 .interface($interface)
-                .build()
-                .expect("Failed to configure listener");
+                .build()?;
 
             let config = ServerConfig::builder()
                 .add_listener(listener)
-                .build()
-                .expect("Failed to configure server");
+                .build()?;
 
             let virtual_host_config = VirtualHostConfig::builder()
                 .hostname($hostname)
@@ -31,8 +29,7 @@ macro_rules! http {
             let root_path = HandlerPath::builder()
                 .uri("/")
                 .handler(Box::new($handler))
-                .build()
-                .unwrap();
+                .build()?;
 
             virtual_host.add_path(root_path);
 
@@ -42,7 +39,7 @@ macro_rules! http {
                 .add_virtual_host(virtual_host)
                 .await;
 
-            Ok::<Vetis, Box<VetisError>>(vetis)
+            Ok::<Vetis, VetisError>(vetis)
         }
     };
 
@@ -50,7 +47,7 @@ macro_rules! http {
         async move {
             use vetis::{
                 config::server::{virtual_host::VirtualHostConfig, ListenerConfig, ServerConfig},
-                errors::VetisError,
+                errors::{ConfigError, VetisError},
                 server::{path::HandlerPath, virtual_host::VirtualHost},
                 Vetis,
             };
@@ -58,11 +55,11 @@ macro_rules! http {
             let listener = ListenerConfig::builder()
                 .port($port)
                 .interface($interface)
-                .build();
+                .build()?;
 
             let config = ServerConfig::builder()
                 .add_listener(listener)
-                .build();
+                .build()?;
 
             let virtual_host_config = VirtualHostConfig::builder()
                 .hostname($hostname)
@@ -74,8 +71,7 @@ macro_rules! http {
             let root_path = HandlerPath::builder()
                 .uri("/")
                 .handler(Box::new($handler))
-                .build()
-                .unwrap();
+                .build()?;
 
             virtual_host.add_path(root_path);
 
@@ -85,7 +81,7 @@ macro_rules! http {
                 .add_virtual_host(virtual_host)
                 .await;
 
-            Ok::<Vetis, Box<VetisError>>(vetis)
+            Ok::<Vetis, VetisError>(vetis)
         }
     };
 }
@@ -95,7 +91,7 @@ macro_rules! https {
     (hostname => &$hostname:ident, port => &$port:ident, interface => &$interface:ident, &cert => &$cert:ident, &key => &$key:ident) => {
         use vetis::{
             config::{ListenerConfig, ServerConfig, VirtualHostConfig},
-            errors::VetisError,
+            errors::{ConfigError, VetisError},
             server::{path::HandlerPath, virtual_host::VirtualHost},
             Vetis,
         };
@@ -103,16 +99,16 @@ macro_rules! https {
         let listener = ListenerConfig::builder()
             .port($port)
             .interface($interface)
-            .build();
+            .build()?;
 
         let config = ServerConfig::builder()
             .add_listener(listener)
-            .build();
+            .build()?;
 
         let security_config = SecurityConfig::builder()
             .cert_from_file($cert)
             .key_from_file($key)
-            .build();
+            .build()?;
 
         let virtual_host_config = VirtualHostConfig::builder()
             .hostname($hostname)
@@ -125,8 +121,7 @@ macro_rules! https {
         let root_path = HandlerPath::builder()
             .uri("/")
             .handler(Box::new($handler))
-            .build()
-            .unwrap();
+            .build()?;
 
         virtual_host.add_path(root_path);
 
@@ -136,6 +131,6 @@ macro_rules! https {
             .add_virtual_host(virtual_host)
             .await;
 
-        Ok::<Vetis, Box<VetisError>>(vetis)
+        Ok::<Vetis, VetisError>(vetis)
     };
 }

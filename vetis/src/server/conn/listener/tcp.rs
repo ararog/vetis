@@ -184,7 +184,13 @@ impl TcpListener {
         ];
         let tls_config = TlsFactory::create_tls_config(virtual_hosts.clone(), alpn).await?;
         let port = Arc::new(self.config.port());
-        let tls_config = tls_config.unwrap();
+        let tls_config = match tls_config {
+            Some(config) => config,
+            None => {
+                error!("Missing TLS config");
+                return Err(VetisError::Tls("Missing TLS config".to_string()));
+            }
+        };
         let tls_acceptor = VetisTlsAcceptor::from(Arc::new(tls_config));
         let future = async move {
             loop {
@@ -192,16 +198,13 @@ impl TcpListener {
                     .accept()
                     .await;
 
-                if let Err(err) = result {
-                    error!("Cannot accept connection: {:?}", err);
-                    continue;
-                }
-
-                let (stream, client_addr) = result.unwrap();
-                if let Err(e) = stream.set_nodelay(true) {
-                    error!("Cannot set TCP_NODELAY: {}", e);
-                    continue;
-                }
+                let (stream, client_addr) = match result {
+                    Ok(conn_info) => conn_info,
+                    Err(e) => {
+                        error!("Cannot accept connection: {:?}", e);
+                        continue;
+                    }
+                };
 
                 // TODO: Check ACL before proceeding
 
@@ -224,12 +227,14 @@ impl TcpListener {
                         .accept(peekable)
                         .await;
 
-                    if let Err(e) = tls_stream {
-                        error!("Cannot accept connection: {:?}", e);
-                        continue;
-                    }
+                    let tls_stream = match tls_stream {
+                        Ok(tls_stream) => tls_stream,
+                        Err(e) => {
+                            error!("Cannot accept connection: {:?}", e);
+                            continue;
+                        }
+                    };
 
-                    let tls_stream = tls_stream.unwrap();
                     let io = VetisIo::new(tls_stream);
                     match protocol {
                         #[cfg(feature = "http1")]

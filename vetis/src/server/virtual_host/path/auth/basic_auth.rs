@@ -98,20 +98,33 @@ impl Auth for BasicAuth {
             let hashed_password = Arc::new(hashed_password.to_string());
 
             #[cfg(feature = "tokio-rt")]
-            let verify_task = tokio::task::spawn_blocking(move || {
-                verify_password(password, hashed_password, algorithm)
-            })
-            .await;
+            {
+                let verify_task = tokio::task::spawn_blocking(move || {
+                    verify_password(password, hashed_password, algorithm)
+                })
+                .await;
 
-            #[cfg(feature = "tokio-rt")]
-            return Ok(verify_task.unwrap());
+                let result = match verify_task {
+                    Ok(result) => result,
+                    Err(e) => {
+                        return Err(VetisError::VirtualHost(VirtualHostError::Auth(format!(
+                            "Could not verify password: {}",
+                            e
+                        ))))
+                    }
+                };
+
+                return Ok(result);
+            }
 
             #[cfg(feature = "smol-rt")]
-            let verify_task =
-                blocking::unblock(|| verify_password(password, hashed_password, algorithm)).await;
+            {
+                let result =
+                    blocking::unblock(|| verify_password(password, hashed_password, algorithm))
+                        .await;
 
-            #[cfg(feature = "smol-rt")]
-            return Ok(verify_task);
+                return Ok(result);
+            }
         }
 
         Ok(false)
@@ -129,9 +142,14 @@ fn verify_password(
         }
         Algorithm::Argon2 => {
             let argon2 = argon2::Argon2::default();
-            let parsed_hash = PasswordHash::new(hashed_password.as_str()).unwrap();
-            let result = argon2.verify_password(password.as_bytes(), &parsed_hash);
-            result.is_ok()
+            let parsed_hash = PasswordHash::new(hashed_password.as_str());
+            match parsed_hash {
+                Ok(parsed_hash) => {
+                    let result = argon2.verify_password(password.as_bytes(), &parsed_hash);
+                    result.is_ok()
+                }
+                Err(_) => false,
+            }
         }
     }
 }

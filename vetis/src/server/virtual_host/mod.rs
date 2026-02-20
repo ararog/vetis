@@ -23,6 +23,7 @@
 /// ```
 use std::{future::Future, path::PathBuf, pin::Pin};
 
+use http::StatusCode;
 #[cfg(all(feature = "python", feature = "rsgi_python"))]
 use pyo3::Python;
 use radix_trie::Trie;
@@ -221,7 +222,15 @@ impl VirtualHost {
     }
 
     async fn serve_status_page(&self, status: u16) -> Result<Response, VetisError> {
-        let status_code = http::StatusCode::from_u16(status).unwrap();
+        let status_code = match StatusCode::from_u16(status) {
+            Ok(code) => code,
+            Err(_) => {
+                return Err(VetisError::VirtualHost(VirtualHostError::Interface(
+                    "Invalid status code".to_string(),
+                )))
+            }
+        };
+
         let static_status_response = Response::builder()
             .status(status_code)
             .text(

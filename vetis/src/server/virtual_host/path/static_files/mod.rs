@@ -51,9 +51,15 @@ impl StaticPath {
             };
 
             if let Some(range) = range {
-                let (unit, range) = range
+                let range_info = match range
                     .split_once("=")
-                    .unwrap();
+                    .ok_or(VetisError::VirtualHost(VirtualHostError::File(FileError::InvalidRange)))
+                {
+                    Ok(info) => info,
+                    Err(e) => return Err(e),
+                };
+
+                let (unit, range) = range_info;
                 if unit != "bytes" {
                     return Err(VetisError::VirtualHost(VirtualHostError::File(
                         FileError::InvalidRange,
@@ -62,13 +68,19 @@ impl StaticPath {
 
                 let (start, end) = range
                     .split_once("-")
-                    .unwrap();
+                    .ok_or(VetisError::VirtualHost(VirtualHostError::File(
+                        FileError::InvalidRange,
+                    )))?;
                 let start = start
                     .parse::<u64>()
-                    .unwrap();
+                    .map_err(|_| {
+                        VetisError::VirtualHost(VirtualHostError::File(FileError::InvalidRange))
+                    })?;
                 let end = end
                     .parse::<u64>()
-                    .unwrap();
+                    .map_err(|_| {
+                        VetisError::VirtualHost(VirtualHostError::File(FileError::InvalidRange))
+                    })?;
                 if start > end || start >= filesize {
                     return Ok(Response::builder()
                         .status(http::StatusCode::RANGE_NOT_SATISFIABLE)
@@ -143,7 +155,11 @@ impl StaticPath {
                     headers.insert(
                         http::header::LAST_MODIFIED,
                         date.parse()
-                            .unwrap(),
+                            .map_err(|_| {
+                                VetisError::VirtualHost(VirtualHostError::File(
+                                    FileError::InvalidMetadata,
+                                ))
+                            })?,
                     );
                 }
                 Err(_) => todo!(),
@@ -153,7 +169,9 @@ impl StaticPath {
                     let mime_type = minimime::lookup_by_filename(
                         filename
                             .to_str()
-                            .unwrap(),
+                            .ok_or(VetisError::VirtualHost(VirtualHostError::File(
+                                FileError::InvalidMetadata,
+                            )))?,
                     );
                     if let Some(mime_type) = mime_type {
                         headers.insert(
@@ -163,12 +181,18 @@ impl StaticPath {
                                     .content_type
                                     .as_str(),
                             )
-                            .unwrap(),
+                            .map_err(|_| {
+                                VetisError::VirtualHost(VirtualHostError::File(
+                                    FileError::InvalidMetadata,
+                                ))
+                            })?,
                         );
                     }
                 }
                 None => {
-                    todo!()
+                    return Err(VetisError::VirtualHost(VirtualHostError::File(
+                        FileError::InvalidMetadata,
+                    )));
                 }
             }
 

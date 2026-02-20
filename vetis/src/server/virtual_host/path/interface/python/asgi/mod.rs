@@ -174,13 +174,26 @@ impl InterfaceWorker for AsgiWorker {
                 }
             };
 
-            let status_str = status
+            let status_str = match status
                 .split_whitespace()
                 .next()
-                .unwrap();
-            let status_code = status_str
-                .parse::<StatusCode>()
-                .unwrap();
+            {
+                Some(str) => str,
+                None => {
+                    return Err(VetisError::VirtualHost(VirtualHostError::Interface(
+                        "Invalid status message".to_string(),
+                    )))
+                }
+            };
+
+            let status_code = match status_str.parse::<StatusCode>() {
+                Ok(code) => code,
+                Err(_) => {
+                    return Err(VetisError::VirtualHost(VirtualHostError::Interface(
+                        "Invalid status code".to_string(),
+                    )))
+                }
+            };
 
             let headers = headers
                 .into_iter()
@@ -193,10 +206,17 @@ impl InterfaceWorker for AsgiWorker {
                 });
 
             match result {
-                Ok(_) => Ok(Response::builder()
-                    .status(status_code)
-                    .headers(headers)
-                    .body(VetisBody::body_from_bytes(&response_body.unwrap()))),
+                Ok(_) => {
+                    if response_body.is_none() {
+                        return Err(VetisError::VirtualHost(VirtualHostError::Interface(
+                            "No response body".to_string(),
+                        )));
+                    }
+                    Ok(Response::builder()
+                        .status(status_code)
+                        .headers(headers)
+                        .body(VetisBody::body_from_bytes(&response_body.unwrap())))
+                }
                 Err(e) => {
                     error!("Failed to run script: {}", e);
                     println!("Failed to run script: {}", e);
