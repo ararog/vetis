@@ -57,7 +57,7 @@ impl Listener for ServerListener {
     fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts) {
         match self {
             #[cfg(any(feature = "http1", feature = "http2"))]
-            ServerListener::Tcp(ref mut tcp_listener) => {
+            ServerListener::Tcp(tcp_listener) => {
                 tcp_listener.set_virtual_hosts(virtual_hosts);
             }
             #[cfg(feature = "http3")]
@@ -71,7 +71,7 @@ impl Listener for ServerListener {
         Box::pin(async move {
             match self {
                 #[cfg(any(feature = "http1", feature = "http2"))]
-                ServerListener::Tcp(ref mut tcp_listener) => {
+                ServerListener::Tcp(tcp_listener) => {
                     tcp_listener
                         .listen()
                         .await?
@@ -92,7 +92,7 @@ impl Listener for ServerListener {
         Box::pin(async move {
             match self {
                 #[cfg(any(feature = "http1", feature = "http2"))]
-                ServerListener::Tcp(ref mut tcp_listener) => {
+                ServerListener::Tcp(tcp_listener) => {
                     tcp_listener
                         .stop()
                         .await?

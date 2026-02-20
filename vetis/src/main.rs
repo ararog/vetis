@@ -1,10 +1,13 @@
 use clap::Parser;
 use log::error;
+
+use serde::Deserialize;
+
 #[cfg(feature = "smol-rt")]
 use macro_rules_attribute::apply;
-use serde::Deserialize;
 #[cfg(feature = "smol-rt")]
 use smol_macros::main;
+
 use std::{error::Error, fs::read_to_string, path::Path};
 use vetis::{
     config::server::{virtual_host::VirtualHostConfig, ServerConfig},

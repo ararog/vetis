@@ -523,8 +523,10 @@ version = "4.5.59"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "370daa45065b80218950227371916a1633217ae42b2715b2287b606dcd618e24"
 dependencies = [
+ "anstream",
  "anstyle",
  "clap_lex",
+ "strsim",
 ]
 
 [[package]]
@@ -1753,6 +1755,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "670fdfda89751bc4a84ac13eaa63e205cf0fd22b4c9a5fbfa085b63c1f1d3a30"
 
 [[package]]
+name = "maplit"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
+
+[[package]]
 name = "memchr"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2857,6 +2865,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "simple"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "clap",
+ "deboa",
+ "env_logger",
+ "http-body-util",
+ "hyper",
+ "macro_rules_attribute",
+ "maplit",
+ "smol-macros",
+ "tokio",
+ "vetis",
+]
+
+[[package]]
 name = "siphasher"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3016,6 +3041,12 @@ name = "stdweb-internal-runtime"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213701ba3370744dcd1a12960caa4843b3d68b4d1c0a5d575e0d65b2ee9d16c0"
+
+[[package]]
+name = "strsim"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "subtle"
@@ -3495,6 +3526,17 @@ dependencies = [
  "tokio-rustls",
  "tokio-util",
  "url",
+]
+
+[[package]]
+name = "vetis-macros"
+version = "0.1.1-beta.1"
+dependencies = [
+ "deboa",
+ "http",
+ "http-body-util",
+ "tokio",
+ "vetis",
 ]
 
 [[package]]
