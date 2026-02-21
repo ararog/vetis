@@ -9,6 +9,7 @@ async fn test_http() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut server = http!(
         hostname => "localhost",
+        root_directory => "src",
         port => 8080,
         interface => "0.0.0.0",
         handler => handler

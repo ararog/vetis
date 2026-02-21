@@ -9,10 +9,7 @@ permalink: /
 <h1><b>VeTiS</b></h1>
 </div>
 
-[![crates.io](https://img.shields.io/crates/v/vetis?style=flat-square)](https://crates.io/crates/vetis)
-[![Build Status](https://github.com/ararog/vetis/actions/workflows/rust.yml/badge.svg?event=push)](https://github.com/ararog/vetis/actions/workflows/rust.yml)
-[![Documentation](https://docs.rs/vetis/badge.svg)](https://docs.rs/vetis/latest/vetis)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Crates.io downloads](https://img.shields.io/crates/d/vetis)](https://crates.io/crates/vetis) [![crates.io](https://img.shields.io/crates/v/vetis?style=flat-square)](https://crates.io/crates/vetis) [![Build Status](https://github.com/ararog/vetis/actions/workflows/rust.yml/badge.svg?event=push)](https://github.com/ararog/vetis/actions/workflows/rust.yml) ![Crates.io MSRV](https://img.shields.io/crates/msrv/vetis) [![Documentation](https://docs.rs/vetis/badge.svg)](https://docs.rs/vetis/latest/vetis) [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ararog/vetis/blob/main/LICENSE.md)  [![codecov](https://codecov.io/gh/ararog/vetis/graph/badge.svg?token=T0HSBAPVSI)](https://codecov.io/gh/ararog/vetis)
 
 **VeTiS** is a lightweight yet powerful web server that brings simplicity and performance together. Designed with Rust's safety guarantees in mind, it delivers HTTP/1, HTTP/2, and HTTP/3 support with a clean, intuitive API that makes building web services a breeze.
 
@@ -33,6 +30,8 @@ That's why VeTiS came to reality, by taking advantage of what I started on deboa
 - **Protocol Support**: Full HTTP/1, HTTP/2, and HTTP/3 implementation
 - **Secure by Default**: Built-in TLS support with modern cryptography
 - **Zero-Cost Abstractions**: Leverage Rust's performance without overhead
+- **Language Support**: Built-in support for Python, PHP, and RSGI applications
+- **Standalone server**: Can be used as a standalone server or as a library
 - **Feature-Gated**: Include only what you need for optimal binary size
 
 ## Quick Start
@@ -48,52 +47,116 @@ Basic usage:
 
 ```rust
 use hyper::StatusCode;
+
+#[cfg(feature = "smol")]
+use macro_rules_attribute::apply;
+#[cfg(feature = "smol")]
+use smol_macros::main;
+
 use vetis::{
+    config::server::{
+        virtual_host::{
+            path::proxy::ProxyPathConfig, path::static_files::StaticPathConfig, SecurityConfig,
+            VirtualHostConfig,
+        },
+        ListenerConfig, Protocol, ServerConfig,
+    },
+    server::virtual_host::{
+        handler_fn,
+        path::{proxy::ProxyPath, static_files::StaticPath, HandlerPath},
+        VirtualHost,
+    },
     Vetis,
-    config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
-    server::virtual_host::{VirtualHost, handler_fn},
 };
 
-pub const CA_CERT: &[u8] = include_bytes!("../certs/ca.der");
-pub const SERVER_CERT: &[u8] = include_bytes!("../certs/server.der");
-pub const SERVER_KEY: &[u8] = include_bytes!("../certs/server.key.der");
+pub(crate) const CA_CERT: &[u8] = include_bytes!("../certs/ca.der");
 
+pub(crate) const SERVER_CERT: &[u8] = include_bytes!("../certs/server.der");
+pub(crate) const SERVER_KEY: &[u8] = include_bytes!("../certs/server.key.der");
+
+#[cfg(feature = "tokio")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    std_logger::Config::logfmt().init();
+    run().await
+}
+
+#[cfg(feature = "smol")]
+#[apply(main!)]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    run().await
+}
+
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
+    env_logger::Builder::from_env(env_logger::Env::default().filter_or("RUST_LOG", "error")).init();
 
     let https = ListenerConfig::builder()
         .port(8443)
-        .protocol(vetis::config::Protocol::HTTP1)
+        .protocol(Protocol::Http1)
         .interface("0.0.0.0")
-        .build();
+        .build()?;
 
     let config = ServerConfig::builder()
         .add_listener(https)
-        .build();
+        .build()?;
 
     let security_config = SecurityConfig::builder()
         .ca_cert_from_bytes(CA_CERT.to_vec())
         .cert_from_bytes(SERVER_CERT.to_vec())
         .key_from_bytes(SERVER_KEY.to_vec())
-        .build();
+        .build()?;
 
     let localhost_config = VirtualHostConfig::builder()
         .hostname("localhost")
         .port(8443)
         .security(security_config)
+        .root_directory("/home/rogerio/Downloads")
+        .status_pages(maplit::hashmap! {
+            404 => "404.html".to_string(),
+            500 => "500.html".to_string(),
+        })
         .build()?;
 
     let mut localhost_virtual_host = VirtualHost::new(localhost_config);
 
-    let mut root_path = HandlerPath::new("/", handler_fn(|request| async move {
-         let response = vetis::Response::builder()
-             .status(StatusCode::OK)
-             .text("Hello, World!");
-         Ok(response)
-    }));
-     
-    localhost_virtual_host.add_path(root_path);    
+    let root_path = HandlerPath::builder()
+        .uri("/hello")
+        .handler(handler_fn(|request| async move {
+            let response = vetis::Response::builder()
+                .status(StatusCode::OK)
+                .text("Hello from localhost");
+            Ok(response)
+        }))
+        .build()?;
+
+    localhost_virtual_host.add_path(root_path);
+
+    let health_path = HandlerPath::builder()
+        .uri("/health")
+        .handler(handler_fn(|request| async move {
+            let response = vetis::Response::builder()
+                .status(StatusCode::OK)
+                .text("Health check");
+            Ok(response)
+        }))
+        .build()?;
+
+    localhost_virtual_host.add_path(health_path);
+
+    let proxy_path = ProxyPathConfig::builder()
+        .uri("/proxy")
+        .target("http://localhost:5230")
+        .build()?;
+
+    localhost_virtual_host.add_path(ProxyPath::new(proxy_path));
+
+    let images_path = StaticPathConfig::builder()
+        .uri("/images")
+        .directory("/home/rogerio/Downloads")
+        .extensions("\\.(jpg|png|gif|html)$")
+        .index_files(vec!["index.html".to_string()])
+        .build()?;
+
+    localhost_virtual_host.add_path(StaticPath::new(images_path));
 
     let mut server = Vetis::new(config);
     server
@@ -117,6 +180,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 | [vetis](./vetis) | Core HTTP server library | [![docs.rs](https://img.shields.io/docsrs/vetis/latest)](https://docs.rs/vetis) |
 | [vetis-macros](./vetis-macros) | Macros for Vetis | [![docs.rs](https://img.shields.io/docsrs/vetis-macros/latest)](https://docs.rs/vetis-macros) |
 
+
+## Standalone Server
+
+Check out the [standalone server](./standalone-server.md) for complete examples of how to use Vetis as a standalone server.
+
+
 ## Examples
 
 Check out the [examples](./examples.md) for complete examples of how to use Vetis in your projects.
@@ -127,10 +196,15 @@ You can create a new project from the template using `cargo generate`:
 
 `cargo generate ararog/vetis-templates`
 
+## Benchmarks
+
+Check out the [benchmarks](./benchmarks.md) for performance details.
+
 ## Documentation
 
 - [API Reference](https://docs.rs/vetis)
 - [Contributing Guide](./CONTRIBUTING.md)
+- [Language Support](./LANGUAGE_SUPPORT.md)
 
 ## Other Projects
 

@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use http::HeaderMap;
 
 use crate::{
-    config::{Protocol, ServerConfig},
+    config::server::{Protocol, ServerConfig},
     errors::VetisError,
     server::{
         conn::listener::{Listener, ServerListener},
@@ -19,6 +19,15 @@ pub struct HttpServer {
 }
 
 impl Server for HttpServer {
+    /// Create a new server instance
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - A `ServerConfig` instance containing the server configuration.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `HttpServer` instance.
     fn new(config: ServerConfig) -> Self {
         Self {
             config,
@@ -27,10 +36,20 @@ impl Server for HttpServer {
         }
     }
 
+    /// Set the virtual hosts for the server.
+    ///
+    /// # Arguments
+    ///
+    /// * `virtual_hosts` - A `VetisVirtualHosts` instance containing the virtual host registry.
     fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts) {
         self.virtual_hosts = virtual_hosts;
     }
 
+    /// Start the server.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), VetisError>` - A result containing `()` if the server started successfully, or a `VetisError` if the server failed to start.
     async fn start(&mut self) -> Result<(), VetisError> {
         let mut listeners: Vec<ServerListener> = self
             .config
@@ -64,6 +83,9 @@ impl Server for HttpServer {
                     );
                     listener
                 }
+                _ => {
+                    panic!("Unsupported protocol");
+                }
             })
             .collect();
 
@@ -78,6 +100,11 @@ impl Server for HttpServer {
         Ok(())
     }
 
+    /// Stop the server.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), VetisError>` - A result containing `()` if the server stopped successfully, or a `VetisError` if the server failed to stop.
     async fn stop(&mut self) -> Result<(), VetisError> {
         for listener in self
             .listeners

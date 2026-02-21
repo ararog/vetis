@@ -6,15 +6,19 @@ use macro_rules_attribute::apply;
 use smol_macros::main;
 
 use vetis::{
+    config::server::{
+        virtual_host::{
+            path::proxy::ProxyPathConfig, path::static_files::StaticPathConfig, SecurityConfig,
+            VirtualHostConfig,
+        },
+        ListenerConfig, Protocol, ServerConfig,
+    },
+    server::virtual_host::{
+        handler_fn,
+        path::{proxy::ProxyPath, static_files::StaticPath, HandlerPath},
+        VirtualHost,
+    },
     Vetis,
-    config::{
-        ListenerConfig, Protocol, ProxyPathConfig, SecurityConfig, ServerConfig, StaticPathConfig,
-        VirtualHostConfig,
-    },
-    server::{
-        path::{HandlerPath, ProxyPath, StaticPath},
-        virtual_host::{VirtualHost, handler_fn},
-    },
 };
 
 pub(crate) const CA_CERT: &[u8] = include_bytes!("../certs/ca.der");
@@ -57,9 +61,10 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .hostname("localhost")
         .port(8443)
         .security(security_config)
+        .root_directory("/home/rogerio/Downloads")
         .status_pages(maplit::hashmap! {
-            404 => "/home/rogerio/Downloads/404.html".to_string(),
-            500 => "/home/rogerio/Downloads/500.html".to_string(),
+            404 => "404.html".to_string(),
+            500 => "500.html".to_string(),
         })
         .build()?;
 

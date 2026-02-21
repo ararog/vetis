@@ -1,7 +1,22 @@
 [package]
 name = "simple"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+authors = ["Rogerio Araújo <rogerio.araujo@gmail.com>"]
+repository = "https://github.com/ararog/vetis"
+homepage = "https://github.com/ararog/vetis"
+description = "Very Tiny Server"
+readme = "README.md"
+license = "MIT"
+keywords = ["http", "networking", "server", "rest-server"]
+publish = true
+rust-version = "1.75.0"
+
+[package.metadata.wix]
+upgrade-guid = "23ECFFB2-E54F-4B58-9057-4F6A3E8C89A6"
+path-guid = "6D661344-550C-452E-A1CD-E321BAFA922F"
+license = false
+eula = false
 
 [features]
 default = ["tokio"]
