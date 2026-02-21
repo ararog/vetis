@@ -38,6 +38,7 @@ jobs:
 
     - name: Run vetis tests
       run: |
+        export RIPHT_PHP_SAPI_PREFIX="${{github.workspace}}/buildroot"
         cd vetis
 
         cargo test --features "http1 tokio-rt tokio-rust-tls static-files reverse-proxy auth interface" --no-default-features
