@@ -666,7 +666,7 @@ mod wsgi_interface_tests {
         use crate::tests::{CA_CERT, SERVER_CERT, SERVER_KEY};
 
         let listener = ListenerConfig::builder()
-            .port(8084)
+            .port(8088)
             .protocol(default_protocol())
             .interface("0.0.0.0")
             .build()?;
@@ -683,7 +683,7 @@ mod wsgi_interface_tests {
 
         let host_config = VirtualHostConfig::builder()
             .hostname("localhost")
-            .port(8084)
+            .port(8088)
             .root_directory("src/tests")
             .security(security_config.clone())
             .build()?;
@@ -692,7 +692,8 @@ mod wsgi_interface_tests {
         virtual_host.add_path(InterfacePath::new(
             InterfacePathConfig::builder()
                 .uri("/")
-                .target("/home/rogerio/Projetos/python/flask-app/app.py")
+                .directory("src/tests/files/python")
+                .target("main:app")
                 .build()?,
         ));
 
@@ -716,7 +717,7 @@ mod wsgi_interface_tests {
             .certificate(Certificate::from_slice(CA_CERT, deboa::cert::ContentEncoding::DER))
             .build();
 
-        let request = request::get("https://localhost:8084/")?
+        let request = request::get("https://localhost:8088/")?
             .send_with(&client)
             .await?;
 

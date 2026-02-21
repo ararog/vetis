@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs};
+use std::{collections::HashMap, fs, path::Path};
 
 use log::error;
 use serde::{Deserialize, Deserializer};
@@ -271,7 +271,7 @@ impl VirtualHostConfigBuilder {
             .is_empty()
         {
             return Err(VetisError::Config(ConfigError::VirtualHost(
-                "hostname is not provided".to_string(),
+                "Missing hostname".to_string(),
             )));
         }
 
@@ -280,10 +280,10 @@ impl VirtualHostConfigBuilder {
             .is_empty()
         {
             return Err(VetisError::Config(ConfigError::VirtualHost(
-                "root_directory is not provided".to_string(),
+                "Missing root directory".to_string(),
             )));
         } else {
-            let root_path = std::path::Path::new(&self.root_directory);
+            let root_path = Path::new(&self.root_directory);
             if !root_path.exists() {
                 return Err(VetisError::Config(ConfigError::VirtualHost(format!(
                     "root_directory does not exist: {}",

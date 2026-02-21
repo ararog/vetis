@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use crate::errors::{ConfigError, VetisError};
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 #[derive(Clone, Deserialize)]
 #[non_exhaustive]
@@ -10,13 +10,14 @@ pub enum InterfaceType {
     Php,
     Asgi,
     Wsgi,
-    RsgiPython,
-    RsgiRuby,
+    Rsgi,
+    Ruby,
 }
 
 /// Builder for creating `InterfacePathConfig` instances.
 pub struct InterfacePathConfigBuilder {
     uri: String,
+    directory: String,
     target: String,
     params: Option<HashMap<String, String>>,
     interface_type: InterfaceType,
@@ -30,6 +31,16 @@ impl InterfacePathConfigBuilder {
     /// * `Self` - The builder.
     pub fn uri(mut self, uri: &str) -> Self {
         self.uri = uri.to_string();
+        self
+    }
+
+    /// Allow set the directory of the interface path.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
+    pub fn directory(mut self, directory: &str) -> Self {
+        self.directory = directory.to_string();
         self
     }
 
@@ -73,8 +84,58 @@ impl InterfacePathConfigBuilder {
             return Err(VetisError::Config(ConfigError::Path("URI cannot be empty".to_string())));
         }
 
+        if self
+            .directory
+            .is_empty()
+        {
+            return Err(VetisError::Config(ConfigError::Path("Missing directory".to_string())));
+        } else {
+            let path = Path::new(&self.directory);
+            if !path.exists() {
+                return Err(VetisError::Config(ConfigError::Path(
+                    "Directory does not exist".to_string(),
+                )));
+            }
+        }
+
+        if self
+            .target
+            .is_empty()
+        {
+            return Err(VetisError::Config(ConfigError::Path("Missing target".to_string())));
+        } else {
+            match self.interface_type {
+                InterfaceType::Asgi | InterfaceType::Wsgi | InterfaceType::Rsgi => {
+                    let target_parts = self
+                        .target
+                        .split_once(":");
+                    match target_parts {
+                        Some((module, application)) => {
+                            let path = Path::new(&self.directory);
+                            let file = path.join(format!("{}.py", module));
+                            if !file.exists() {
+                                return Err(VetisError::Config(ConfigError::Path(
+                                    "Module file does not exist".to_string(),
+                                )));
+                            }
+                        }
+                        None => {
+                            return Err(VetisError::Config(ConfigError::Path("Target must be in format 'module:application' for API interface type".to_string())));
+                        }
+                    }
+                }
+                InterfaceType::Php => {
+                    // For PHP interface type, target is not used
+                }
+                InterfaceType::Ruby => {
+                    // For PHP interface type, target is not used
+                }
+            }
+        }
+
         Ok(InterfacePathConfig {
             uri: self.uri,
+            directory: self.directory,
             target: self.target,
             params: self.params,
             interface_type: self.interface_type,
@@ -86,6 +147,7 @@ impl InterfacePathConfigBuilder {
 #[derive(Clone, Deserialize)]
 pub struct InterfacePathConfig {
     uri: String,
+    directory: String,
     target: String,
     params: Option<HashMap<String, String>>,
     interface_type: InterfaceType,
@@ -100,6 +162,7 @@ impl InterfacePathConfig {
     pub fn builder() -> InterfacePathConfigBuilder {
         InterfacePathConfigBuilder {
             uri: "/".to_string(),
+            directory: ".".to_string(),
             target: "main".to_string(),
             params: None,
             interface_type: InterfaceType::Wsgi,
@@ -113,6 +176,15 @@ impl InterfacePathConfig {
     /// * `&str` - The uri.
     pub fn uri(&self) -> &str {
         &self.uri
+    }
+
+    /// Returns directory
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - The directory.
+    pub fn directory(&self) -> &str {
+        &self.directory
     }
 
     /// Returns target

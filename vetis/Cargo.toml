@@ -25,10 +25,10 @@ default = [
   "tokio-rust-tls",
   # Leaving them enable for testing purposes, 
   # they must be disabled at time of publish/release.
-  #"static-files",
-  #"reverse-proxy",
-  #"auth",
-  #"interface",
+  "static-files",
+  "reverse-proxy",
+  "auth",
+  "interface",
 ]
 
 tokio-rt = [

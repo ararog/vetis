@@ -10,7 +10,7 @@ use crate::{
 
 pub mod callback;
 
-impl From<RsgiRubyWorker> for Interface {
+impl From<RubyWorker> for Interface {
     /// Convert static path to host path
     ///
     /// # Arguments
@@ -20,22 +20,23 @@ impl From<RsgiRubyWorker> for Interface {
     /// # Returns
     ///
     /// * `Interface` - The interface
-    fn from(value: RsgiRubyWorker) -> Self {
-        Interface::RsgiRuby(value)
+    fn from(value: RubyWorker) -> Self {
+        Interface::Ruby(value)
     }
 }
 
-pub struct RsgiRubyWorker {
-    file: String,
+pub struct RubyWorker {
+    directory: String,
+    target: String,
 }
 
-impl RsgiRubyWorker {
-    pub fn new(file: String) -> RsgiRubyWorker {
-        RsgiRubyWorker { file }
+impl RubyWorker {
+    pub fn new(directory: String, target: String) -> RubyWorker {
+        RubyWorker { directory, target }
     }
 }
 
-impl InterfaceWorker for RsgiRubyWorker {
+impl InterfaceWorker for RubyWorker {
     fn handle(
         &self,
         request: Arc<Request>,

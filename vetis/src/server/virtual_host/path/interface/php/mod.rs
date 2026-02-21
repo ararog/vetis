@@ -24,12 +24,13 @@ impl From<PhpWorker> for Interface {
 }
 
 pub struct PhpWorker {
-    file: String,
+    directory: String,
+    target: String,
 }
 
 impl PhpWorker {
-    pub fn new(file: String) -> PhpWorker {
-        PhpWorker { file }
+    pub fn new(directory: String, target: String) -> PhpWorker {
+        PhpWorker { directory, target }
     }
 }
 

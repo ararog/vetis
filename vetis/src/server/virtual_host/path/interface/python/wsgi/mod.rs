@@ -1,4 +1,4 @@
-use std::{ffi::CString, fs, future::Future, pin::Pin, sync::Arc};
+use std::{ffi::CString, fs, future::Future, path::Path, pin::Pin, sync::Arc};
 
 use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use log::error;
@@ -46,8 +46,12 @@ pub struct WsgiWorker {
 }
 
 impl WsgiWorker {
-    pub fn new(file: String) -> Result<WsgiWorker, VetisError> {
-        let code = fs::read_to_string(&file);
+    pub fn new(directory: String, target: String) -> Result<WsgiWorker, VetisError> {
+        let directory = Path::new(&directory);
+        let target = target.split_once(":");
+        let (module, app) = target.unwrap();
+
+        let code = fs::read_to_string(directory.join(format!("{}.py", module)));
         let code = match code {
             Ok(code) => code,
             Err(e) => {
@@ -65,18 +69,9 @@ impl WsgiWorker {
             }
         };
 
-        let file = CString::new(file.as_str());
-        let file = match file {
-            Ok(file) => file,
-            Err(e) => {
-                error!("Failed to initialize file: {}", e);
-                return Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())));
-            }
-        };
-
         let app = Python::attach(|py| {
-            let script_module = PyModule::from_code(py, &code, &file, c"main")?;
-            let app = script_module.getattr("app")?;
+            let script_module = PyModule::from_code(py, &code, c"", c"main")?;
+            let app = script_module.getattr(app)?;
             script_module.add_class::<StartResponse>()?;
 
             let environ = PyDict::new(py);

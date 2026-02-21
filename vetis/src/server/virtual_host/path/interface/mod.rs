@@ -3,7 +3,7 @@ use std::{future::Future, pin::Pin, sync::Arc};
 #[cfg(feature = "asgi")]
 use crate::server::virtual_host::path::interface::python::asgi::AsgiWorker;
 #[cfg(feature = "rsgi")]
-use crate::server::virtual_host::path::interface::python::rsgi::RsgiPythonWorker;
+use crate::server::virtual_host::path::interface::python::rsgi::RsgiWorker;
 #[cfg(feature = "wsgi")]
 use crate::server::virtual_host::path::interface::python::wsgi::WsgiWorker;
 #[cfg(feature = "python")]
@@ -13,7 +13,7 @@ use pyo3::Python;
 use crate::server::virtual_host::path::interface::php::PhpWorker;
 
 #[cfg(feature = "ruby")]
-use crate::server::virtual_host::path::interface::ruby::RsgiRubyWorker;
+use crate::server::virtual_host::path::interface::ruby::RubyWorker;
 
 use crate::{
     config::server::virtual_host::path::interface::{InterfacePathConfig, InterfaceType},
@@ -45,9 +45,9 @@ pub enum Interface {
     #[cfg(all(feature = "wsgi", feature = "python"))]
     Wsgi(WsgiWorker),
     #[cfg(all(feature = "rsgi", feature = "python"))]
-    RsgiPython(RsgiPythonWorker),
+    Rsgi(RsgiWorker),
     #[cfg(all(feature = "rsgi", feature = "ruby"))]
-    RsgiRuby(RsgiRubyWorker),
+    Ruby(RubyWorker),
 }
 
 impl InterfaceWorker for Interface {
@@ -77,9 +77,9 @@ impl InterfaceWorker for Interface {
             #[cfg(feature = "python")]
             Interface::Wsgi(handler) => handler.handle(request, uri),
             #[cfg(all(feature = "python", feature = "rsgi"))]
-            Interface::RsgiPython(handler) => handler.handle(request, uri),
+            Interface::Rsgi(handler) => handler.handle(request, uri),
             #[cfg(all(feature = "ruby", feature = "rsgi"))]
-            Interface::RsgiRuby(handler) => handler.handle(request, uri),
+            Interface::Ruby(handler) => handler.handle(request, uri),
             _ => {
                 panic!("Unsupported interface type");
             }
@@ -104,18 +104,21 @@ impl InterfacePath {
     ///
     /// * `InterfacePath` - The proxy path
     pub fn new(config: InterfacePathConfig) -> InterfacePath {
-        let file = config
+        let directory = config
+            .directory()
+            .to_string();
+        let target = config
             .target()
             .to_string();
 
         let interface = match config.interface_type() {
             #[cfg(feature = "php")]
-            InterfaceType::Php => Interface::Php(PhpWorker::new(file)),
+            InterfaceType::Php => Interface::Php(PhpWorker::new(directory, target)),
             #[cfg(all(feature = "python", feature = "asgi"))]
-            InterfaceType::Asgi => Interface::Asgi(AsgiWorker::new(file)),
+            InterfaceType::Asgi => Interface::Asgi(AsgiWorker::new(directory, target)),
             #[cfg(all(feature = "python", feature = "wsgi"))]
             InterfaceType::Wsgi => {
-                let worker = WsgiWorker::new(file);
+                let worker = WsgiWorker::new(directory, target);
                 match worker {
                     Ok(worker) => Interface::Wsgi(worker),
                     Err(e) => {
@@ -124,9 +127,9 @@ impl InterfacePath {
                 }
             }
             #[cfg(all(feature = "python", feature = "rsgi"))]
-            InterfaceType::RsgiPython => Interface::RsgiPython(RsgiPythonWorker::new(file)),
+            InterfaceType::Rsgi => Interface::Rsgi(RsgiWorker::new(directory, target)),
             #[cfg(all(feature = "ruby", feature = "ruby"))]
-            InterfaceType::RsgiRuby => Interface::RsgiRuby(RsgiRubyWorker::new(file)),
+            InterfaceType::Ruby => Interface::Ruby(RubyWorker::new(directory, target)),
             _ => {
                 panic!("Unsupported interface type");
             }
@@ -196,11 +199,11 @@ impl Path for InterfacePath {
                     .interface
                     .handle(request.clone(), uri),
                 #[cfg(all(feature = "python", feature = "rsgi"))]
-                InterfaceType::RsgiPython => self
+                InterfaceType::Rsgi => self
                     .interface
                     .handle(request.clone(), uri),
                 #[cfg(all(feature = "ruby", feature = "ruby"))]
-                InterfaceType::RsgiRuby => self
+                InterfaceType::Ruby => self
                     .interface
                     .handle(request.clone(), uri),
                 _ => {

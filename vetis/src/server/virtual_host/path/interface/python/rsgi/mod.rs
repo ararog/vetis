@@ -10,7 +10,7 @@ use crate::{
 
 pub mod callback;
 
-impl From<RsgiPythonWorker> for Interface {
+impl From<RsgiWorker> for Interface {
     /// Convert static path to host path
     ///
     /// # Arguments
@@ -20,22 +20,23 @@ impl From<RsgiPythonWorker> for Interface {
     /// # Returns
     ///
     /// * `Interface` - The interface
-    fn from(value: RsgiPythonWorker) -> Self {
-        Interface::RsgiPython(value)
+    fn from(value: RsgiWorker) -> Self {
+        Interface::Rsgi(value)
     }
 }
 
-pub struct RsgiPythonWorker {
-    file: String,
+pub struct RsgiWorker {
+    directory: String,
+    target: String,
 }
 
-impl RsgiPythonWorker {
-    pub fn new(file: String) -> RsgiPythonWorker {
-        RsgiPythonWorker { file }
+impl RsgiWorker {
+    pub fn new(directory: String, target: String) -> RsgiWorker {
+        RsgiWorker { directory, target }
     }
 }
 
-impl InterfaceWorker for RsgiPythonWorker {
+impl InterfaceWorker for RsgiWorker {
     fn handle(
         &self,
         request: Arc<Request>,

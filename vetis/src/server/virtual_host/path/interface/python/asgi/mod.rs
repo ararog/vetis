@@ -34,12 +34,13 @@ impl From<AsgiWorker> for Interface {
 }
 
 pub struct AsgiWorker {
-    file: String,
+    directory: String,
+    target: String,
 }
 
 impl AsgiWorker {
-    pub fn new(file: String) -> AsgiWorker {
-        AsgiWorker { file }
+    pub fn new(directory: String, target: String) -> AsgiWorker {
+        AsgiWorker { directory, target }
     }
 }
 
@@ -52,11 +53,11 @@ impl InterfaceWorker for AsgiWorker {
         let mut response_body: Option<Vec<u8>> = None;
 
         let (tx, rx) = oneshot::oneshot::<(String, Vec<(String, String)>)>();
-        let code = fs::read_to_string(&self.file);
+        let code = fs::read_to_string(&self.target);
         let code = match code {
             Ok(code) => code,
             Err(e) => {
-                error!("Failed to read script from file: {}", e);
+                error!("Failed to read script from target: {}", e);
                 return Box::pin(async move {
                     Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())))
                 });
@@ -74,11 +75,11 @@ impl InterfaceWorker for AsgiWorker {
             }
         };
 
-        let file = CString::new(self.file.as_str());
+        let file = CString::new(self.target.as_str());
         let file = match file {
             Ok(file) => file,
             Err(e) => {
-                error!("Failed to initialize file: {}", e);
+                error!("Failed to initialize target: {}", e);
                 return Box::pin(async move {
                     Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())))
                 });

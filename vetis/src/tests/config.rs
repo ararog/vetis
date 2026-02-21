@@ -98,7 +98,7 @@ fn test_invalid_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> 
 
     assert_eq!(
         virtual_host_config.err(),
-        Some(VetisError::Config(ConfigError::VirtualHost("hostname is not provided".to_string())))
+        Some(VetisError::Config(ConfigError::VirtualHost("Missing hostname".to_string())))
     );
     Ok(())
 }
