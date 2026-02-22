@@ -42,7 +42,6 @@ tokio-rt = [
   "quinn/runtime-tokio",
   "__deboa_tokio",
   "dep:tokio-util",
-  "pyo3-async-runtimes/tokio-runtime",
 ]
 smol-rt = [
   "dep:smol",
@@ -56,7 +55,6 @@ smol-rt = [
   "quinn/runtime-smol",
   "__deboa_smol",
   "dep:futures-lite",
-  "pyo3-async-runtimes/async-std-runtime",
   "dep:blocking",
 ]
 
@@ -69,9 +67,11 @@ interface = ["python", "php", "ruby"]
 
 # TODO: Implement ASGI/WSGI support
 python = ["asgi", "rsgi", "wsgi"]
-asgi = ["dep:pyo3", "dep:pyo3-async-runtimes"]
+asgi = ["dep:pyo3", "__pyo3_tokio_async"]
 rsgi = []
-wsgi = ["dep:pyo3", "dep:pyo3-async-runtimes"]
+wsgi = ["dep:pyo3", "__pyo3_tokio_async"]
+__pyo3_tokio_async = ["pyo3-async-runtimes/tokio-runtime"]
+__pyo3_smol_async = ["pyo3-async-runtimes/async-std-runtime"]
 
 # TODO: Implement PHP support
 php = ["dep:ripht-php-sapi"]
