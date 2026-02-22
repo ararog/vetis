@@ -51,6 +51,7 @@ COPY --from=files --chmod=444 \
 COPY --from=files --chmod=444 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=files --chmod=444 /usr/share/zoneinfo /usr/share/zoneinfo
 
+COPY --from=build /buildroot /usr
 COPY --from=build /vetis/target/release/vetis /bin/vetis
 
 USER vetis:vetis

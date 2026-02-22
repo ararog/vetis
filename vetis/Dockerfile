@@ -2,10 +2,9 @@ FROM rust:alpine AS build
 
 RUN apk update && \
     apk upgrade --no-cache && \
-    export LIBCLANG_STATIC=1 && \
-    apk add --no-cache lld mold musl musl-dev libc-dev cmake clang clang-dev openssl file \
+    apk add --no-cache lld mold musl musl-dev libc-dev cmake clang-dev openssl file \
         libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd \
-        binutils ca-certificates upx python3 python3-dev ruby-full clang-dev llvm-dev
+        binutils ca-certificates upx python3 python3-dev ruby-full llvm-dev
 
 RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/spc-linux-x86_64 && \
     chmod +x spc && \
@@ -52,6 +51,8 @@ COPY --from=files --chmod=444 \
 COPY --from=files --chmod=444 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=files --chmod=444 /usr/share/zoneinfo /usr/share/zoneinfo
 
+COPY --from=build /buildroot /usr
+COPY --from=build /usr/lib /usr/lib
 COPY --from=build /vetis/target/release/vetis /bin/vetis
 
 USER vetis:vetis
