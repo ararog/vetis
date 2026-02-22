@@ -15,7 +15,7 @@ RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/s
 WORKDIR /vetis
 COPY . ./
 RUN cd /vetis && \
-    RIPHT_PHP_SAPI_PREFIX="//buildroot" cargo build --release --features="tokio-rt http1 tokio-rust-tls php" --no-default-features
+    RIPHT_PHP_SAPI_PREFIX="//buildroot" cargo build --release --features="tokio-rt http1 tokio-rust-tls php" --no-default-features --target=x86_64-unknown-linux-musl
 
 
 FROM alpine:latest AS files
