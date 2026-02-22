@@ -15,7 +15,22 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: Build the Docker image
+    - name: Build the Docker image (Full)
       run: |
         cd vetis
         docker build . --file Dockerfile --tag vetis:$(date +%s)
+
+    - name: Build the Docker image (PHP)
+      run: |
+        cd vetis
+        docker build . --file Dockerfile.php --tag vetis-php:$(date +%s)
+
+    - name: Build the Docker image (Python)
+      run: |
+        cd vetis
+        docker build . --file Dockerfile.python --tag vetis-python:$(date +%s)        
+
+    - name: Build the Docker image (Ruby)
+      run: |
+        cd vetis
+        docker build . --file Dockerfile.ruby --tag vetis-ruby:$(date +%s)                

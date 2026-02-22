@@ -4,7 +4,7 @@ RUN apk update && \
     apk upgrade --no-cache && \
     apk add --no-cache lld mold musl musl-dev libc-dev cmake clang clang-dev openssl file \
         libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd \
-        binutils ca-certificates upx python3 py3-pip ruby-full clang-static
+        binutils ca-certificates upx
 
 RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/spc-linux-x86_64 && \
     chmod +x spc && \
@@ -16,7 +16,7 @@ RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/s
 WORKDIR /vetis
 COPY . ./
 RUN cd /vetis && \
-    cargo build --release --features="tokio-rt http1 tokio-rust-tls interface" --no-default-features
+    cargo build --release --features="tokio-rt http1 tokio-rust-tls interface/php" --no-default-features
 
 
 FROM alpine:latest AS files
