@@ -3,7 +3,7 @@ FROM rust:alpine AS build
 RUN apk update && \
     apk upgrade --no-cache && \
     apk add --no-cache lld mold musl musl-dev libc-dev cmake clang-static llvm-static openssl file \
-        libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd \
+        libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd pkgconfig \
         binutils ca-certificates upx python3 python3-dev ruby-full
 
 RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/spc-linux-x86_64 && \
