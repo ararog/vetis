@@ -1,4 +1,4 @@
-name: Build Docker Image (Python)
+name: Build and Push Docker Image (Python)
 
 permissions:
   contents: read
@@ -17,7 +17,22 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: Build the Docker image (Python)
-      run: |
-        cd vetis
-        docker build . --file Dockerfile.python --tag vetis-python:$(date +%s)
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ vars.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        push: true
+        context: ./vetis
+        file: ./vetis/Dockerfile.python
+        tags: ${{ vars.DOCKERHUB_USERNAME }}/vetis-python:latest
