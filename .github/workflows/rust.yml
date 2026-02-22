@@ -53,6 +53,7 @@ jobs:
 
     - name: Run vetis-macros tests
       run: |
+        export RIPHT_PHP_SAPI_PREFIX="${{github.workspace}}/buildroot"
         cd vetis-macros
 
         cargo test
