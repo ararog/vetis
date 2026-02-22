@@ -28,6 +28,7 @@ jobs:
 
     - uses: actions/download-artifact@v5
       id: download-php
+      continue-on-error: true
       with:
         name: php-binary
         path: buildroot/

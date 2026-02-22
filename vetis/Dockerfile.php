@@ -16,7 +16,7 @@ RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/s
 WORKDIR /vetis
 COPY . ./
 RUN cd /vetis && \
-    cargo build --release --features="tokio-rt http1 tokio-rust-tls interface/php" --no-default-features
+    cargo build --release --features="tokio-rt http1 tokio-rust-tls interface php" --no-default-features
 
 
 FROM alpine:latest AS files
