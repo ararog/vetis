@@ -9,7 +9,7 @@ RUN apk update && \
 WORKDIR /vetis
 COPY . ./
 RUN cd /vetis && \
-    cargo build --release --features="tokio-rt http1 tokio-rust-tls ruby" --no-default-features
+    cargo build --release --features="tokio-rt http1 tokio-rust-tls ruby" --no-default-features --target=x86_64-unknown-linux-musl
 
 
 FROM alpine:latest AS files
