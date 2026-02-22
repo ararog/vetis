@@ -26,13 +26,28 @@ jobs:
       with:
         ruby-version: '3.1'
 
-    - name: Setup PHP
+    - uses: actions/download-artifact@v5
+      id: download-php
+      with:
+        name: php-binary
+        path: buildroot/
+
+    - name: Build Static PHP
+      id: build-php
+      if: steps.download-php.outputs.download-success != 'true'
       run: |
           curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/spc-linux-x86_64
           chmod +x spc
           ./spc doctor --auto-fix
           ./spc download php-src --with-php=8.3 --for-extensions="phar,posix,readline"
           ./spc build phar,posix,readline --build-embed
+
+    - uses: actions/upload-artifact@v4
+      if: steps.build-php.outcome == 'success'
+      with:
+        name: php-binary
+        path: buildroot/
+        retention-days: 1
 
     - uses: Swatinem/rust-cache@v2
 

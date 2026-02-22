@@ -1,4 +1,4 @@
-name: Docker
+name: Build Docker Image (Python)
 
 permissions:
   contents: read
@@ -8,6 +8,8 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "**" ]
+    # paths-ignore:
+    #   - ".github/workflows/**"
 
 jobs:
   build:
