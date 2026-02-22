@@ -4,7 +4,14 @@ RUN apk update && \
     apk upgrade --no-cache && \
     apk add --no-cache lld mold musl musl-dev libc-dev cmake clang clang-dev openssl file \
         libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd \
-        binutils ca-certificates upx python3 py3-pip
+        binutils ca-certificates upx python3 py3-pip ruby-full clang
+
+RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/spc-linux-x86_64 && \
+    chmod +x spc && \
+    ./spc doctor --auto-fix && \
+    ./spc download php-src --with-php=8.3 --for-extensions="phar,posix,readline" && \
+    ./spc build phar,posix,readline --build-embed && \
+    export RIPHT_PHP_SAPI_PREFIX="/opt/spc"
 
 WORKDIR /vetis
 COPY . ./
