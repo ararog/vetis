@@ -2,9 +2,10 @@ FROM rust:alpine AS build
 
 RUN apk update && \
     apk upgrade --no-cache && \
+    export LIBCLANG_STATIC=1 && \
     apk add --no-cache lld mold musl musl-dev libc-dev cmake clang clang-dev openssl file \
         libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd \
-        binutils ca-certificates upx python3 py3-pip ruby-full clang-static
+        binutils ca-certificates upx python3 python3-dev ruby-full clang-dev llvm-dev
 
 RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/spc-linux-x86_64 && \
     chmod +x spc && \

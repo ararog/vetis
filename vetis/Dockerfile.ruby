@@ -2,9 +2,10 @@ FROM rust:alpine AS build
 
 RUN apk update && \
     apk upgrade --no-cache && \
+    export LIBCLANG_STATIC=1 && \
     apk add --no-cache lld mold musl musl-dev libc-dev cmake clang clang-dev openssl file \
         libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd \
-        binutils ca-certificates upx ruby-full clang-dev
+        binutils ca-certificates upx ruby-full clang-dev llvm-dev
 
 WORKDIR /vetis
 COPY . ./
