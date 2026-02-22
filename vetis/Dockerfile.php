@@ -10,13 +10,12 @@ RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/s
     chmod +x spc && \
     ./spc doctor --auto-fix && \
     ./spc download php-src --with-php=8.3 --for-extensions="apcu,bcmath,calendar,ctype,curl,dba,dom,exif,fileinfo,filter,gd,iconv,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,readline,redis,session,simplexml,sockets,sodium,sqlite3,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib" && \
-    ./spc build apcu,bcmath,calendar,ctype,curl,dba,dom,exif,fileinfo,filter,gd,iconv,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,readline,redis,session,simplexml,sockets,sodium,sqlite3,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib --build-embed && \
-    export RIPHT_PHP_SAPI_PREFIX="//buildroot"
+    ./spc build apcu,bcmath,calendar,ctype,curl,dba,dom,exif,fileinfo,filter,gd,iconv,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,readline,redis,session,simplexml,sockets,sodium,sqlite3,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib --build-embed
 
 WORKDIR /vetis
 COPY . ./
 RUN cd /vetis && \
-    cargo build --release --features="tokio-rt http1 tokio-rust-tls php" --no-default-features
+    RIPHT_PHP_SAPI_PREFIX="//buildroot" cargo build --release --features="tokio-rt http1 tokio-rust-tls php" --no-default-features
 
 
 FROM alpine:latest AS files
