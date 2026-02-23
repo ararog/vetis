@@ -4,8 +4,10 @@ use http::StatusCode;
 
 use crate::{
     errors::VetisError,
-    server::virtual_host::path::interface::{Interface, InterfaceWorker},
-    Request, Response, VetisBody, VetisBodyExt,
+    server::{
+        http::{Request, Response, VetisBody, VetisBodyExt},
+        virtual_host::path::interface::{Interface, InterfaceWorker},
+    },
 };
 
 pub mod callback;
@@ -39,8 +41,8 @@ impl RsgiWorker {
 impl InterfaceWorker for RsgiWorker {
     fn handle(
         &self,
-        request: Arc<Request>,
-        uri: Arc<String>,
+        _request: Arc<Request>,
+        _uri: Arc<String>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
         Box::pin(async move {
             Ok(Response::builder()

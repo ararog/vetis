@@ -45,7 +45,7 @@ mod handler {
         let root_path = HandlerPath::builder()
             .uri("/hello")
             .handler(handler_fn(|_request| async move {
-                let response = crate::Response::builder()
+                let response = crate::server::http::Response::builder()
                     .status(StatusCode::OK)
                     .text("Hello from localhost");
                 Ok(response)
@@ -456,7 +456,9 @@ mod static_files {
 
 #[cfg(feature = "reverse-proxy")]
 mod reverse_proxy {
+    #[cfg(any(feature = "http1", feature = "http2"))]
     use deboa::{cert::Certificate, request};
+    #[cfg(any(feature = "http1", feature = "http2"))]
     use http::StatusCode;
     use std::error::Error;
 
@@ -465,18 +467,23 @@ mod reverse_proxy {
     #[cfg(feature = "smol-rt")]
     use smol_macros::test;
 
+    #[cfg(any(feature = "http1", feature = "http2"))]
     use crate::{
         config::server::{
-            virtual_host::{path::proxy::ProxyPathConfig, SecurityConfig, VirtualHostConfig},
+            virtual_host::{SecurityConfig, VirtualHostConfig},
             ListenerConfig, ServerConfig,
         },
-        errors::{ConfigError, VetisError},
         server::virtual_host::{
             handler_fn,
             path::{proxy::ProxyPath, HandlerPath},
             VirtualHost,
         },
         tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
+    };
+
+    use crate::{
+        config::server::virtual_host::path::proxy::ProxyPathConfig,
+        errors::{ConfigError, VetisError},
     };
 
     #[test]
@@ -577,7 +584,7 @@ mod reverse_proxy {
             HandlerPath::builder()
                 .uri("/")
                 .handler(handler_fn(|_request| async move {
-                    Ok(crate::Response::builder()
+                    Ok(crate::server::http::Response::builder()
                         .status(StatusCode::OK)
                         .text("Hello, world!"))
                 }))

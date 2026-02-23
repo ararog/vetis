@@ -13,8 +13,10 @@ use crate::server::virtual_host::path::static_files::StaticPath;
 
 use crate::{
     errors::{HandlerError, VetisError, VirtualHostError},
-    server::virtual_host::BoxedHandlerClosure,
-    Request, Response,
+    server::{
+        http::{Request, Response},
+        virtual_host::BoxedHandlerClosure,
+    },
 };
 
 #[cfg(feature = "auth")]

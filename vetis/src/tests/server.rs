@@ -71,7 +71,7 @@ mod server_tests {
         let ip4_root_path = HandlerPath::builder()
             .uri("/hello")
             .handler(handler_fn(|_request| async move {
-                let response = crate::Response::builder()
+                let response = crate::server::http::Response::builder()
                     .status(StatusCode::OK)
                     .text("Hello from ipv4");
                 Ok(response)
@@ -81,7 +81,7 @@ mod server_tests {
         let ip6_root_path = HandlerPath::builder()
             .uri("/hello")
             .handler(handler_fn(|_request| async move {
-                let response = crate::Response::builder()
+                let response = crate::server::http::Response::builder()
                     .status(StatusCode::OK)
                     .text("Hello from ipv6");
                 Ok(response)

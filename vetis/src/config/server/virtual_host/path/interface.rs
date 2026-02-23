@@ -110,7 +110,7 @@ impl InterfacePathConfigBuilder {
                         .target
                         .split_once(":");
                     match target_parts {
-                        Some((module, application)) => {
+                        Some((module, _application)) => {
                             let path = Path::new(&self.directory);
                             let file = path.join(format!("{}.py", module));
                             if !file.exists() {

@@ -9,10 +9,9 @@ use crate::{
     config::server::virtual_host::path::static_files::StaticPathConfig,
     errors::{FileError, VetisError, VirtualHostError},
     server::{
-        http::static_response,
+        http::{static_response, Request, Response, VetisBody, VetisBodyExt},
         virtual_host::path::{HostPath, Path},
     },
-    Request, Response, VetisBody, VetisBodyExt,
 };
 use http::{HeaderMap, HeaderValue};
 use std::{future::Future, path::PathBuf, pin::Pin, sync::Arc};

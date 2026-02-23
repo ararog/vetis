@@ -47,10 +47,10 @@ use crate::{
     errors::VetisError,
     server::{
         conn::listener::{Listener, ListenerResult},
-        http::static_response,
+        http::{static_response, VetisBody},
         tls::TlsFactory,
     },
-    VetisBody, VetisRwLock, VetisVirtualHosts,
+    VetisRwLock, VetisVirtualHosts,
 };
 
 #[cfg(feature = "tokio-rt")]
@@ -343,7 +343,7 @@ async fn process_request(
 
         if let Some(virtual_host) = virtual_host {
             // TODO: Save client_addr in request, grab url from request for logging
-            let request = crate::Request::from_http(req);
+            let request = crate::server::http::Request::from_http(req);
 
             let method = request
                 .method()

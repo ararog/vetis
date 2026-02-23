@@ -18,8 +18,10 @@ use crate::server::virtual_host::path::interface::ruby::RubyWorker;
 use crate::{
     config::server::virtual_host::path::interface::{InterfacePathConfig, InterfaceType},
     errors::VetisError,
-    server::virtual_host::path::{HostPath, Path},
-    Request, Response,
+    server::{
+        http::{Request, Response},
+        virtual_host::path::{HostPath, Path},
+    },
 };
 
 // #[cfg(feature = "php")]

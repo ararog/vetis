@@ -32,8 +32,10 @@ use std::sync::Arc;
 use crate::{
     config::server::virtual_host::VirtualHostConfig,
     errors::{FileError, VetisError, VirtualHostError},
-    server::virtual_host::path::{HostPath, Path},
-    Request, Response, VetisBody, VetisBodyExt,
+    server::{
+        http::{Request, Response, VetisBody, VetisBodyExt},
+        virtual_host::path::{HostPath, Path},
+    },
 };
 
 #[cfg(feature = "smol-rt")]

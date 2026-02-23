@@ -1,8 +1,10 @@
 use crate::{
     config::server::virtual_host::path::proxy::ProxyPathConfig,
     errors::{VetisError, VirtualHostError},
-    server::virtual_host::path::{HostPath, Path},
-    Request, Response,
+    server::{
+        http::{Request, Response},
+        virtual_host::path::{HostPath, Path},
+    },
 };
 use deboa::{client::conn::pool::HttpConnectionPool, request::DeboaRequest, Client};
 use std::{
@@ -88,6 +90,7 @@ impl Path for ProxyPath {
 
             let deboa_request = match deboa_request
                 .headers(request_parts.headers)
+                // TODO: Set body
                 .build()
             {
                 Ok(request) => request,

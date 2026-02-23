@@ -46,7 +46,7 @@ mod tls_tests {
                 .uri("/")
                 .handler(handler_fn(|_req| async move {
                     Ok::<_, VetisError>(
-                        crate::Response::builder()
+                        crate::server::http::Response::builder()
                             .status(http::StatusCode::OK)
                             .text("Test response"),
                     )
@@ -75,7 +75,7 @@ mod tls_tests {
                 .uri("/")
                 .handler(handler_fn(|_req| async move {
                     Ok::<_, VetisError>(
-                        crate::Response::builder()
+                        crate::server::http::Response::builder()
                             .status(http::StatusCode::OK)
                             .text("Test response"),
                     )
@@ -111,7 +111,7 @@ mod tls_tests {
                 .uri("/")
                 .handler(handler_fn(|_req| async move {
                     Ok::<_, VetisError>(
-                        crate::Response::builder()
+                        crate::server::http::Response::builder()
                             .status(http::StatusCode::OK)
                             .text("Test response"),
                     )
@@ -261,7 +261,7 @@ mod tls_tests {
                 .uri("/")
                 .handler(handler_fn(|_req| async move {
                     Ok::<_, VetisError>(
-                        crate::Response::builder()
+                        crate::server::http::Response::builder()
                             .status(http::StatusCode::OK)
                             .text("Test response"),
                     )
@@ -284,7 +284,7 @@ mod tls_tests {
                 .uri("/")
                 .handler(handler_fn(|_req| async move {
                     Ok::<_, VetisError>(
-                        crate::Response::builder()
+                        crate::server::http::Response::builder()
                             .status(http::StatusCode::OK)
                             .text("Test response"),
                     )

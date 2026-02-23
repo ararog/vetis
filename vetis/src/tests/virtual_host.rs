@@ -10,7 +10,6 @@ mod virtual_host_tests {
     use crate::{
         config::server::virtual_host::VirtualHostConfig,
         server::virtual_host::{handler_fn, path::HandlerPath, VirtualHost},
-        Request,
     };
 
     async fn do_add_virtual_host() -> Result<(), Box<dyn std::error::Error>> {
@@ -25,7 +24,7 @@ mod virtual_host_tests {
             HandlerPath::builder()
                 .uri("/")
                 .handler(handler_fn(|_request| async move {
-                    Ok(crate::Response::builder()
+                    Ok(crate::server::http::Response::builder()
                         .status(StatusCode::OK)
                         .text("Hello, world!"))
                 }))
@@ -67,7 +66,7 @@ mod virtual_host_tests {
             HandlerPath::builder()
                 .uri("/")
                 .handler(handler_fn(|_request| async move {
-                    Ok(crate::Response::builder()
+                    Ok(crate::server::http::Response::builder()
                         .status(StatusCode::OK)
                         .text("Hello, world!"))
                 }))
@@ -87,7 +86,7 @@ mod virtual_host_tests {
             .body(Full::new(Bytes::from(b"Test".to_vec())))
             .unwrap();
 
-        let request = Request::from_quic(request);
+        let request = crate::server::http::Request::from_quic(request);
 
         let response = virtual_host
             .route(request)

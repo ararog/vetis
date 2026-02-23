@@ -10,10 +10,12 @@ use pyo3::{
 
 use crate::{
     errors::{VetisError, VirtualHostError},
-    server::virtual_host::path::interface::{
-        python::wsgi::callback::StartResponse, Interface, InterfaceWorker,
+    server::{
+        http::{Request, Response, VetisBody, VetisBodyExt},
+        virtual_host::path::interface::{
+            python::wsgi::callback::StartResponse, Interface, InterfaceWorker,
+        },
     },
-    Request, Response, VetisBody, VetisBodyExt,
 };
 
 pub mod callback;
@@ -48,7 +50,7 @@ impl InterfaceWorker for AsgiWorker {
     fn handle(
         &self,
         request: Arc<Request>,
-        uri: Arc<String>,
+        _uri: Arc<String>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
         let mut response_body: Option<Vec<u8>> = None;
 

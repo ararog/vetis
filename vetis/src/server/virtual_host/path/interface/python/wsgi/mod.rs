@@ -19,10 +19,12 @@ pub mod callback;
 
 use crate::{
     errors::{VetisError, VirtualHostError},
-    server::virtual_host::path::interface::{
-        python::wsgi::callback::StartResponse, Interface, InterfaceWorker,
+    server::{
+        http::{Request, Response, VetisBody, VetisBodyExt},
+        virtual_host::path::interface::{
+            python::wsgi::callback::StartResponse, Interface, InterfaceWorker,
+        },
     },
-    Request, Response, VetisBody, VetisBodyExt,
 };
 
 impl From<WsgiWorker> for Interface {
