@@ -9,8 +9,8 @@ use crate::server::virtual_host::path::interface::python::wsgi::WsgiWorker;
 #[cfg(feature = "python")]
 use pyo3::Python;
 
-#[cfg(feature = "php")]
-use crate::server::virtual_host::path::interface::php::PhpWorker;
+// #[cfg(feature = "php")]
+// use crate::server::virtual_host::path::interface::php::PhpWorker;
 
 #[cfg(feature = "ruby")]
 use crate::server::virtual_host::path::interface::ruby::RubyWorker;
@@ -22,8 +22,8 @@ use crate::{
     Request, Response,
 };
 
-#[cfg(feature = "php")]
-pub mod php;
+// #[cfg(feature = "php")]
+// pub mod php;
 #[cfg(feature = "python")]
 pub mod python;
 #[cfg(feature = "ruby")]
@@ -38,8 +38,8 @@ pub trait InterfaceWorker {
 }
 
 pub enum Interface {
-    #[cfg(feature = "php")]
-    Php(PhpWorker),
+    // #[cfg(feature = "php")]
+    // Php(PhpWorker),
     #[cfg(all(feature = "asgi", feature = "python"))]
     Asgi(AsgiWorker),
     #[cfg(all(feature = "wsgi", feature = "python"))]
@@ -70,8 +70,8 @@ impl InterfaceWorker for Interface {
         Python::initialize();
 
         match self {
-            #[cfg(feature = "php")]
-            Interface::Php(handler) => handler.handle(request, uri),
+            // #[cfg(feature = "php")]
+            // Interface::Php(handler) => handler.handle(request, uri),
             #[cfg(feature = "python")]
             Interface::Asgi(handler) => handler.handle(request, uri),
             #[cfg(feature = "python")]
@@ -112,8 +112,16 @@ impl InterfacePath {
             .to_string();
 
         let interface = match config.interface_type() {
-            #[cfg(feature = "php")]
-            InterfaceType::Php => Interface::Php(PhpWorker::new(directory, target)),
+            // #[cfg(feature = "php")]
+            // InterfaceType::Php => {
+            //     let worker = PhpWorker::new(directory, target);
+            //     match worker {
+            //         Ok(worker) => Interface::Php(worker),
+            //         Err(e) => {
+            //             panic!("Could not initialize php worker: {}", e);
+            //         }
+            //     }
+            // },
             #[cfg(all(feature = "python", feature = "asgi"))]
             InterfaceType::Asgi => Interface::Asgi(AsgiWorker::new(directory, target)),
             #[cfg(all(feature = "python", feature = "wsgi"))]
@@ -122,7 +130,7 @@ impl InterfacePath {
                 match worker {
                     Ok(worker) => Interface::Wsgi(worker),
                     Err(e) => {
-                        panic!("Could not initialize worker: {}", e);
+                        panic!("Could not initialize wsgi worker: {}", e);
                     }
                 }
             }
@@ -186,10 +194,10 @@ impl Path for InterfacePath {
                 .config
                 .interface_type()
             {
-                #[cfg(feature = "php")]
-                InterfaceType::Php => self
-                    .interface
-                    .handle(request.clone(), uri),
+                //#[cfg(feature = "php")]
+                //InterfaceType::Php => self
+                //    .interface
+                //    .handle(request.clone(), uri),
                 #[cfg(feature = "python")]
                 InterfaceType::Asgi => self
                     .interface
