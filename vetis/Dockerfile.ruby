@@ -2,14 +2,15 @@ FROM rust:alpine AS build
 
 RUN apk update && \
     apk upgrade --no-cache && \
-    apk add --no-cache lld mold musl musl-dev libc-dev cmake clang-static llvm-static openssl file \
+    apk add --no-cache lld mold musl musl-dev libc-dev cmake clang clang-dev llvm llvm-dev openssl file \
         libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd pkgconfig \
         binutils ca-certificates upx ruby-full
 
-WORKDIR /vetis
+WORKDIR /docker
 COPY . ./
-RUN cd /vetis && \
-    cargo build --release --features="tokio-rt http1 tokio-rust-tls ruby" --no-default-features --target=x86_64-unknown-linux-musl
+RUN cd /docker/vetis && \
+    RUSTFLAGS="-C target-feature=-crt-static" cargo build --release --features="tokio-rt http1 tokio-rust-tls ruby" \
+    --no-default-features --target=x86_64-unknown-linux-musl
 
 
 FROM alpine:latest AS files
