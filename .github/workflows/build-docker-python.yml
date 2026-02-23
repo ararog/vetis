@@ -33,6 +33,6 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         push: true
-        context: ./vetis
+        context: .
         file: ./vetis/Dockerfile.python
         tags: ${{ vars.DOCKERHUB_USERNAME }}/vetis-python:latest

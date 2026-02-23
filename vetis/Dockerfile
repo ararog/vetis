@@ -12,10 +12,13 @@ RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/s
     ./spc download php-src --with-php=8.3 --for-extensions="apcu,bcmath,calendar,ctype,curl,dba,dom,exif,fileinfo,filter,gd,iconv,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,readline,redis,session,simplexml,sockets,sodium,sqlite3,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib" && \
     ./spc build apcu,bcmath,calendar,ctype,curl,dba,dom,exif,fileinfo,filter,gd,iconv,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,readline,redis,session,simplexml,sockets,sodium,sqlite3,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib --build-embed
 
-WORKDIR /vetis
+WORKDIR /docker
 COPY . ./
-RUN cd /vetis && \
-    RIPHT_PHP_SAPI_PREFIX="//buildroot" cargo build --release --features="tokio-rt http1 tokio-rust-tls static-files reverse-proxy auth interface" --no-default-features  --target=x86_64-unknown-linux-musl
+RUN cd /docker/vetis && \
+    RUSTFLAGS="-L native=/usr/lib/python3.12/config-3.12-x86_64-linux-musl" \
+    RIPHT_PHP_SAPI_PREFIX="//buildroot" \
+    cargo build --release --features="tokio-rt http1 tokio-rust-tls static-files reverse-proxy auth interface" \
+    --no-default-features --target=x86_64-unknown-linux-musl
 
 
 FROM alpine:latest AS files
@@ -51,8 +54,8 @@ COPY --from=files --chmod=444 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=files --chmod=444 /usr/share/zoneinfo /usr/share/zoneinfo
 
 COPY --from=build /buildroot /usr
-COPY --from=build /usr/lib /usr/lib
-COPY --from=build /vetis/target/release/vetis /bin/vetis
+COPY --from=build /usr/lib/python3.12/config-3.12-x86_64-linux-musl /usr/lib/python3.12/config-3.12-x86_64-linux-musl
+COPY --from=build /docker/target/x86_64-unknown-linux-musl/release/vetis /bin/vetis
 
 USER vetis:vetis
 
