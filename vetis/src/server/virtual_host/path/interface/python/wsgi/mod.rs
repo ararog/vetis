@@ -13,7 +13,7 @@ use smol::unblock as spawn_blocking;
 #[cfg(feature = "tokio-rt")]
 use tokio::task::spawn_blocking;
 
-use crossfire::oneshot;
+use tokio::sync::oneshot;
 
 pub mod callback;
 
@@ -99,7 +99,7 @@ impl InterfaceWorker for WsgiWorker {
         request: Arc<Request>,
         _uri: Arc<String>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
-        let (tx, rx) = oneshot::oneshot::<(String, Vec<(String, String)>)>();
+        let (tx, rx) = oneshot::channel::<(String, Vec<(String, String)>)>();
         let request = request.clone();
         let func = self.func.clone();
         let env = self.env.clone();
