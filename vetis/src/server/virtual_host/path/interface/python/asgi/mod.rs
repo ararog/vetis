@@ -1,12 +1,17 @@
 use std::{collections::HashMap, ffi::CString, fs, future::Future, pin::Pin, sync::Arc};
 
-use crossfire::oneshot;
 use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use log::error;
 use pyo3::{
     types::{PyAnyMethods, PyIterator, PyModule, PyModuleMethods},
     Bound, PyAny, PyErr, PyResult, Python,
 };
+
+#[cfg(feature = "tokio-rt")]
+use tokio::sync::oneshot;
+
+#[cfg(feature = "smol-rt")]
+use smol::oneshot;
 
 use crate::{
     errors::{VetisError, VirtualHostError},
@@ -54,7 +59,7 @@ impl InterfaceWorker for AsgiWorker {
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
         let mut response_body: Option<Vec<u8>> = None;
 
-        let (tx, rx) = oneshot::oneshot::<(String, Vec<(String, String)>)>();
+        let (tx, rx) = oneshot::channel::<(String, Vec<(String, String)>)>();
         let code = fs::read_to_string(&self.target);
         let code = match code {
             Ok(code) => code,

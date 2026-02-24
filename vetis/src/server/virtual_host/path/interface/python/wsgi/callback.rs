@@ -4,9 +4,9 @@ use pyo3::{
     Bound, PyResult,
 };
 
-use crossfire::oneshot;
+use tokio::sync::oneshot;
 
-pub(crate) type WsgiMessageSender = oneshot::TxOneshot<(String, Vec<(String, String)>)>;
+pub(crate) type WsgiMessageSender = oneshot::Sender<(String, Vec<(String, String)>)>;
 
 #[pyclass]
 pub(crate) struct Write {
