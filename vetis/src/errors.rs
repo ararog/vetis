@@ -171,6 +171,10 @@ pub enum VirtualHostError {
     #[error("Proxy error: {0}")]
     Proxy(String),
 
+    /// Interface errors
+    #[error("Interface error: {0}")]
+    Interface(String),
+
     #[error("Auth error: {0}")]
     Auth(String),
 }

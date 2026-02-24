@@ -18,8 +18,60 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.1'
+
+    - uses: actions/download-artifact@v5
+      id: download-php
+      continue-on-error: true
+      with:
+        name: php-binary
+        path: buildroot/
+
+    - name: Build Static PHP
+      id: build-php
+      if: steps.download-php.outputs.download-success != 'true'
+      run: |
+          curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/spc-linux-x86_64
+          chmod +x spc
+          ./spc doctor --auto-fix
+          ./spc download php-src --with-php=8.3 --for-extensions="phar,posix,readline"
+          ./spc build phar,posix,readline --build-embed
+
+    - uses: actions/upload-artifact@v4
+      if: steps.build-php.outcome == 'success'
+      with:
+        name: php-binary
+        path: buildroot/
+        retention-days: 1
+
     - uses: Swatinem/rust-cache@v2
 
-    - name: Run tests
+    - name: Run vetis tests
       run: |
+        export RIPHT_PHP_SAPI_PREFIX="${{github.workspace}}/buildroot"
+        cd vetis
+
+        cargo test --features "http1 tokio-rt tokio-rust-tls static-files reverse-proxy auth interface" --no-default-features
+        cargo test --features "http2 tokio-rt tokio-rust-tls static-files reverse-proxy auth interface" --no-default-features
+        cargo test --features "http3 tokio-rt tokio-rust-tls static-files reverse-proxy auth interface" --no-default-features
+
+        cargo test --features "http1 smol-rt smol-rust-tls static-files reverse-proxy auth interface" --no-default-features
+        cargo test --features "http2 smol-rt smol-rust-tls static-files reverse-proxy auth interface" --no-default-features
+        cargo test --features "http3 smol-rt smol-rust-tls static-files reverse-proxy auth interface" --no-default-features
+
+        cd ..
+
+    - name: Run vetis-macros tests
+      run: |
+        export RIPHT_PHP_SAPI_PREFIX="${{github.workspace}}/buildroot"
+        cd vetis-macros
+
         cargo test
+
+        cd ..

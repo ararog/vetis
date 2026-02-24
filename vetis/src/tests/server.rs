@@ -11,27 +11,26 @@ mod server_tests {
     use std::error::Error;
 
     use crate::{
-        config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
-        default_protocol,
-        server::{
-            path::HandlerPath,
-            virtual_host::{handler_fn, VirtualHost},
+        config::server::{
+            virtual_host::{SecurityConfig, VirtualHostConfig},
+            ListenerConfig, ServerConfig,
         },
-        tests::{CA_CERT, IP6_SERVER_CERT, IP6_SERVER_KEY, SERVER_CERT, SERVER_KEY},
+        server::virtual_host::{handler_fn, path::HandlerPath, VirtualHost},
+        tests::{
+            default_protocol, CA_CERT, IP6_SERVER_CERT, IP6_SERVER_KEY, SERVER_CERT, SERVER_KEY,
+        },
     };
 
     async fn do_multiple_interfaces() -> Result<(), Box<dyn Error>> {
-        let protocol = default_protocol();
-
         let ipv4 = ListenerConfig::builder()
             .port(8080)
-            .protocol(protocol.clone())
+            .protocol(default_protocol())
             .interface("0.0.0.0")
             .build()?;
 
         let ipv6 = ListenerConfig::builder()
             .port(8081)
-            .protocol(protocol.clone())
+            .protocol(default_protocol())
             .interface("::")
             .build()?;
 
@@ -49,6 +48,7 @@ mod server_tests {
         let localhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8080)
+            .root_directory("src/tests")
             .security(security_config)
             .build()?;
 
@@ -61,6 +61,7 @@ mod server_tests {
         let ip6_localhost_config = VirtualHostConfig::builder()
             .hostname("ip6-localhost")
             .port(8081)
+            .root_directory("src/tests")
             .security(ip6_security_config)
             .build()?;
 
@@ -70,7 +71,7 @@ mod server_tests {
         let ip4_root_path = HandlerPath::builder()
             .uri("/hello")
             .handler(handler_fn(|_request| async move {
-                let response = crate::Response::builder()
+                let response = crate::server::http::Response::builder()
                     .status(StatusCode::OK)
                     .text("Hello from ipv4");
                 Ok(response)
@@ -80,7 +81,7 @@ mod server_tests {
         let ip6_root_path = HandlerPath::builder()
             .uri("/hello")
             .handler(handler_fn(|_request| async move {
-                let response = crate::Response::builder()
+                let response = crate::server::http::Response::builder()
                     .status(StatusCode::OK)
                     .text("Hello from ipv6");
                 Ok(response)

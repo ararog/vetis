@@ -1,6 +1,6 @@
 # VeTiS (Very Tiny Server)
 
-[![crates.io](https://img.shields.io/crates/v/vetis?style=flat-square)](https://crates.io/crates/vetis) [![Build Status](https://github.com/ararog/vetis/actions/workflows/rust.yml/badge.svg?event=push)](https://github.com/ararog/vetis/actions/workflows/rust.yml) [![codecov](https://codecov.io/gh/ararog/vetis/graph/badge.svg?token=T0HSBAPVSI)](https://codecov.io/gh/ararog/vetis) [![Documentation](https://docs.rs/vetis/badge.svg)](https://docs.rs/vetis/latest/vetis)
+[![Crates.io downloads](https://img.shields.io/crates/d/vetis)](https://crates.io/crates/vetis) [![crates.io](https://img.shields.io/crates/v/vetis?style=flat-square)](https://crates.io/crates/vetis) [![Build Status](https://github.com/ararog/vetis/actions/workflows/rust.yml/badge.svg?event=push)](https://github.com/ararog/vetis/actions/workflows/rust.yml) ![Crates.io MSRV](https://img.shields.io/crates/msrv/vetis) [![Documentation](https://docs.rs/vetis/badge.svg)](https://docs.rs/vetis/latest/vetis) [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ararog/vetis/blob/main/LICENSE.md)  [![codecov](https://codecov.io/gh/ararog/vetis/graph/badge.svg?token=T0HSBAPVSI)](https://codecov.io/gh/ararog/vetis)
 
 
 **A blazingly fast, minimalist HTTP server built for modern Rust applications**
@@ -41,13 +41,15 @@ vetis = { version = "0.1.0", features = ["tokio-rt", "http2", "tokio-rust-tls"] 
 
 - tokio-rt (default)
 - smol-rt
-- http1
-- http2 (default)
+- http1 (default)
+- http2
 - http3
 - tokio-rust-tls (default)
 - static-files
 - reverse-proxy
 - auth
+
+Note: To avoid build issues, do not disable http1.
 
 ## Usage Example
 
@@ -55,52 +57,116 @@ Here's how simple it is to create a web server with VeTiS:
 
 ```rust
 use hyper::StatusCode;
+
+#[cfg(feature = "smol")]
+use macro_rules_attribute::apply;
+#[cfg(feature = "smol")]
+use smol_macros::main;
+
 use vetis::{
+    config::server::{
+        virtual_host::{
+            path::proxy::ProxyPathConfig, path::static_files::StaticPathConfig, SecurityConfig,
+            VirtualHostConfig,
+        },
+        ListenerConfig, Protocol, ServerConfig,
+    },
+    server::virtual_host::{
+        handler_fn,
+        path::{proxy::ProxyPath, static_files::StaticPath, HandlerPath},
+        VirtualHost,
+    },
     Vetis,
-    config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
-    server::virtual_host::{VirtualHost, handler_fn},
 };
 
-pub const CA_CERT: &[u8] = include_bytes!("../certs/ca.der");
-pub const SERVER_CERT: &[u8] = include_bytes!("../certs/server.der");
-pub const SERVER_KEY: &[u8] = include_bytes!("../certs/server.key.der");
+pub(crate) const CA_CERT: &[u8] = include_bytes!("../certs/ca.der");
 
+pub(crate) const SERVER_CERT: &[u8] = include_bytes!("../certs/server.der");
+pub(crate) const SERVER_KEY: &[u8] = include_bytes!("../certs/server.key.der");
+
+#[cfg(feature = "tokio")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    std_logger::Config::logfmt().init();
+    run().await
+}
+
+#[cfg(feature = "smol")]
+#[apply(main!)]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    run().await
+}
+
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
+    env_logger::Builder::from_env(env_logger::Env::default().filter_or("RUST_LOG", "error")).init();
 
     let https = ListenerConfig::builder()
         .port(8443)
-        .protocol(vetis::config::Protocol::HTTP1)
+        .protocol(Protocol::Http1)
         .interface("0.0.0.0")
-        .build();
+        .build()?;
 
     let config = ServerConfig::builder()
         .add_listener(https)
-        .build();
+        .build()?;
 
     let security_config = SecurityConfig::builder()
         .ca_cert_from_bytes(CA_CERT.to_vec())
         .cert_from_bytes(SERVER_CERT.to_vec())
         .key_from_bytes(SERVER_KEY.to_vec())
-        .build();
+        .build()?;
 
     let localhost_config = VirtualHostConfig::builder()
         .hostname("localhost")
         .port(8443)
         .security(security_config)
+        .root_directory("/home/rogerio/Downloads")
+        .status_pages(maplit::hashmap! {
+            404 => "404.html".to_string(),
+            500 => "500.html".to_string(),
+        })
         .build()?;
 
     let mut localhost_virtual_host = VirtualHost::new(localhost_config);
 
-    let mut root_path = HandlerPath::new("/", handler_fn(|request| async move {
-         let response = vetis::Response::builder()
-             .status(StatusCode::OK)
-             .text("Hello, World!");
-         Ok(response)
-    }));
-     
-    localhost_virtual_host.add_path(root_path);    
+    let root_path = HandlerPath::builder()
+        .uri("/hello")
+        .handler(handler_fn(|request| async move {
+            let response = vetis::Response::builder()
+                .status(StatusCode::OK)
+                .text("Hello from localhost");
+            Ok(response)
+        }))
+        .build()?;
+
+    localhost_virtual_host.add_path(root_path);
+
+    let health_path = HandlerPath::builder()
+        .uri("/health")
+        .handler(handler_fn(|request| async move {
+            let response = vetis::Response::builder()
+                .status(StatusCode::OK)
+                .text("Health check");
+            Ok(response)
+        }))
+        .build()?;
+
+    localhost_virtual_host.add_path(health_path);
+
+    let proxy_path = ProxyPathConfig::builder()
+        .uri("/proxy")
+        .target("http://localhost:5230")
+        .build()?;
+
+    localhost_virtual_host.add_path(ProxyPath::new(proxy_path));
+
+    let images_path = StaticPathConfig::builder()
+        .uri("/images")
+        .directory("/home/rogerio/Downloads")
+        .extensions("\\.(jpg|png|gif|html)$")
+        .index_files(vec!["index.html".to_string()])
+        .build()?;
+
+    localhost_virtual_host.add_path(StaticPath::new(images_path));
 
     let mut server = Vetis::new(config);
     server
@@ -121,14 +187,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Core Features
 
+- **Standalone Server** - Run as a standalone HTTP/HTTPS server
+- **Multi-Protocol** - Support for HTTP/1, HTTP/2 and HTTP/3 are disabled by default
 - **Virtual Hosts** - Host multiple domains on a single server
 - **SNI Support** - Server Name Indication for TLS
-- **Reverse Proxy** - Route requests to backend services
+- **Reverse Proxy** - Route requests to backend services (feature gated, disabled by default)
 
 ### Content & Security
 
-- **Static File Serving** - Efficient static asset delivery
+- **Authentication** - Multiple auth methods support
+- **Authorization** - Fine-grained access control
 - **Dynamic Content** - Template rendering and content generation
+- **Logging** - Comprehensive request and error logging
+- **Static File Serving** - Efficient static asset delivery
+
+### Languages
+
+- **Python** - Support for ASGI/WSGI/RSGI applications
+- **PHP** - Support for PHP applications
+- **Ruby** - Support for Ruby applications
 
 ## Roadmap
 
@@ -138,12 +215,6 @@ VeTiS is continuously evolving! Here's what we're working on:
 
 - **WebSockets** - Real-time bidirectional communication
 - **Load Balancing** - Distribute traffic across multiple servers
-
-### Content & Security
-
-- **Authentication** - Multiple auth methods support
-- **Authorization** - Fine-grained access control
-- **Logging** - Comprehensive request and error logging
 
 ## Subprojects
 
@@ -157,66 +228,7 @@ Macros for VeTiS, make easy to create small http server.
 
 ## Benchmarks
 
-Go to `examples/simple` and run:
-
-```bash
-cargo run --
-```
-
-In another terminal tab, run:
-
-```bash
-oha -c 128 -z 10s https://localhost:8443/hello --insecure
-```
-
-Output might be something like below, please not log level
-has huge impact on performance.
-
-```text
-Summary:
-  Success rate:	100.00%
-  Total:	10001.2078 ms
-  Slowest:	940.3868 ms
-  Fastest:	0.0414 ms
-  Average:	0.6897 ms
-  Requests/sec:	184706.9910
-
-  Total data:	35.23 MiB
-  Size/request:	20 B
-  Size/sec:	3.52 MiB
-
-Response time histogram:
-    0.041 ms [1]       |
-   94.076 ms [1847147] |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-  188.110 ms [10]      |
-  282.145 ms [12]      |
-  376.180 ms [13]      |
-  470.214 ms [12]      |
-  564.249 ms [13]      |
-  658.283 ms [14]      |
-  752.318 ms [13]      |
-  846.352 ms [10]      |
-  940.387 ms [23]      |
-
-Response time distribution:
-  10.00% in 0.3281 ms
-  25.00% in 0.4463 ms
-  50.00% in 0.6010 ms
-  75.00% in 0.8024 ms
-  90.00% in 1.0391 ms
-  95.00% in 1.2168 ms
-  99.00% in 1.6595 ms
-  99.90% in 2.4017 ms
-  99.99% in 3.4211 ms
-
-
-Details (average, fastest, slowest):
-  DNS+dialup:	522.2068 ms, 27.9548 ms, 939.1788 ms
-  DNS-lookup:	0.0147 ms, 0.0008 ms, 0.1313 ms
-
-Status code distribution:
-  [200] 1847268 responses
-```
+See [BENCHMARKS.md](BENCHMARKS.md) for detailed benchmark results.
 
 ## License
 

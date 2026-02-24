@@ -14,12 +14,11 @@ mod tls_tests {
     use tokio::sync::RwLock;
 
     use crate::{
-        config::{SecurityConfig, VirtualHostConfig},
+        config::server::virtual_host::{SecurityConfig, VirtualHostConfig},
         errors::VetisError,
         server::{
-            path::HandlerPath,
             tls::TlsFactory,
-            virtual_host::{handler_fn, VirtualHost},
+            virtual_host::{handler_fn, path::HandlerPath, VirtualHost},
         },
         tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
         VetisVirtualHosts,
@@ -36,6 +35,7 @@ mod tls_tests {
         let vhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8443)
+            .root_directory("src/tests")
             .security(security_config)
             .build()
             .expect("Failed to create virtual host config");
@@ -46,7 +46,7 @@ mod tls_tests {
                 .uri("/")
                 .handler(handler_fn(|_req| async move {
                     Ok::<_, VetisError>(
-                        crate::Response::builder()
+                        crate::server::http::Response::builder()
                             .status(http::StatusCode::OK)
                             .text("Test response"),
                     )
@@ -65,6 +65,7 @@ mod tls_tests {
         let vhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8443)
+            .root_directory("src/tests")
             .build()
             .expect("Failed to create virtual host config");
 
@@ -74,7 +75,7 @@ mod tls_tests {
                 .uri("/")
                 .handler(handler_fn(|_req| async move {
                     Ok::<_, VetisError>(
-                        crate::Response::builder()
+                        crate::server::http::Response::builder()
                             .status(http::StatusCode::OK)
                             .text("Test response"),
                     )
@@ -99,6 +100,7 @@ mod tls_tests {
         let vhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8443)
+            .root_directory("src/tests")
             .security(security_config)
             .build()
             .expect("Failed to create virtual host config");
@@ -109,7 +111,7 @@ mod tls_tests {
                 .uri("/")
                 .handler(handler_fn(|_req| async move {
                     Ok::<_, VetisError>(
-                        crate::Response::builder()
+                        crate::server::http::Response::builder()
                             .status(http::StatusCode::OK)
                             .text("Test response"),
                     )
@@ -248,6 +250,7 @@ mod tls_tests {
         let vhost_config1 = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8443)
+            .root_directory("src/tests")
             .security(security_config1)
             .build()
             .expect("Failed to create virtual host config");
@@ -258,7 +261,7 @@ mod tls_tests {
                 .uri("/")
                 .handler(handler_fn(|_req| async move {
                     Ok::<_, VetisError>(
-                        crate::Response::builder()
+                        crate::server::http::Response::builder()
                             .status(http::StatusCode::OK)
                             .text("Test response"),
                     )
@@ -271,6 +274,7 @@ mod tls_tests {
         let vhost_config2 = VirtualHostConfig::builder()
             .hostname("test.com")
             .port(8443)
+            .root_directory("src/tests")
             .build()
             .expect("Failed to create virtual host config");
 
@@ -280,7 +284,7 @@ mod tls_tests {
                 .uri("/")
                 .handler(handler_fn(|_req| async move {
                     Ok::<_, VetisError>(
-                        crate::Response::builder()
+                        crate::server::http::Response::builder()
                             .status(http::StatusCode::OK)
                             .text("Test response"),
                     )

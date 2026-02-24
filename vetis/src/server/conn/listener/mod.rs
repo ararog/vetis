@@ -6,7 +6,7 @@ use crate::server::conn::listener::tcp::TcpListener;
 use crate::server::conn::listener::udp::UdpListener;
 
 use crate::{
-    config::{ListenerConfig, Protocol},
+    config::server::{ListenerConfig, Protocol},
     errors::VetisError,
     VetisVirtualHosts,
 };
@@ -50,13 +50,14 @@ impl Listener for ServerListener {
             Protocol::Http2 => ServerListener::Tcp(TcpListener::new(config)),
             #[cfg(feature = "http3")]
             Protocol::Http3 => ServerListener::Udp(UdpListener::new(config)),
+            _ => panic!("Unsupported protocol"),
         }
     }
 
     fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts) {
         match self {
             #[cfg(any(feature = "http1", feature = "http2"))]
-            ServerListener::Tcp(ref mut tcp_listener) => {
+            ServerListener::Tcp(tcp_listener) => {
                 tcp_listener.set_virtual_hosts(virtual_hosts);
             }
             #[cfg(feature = "http3")]
@@ -70,7 +71,7 @@ impl Listener for ServerListener {
         Box::pin(async move {
             match self {
                 #[cfg(any(feature = "http1", feature = "http2"))]
-                ServerListener::Tcp(ref mut tcp_listener) => {
+                ServerListener::Tcp(tcp_listener) => {
                     tcp_listener
                         .listen()
                         .await?
@@ -91,7 +92,7 @@ impl Listener for ServerListener {
         Box::pin(async move {
             match self {
                 #[cfg(any(feature = "http1", feature = "http2"))]
-                ServerListener::Tcp(ref mut tcp_listener) => {
+                ServerListener::Tcp(tcp_listener) => {
                     tcp_listener
                         .stop()
                         .await?

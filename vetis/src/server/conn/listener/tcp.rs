@@ -43,14 +43,14 @@ use futures_rustls::TlsAcceptor;
 use smol_hyper::rt::FuturesIo;
 
 use crate::{
-    config::{ListenerConfig, Protocol},
+    config::server::{ListenerConfig, Protocol},
     errors::VetisError,
     server::{
         conn::listener::{Listener, ListenerResult},
-        http::static_response,
+        http::{static_response, VetisBody},
         tls::TlsFactory,
     },
-    VetisBody, VetisRwLock, VetisVirtualHosts,
+    VetisRwLock, VetisVirtualHosts,
 };
 
 #[cfg(feature = "tokio-rt")]
@@ -71,6 +71,7 @@ type VetisIo<T> = FuturesIo<T>;
 #[cfg(all(feature = "smol-rt", feature = "http2"))]
 type VetisExecutor = SmolExecutor;
 
+/// TCP listener
 pub struct TcpListener {
     task: Option<GateTask>,
     config: ListenerConfig,
@@ -78,14 +79,33 @@ pub struct TcpListener {
 }
 
 impl Listener for TcpListener {
+    /// Create a new listener
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - A `ListenerConfig` instance containing the listener configuration.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `TcpListener` instance.
     fn new(config: ListenerConfig) -> Self {
         Self { task: None, config, virtual_hosts: Arc::new(VetisRwLock::new(HashMap::new())) }
     }
 
+    /// Set the virtual hosts
+    ///
+    /// # Arguments
+    ///
+    /// * `virtual_hosts` - A `VetisVirtualHosts` instance containing the virtual hosts.
     fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts) {
         self.virtual_hosts = virtual_hosts;
     }
 
+    /// Listen for incoming connections
+    ///
+    /// # Returns
+    ///
+    /// * `ListenerResult<'_, ()>` - A `ListenerResult` instance containing the result of the listener.
     fn listen(&mut self) -> ListenerResult<'_, ()> {
         let future = async move {
             let addr = if let Ok(ip) = self
@@ -129,6 +149,11 @@ impl Listener for TcpListener {
         Box::pin(future)
     }
 
+    /// Stop the listener
+    ///
+    /// # Returns
+    ///
+    /// * `ListenerResult<'_, ()>` - A `ListenerResult` instance containing the result of the listener.
     fn stop(&mut self) -> ListenerResult<'_, ()> {
         let future = async move {
             if let Some(mut task) = self.task.take() {
@@ -159,7 +184,13 @@ impl TcpListener {
         ];
         let tls_config = TlsFactory::create_tls_config(virtual_hosts.clone(), alpn).await?;
         let port = Arc::new(self.config.port());
-        let tls_config = tls_config.unwrap();
+        let tls_config = match tls_config {
+            Some(config) => config,
+            None => {
+                error!("Missing TLS config");
+                return Err(VetisError::Tls("Missing TLS config".to_string()));
+            }
+        };
         let tls_acceptor = VetisTlsAcceptor::from(Arc::new(tls_config));
         let future = async move {
             loop {
@@ -167,26 +198,27 @@ impl TcpListener {
                     .accept()
                     .await;
 
-                if let Err(err) = result {
-                    error!("Cannot accept connection: {:?}", err);
-                    continue;
-                }
-
-                let (stream, client_addr) = result.unwrap();
-                if let Err(e) = stream.set_nodelay(true) {
-                    error!("Cannot set TCP_NODELAY: {}", e);
-                    continue;
-                }
+                let (stream, client_addr) = match result {
+                    Ok(conn_info) => conn_info,
+                    Err(e) => {
+                        error!("Cannot accept connection: {:?}", e);
+                        continue;
+                    }
+                };
 
                 // TODO: Check ACL before proceeding
 
                 let mut peekable = AsyncPeekable::from(stream);
 
                 let mut peeked = [0; 2];
-                peekable
+                let result = peekable
                     .peek_exact(&mut peeked)
-                    .await
-                    .unwrap();
+                    .await;
+
+                if let Err(e) = result {
+                    error!("Cannot peek connection: {:?}", e);
+                    continue;
+                }
 
                 let is_tls = peeked.starts_with(&[0x16, 0x03]);
 
@@ -195,12 +227,14 @@ impl TcpListener {
                         .accept(peekable)
                         .await;
 
-                    if let Err(e) = tls_stream {
-                        error!("Cannot accept connection: {:?}", e);
-                        continue;
-                    }
+                    let tls_stream = match tls_stream {
+                        Ok(tls_stream) => tls_stream,
+                        Err(e) => {
+                            error!("Cannot accept connection: {:?}", e);
+                            continue;
+                        }
+                    };
 
-                    let tls_stream = tls_stream.unwrap();
                     let io = VetisIo::new(tls_stream);
                     match protocol {
                         #[cfg(feature = "http1")]
@@ -224,6 +258,9 @@ impl TcpListener {
                         #[cfg(feature = "http3")]
                         Protocol::Http3 => {
                             // HTTP/3 is handled by UDP listener
+                        }
+                        _ => {
+                            panic!("Unsupported protocol");
                         }
                     }
                 } else {
@@ -250,6 +287,9 @@ impl TcpListener {
                         #[cfg(feature = "http3")]
                         Protocol::Http3 => {
                             // HTTP/3 is handled by UDP listener
+                        }
+                        _ => {
+                            panic!("Unsupported protocol");
                         }
                     }
                 }
@@ -303,7 +343,7 @@ async fn process_request(
 
         if let Some(virtual_host) = virtual_host {
             // TODO: Save client_addr in request, grab url from request for logging
-            let request = crate::Request::from_http(req);
+            let request = crate::server::http::Request::from_http(req);
 
             let method = request
                 .method()

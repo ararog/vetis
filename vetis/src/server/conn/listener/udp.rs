@@ -11,14 +11,14 @@ use h3_quinn::{
     quinn::{self, crypto::rustls::QuicServerConfig},
     Connection as QuinnConnection,
 };
-use http::header;
+
 use http_body_util::{BodyExt, Full};
 
 use log::{debug, error, info};
 use rt_gate::{spawn_server, spawn_worker, GateTask};
 
 use crate::{
-    config::ListenerConfig,
+    config::server::ListenerConfig,
     errors::{StartError::Tls, VetisError},
     server::{
         conn::listener::{Listener, ListenerResult},
@@ -28,6 +28,7 @@ use crate::{
     VetisRwLock, VetisVirtualHosts,
 };
 
+/// UDP listener
 pub struct UdpListener {
     config: ListenerConfig,
     task: Option<GateTask>,
@@ -35,14 +36,33 @@ pub struct UdpListener {
 }
 
 impl Listener for UdpListener {
+    /// Create a new listener
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - A `ListenerConfig` instance containing the listener configuration.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `UdpListener` instance.
     fn new(config: ListenerConfig) -> Self {
         Self { config, task: None, virtual_hosts: Arc::new(VetisRwLock::new(HashMap::new())) }
     }
 
+    /// Allow set virtual hosts
+    ///
+    /// # Arguments
+    ///
+    /// * `virtual_hosts` - A `VetisVirtualHosts` instance containing the virtual hosts.
     fn set_virtual_hosts(&mut self, virtual_hosts: VetisVirtualHosts) {
         self.virtual_hosts = virtual_hosts;
     }
 
+    /// Listen for incoming connections
+    ///
+    /// # Returns
+    ///
+    /// * `ListenerResult<'_, ()>` - A `ListenerResult` instance containing the result of the listener.
     fn listen(&mut self) -> ListenerResult<'_, ()> {
         let future = async move {
             let addr = if let Ok(ip) = self
@@ -95,6 +115,11 @@ impl Listener for UdpListener {
         Box::pin(future)
     }
 
+    /// Stop the listener
+    ///
+    /// # Returns
+    ///
+    /// * `ListenerResult<'_, ()>` - A `ListenerResult` instance containing the result of the listener.
     fn stop(&mut self) -> ListenerResult<'_, ()> {
         Box::pin(async move {
             if let Some(mut task) = self.task.take() {
@@ -123,9 +148,13 @@ impl UdpListener {
                     match new_conn.await {
                         Ok(conn) => {
                             let mut h3_conn: Connection<QuinnConnection, Bytes> =
-                                Connection::new(QuinnConnection::new(conn))
-                                    .await
-                                    .unwrap();
+                                match Connection::new(QuinnConnection::new(conn)).await {
+                                    Ok(conn) => conn,
+                                    Err(err) => {
+                                        error!("Cannot create connection: {:?}", err);
+                                        return;
+                                    }
+                                };
 
                             loop {
                                 match h3_conn
@@ -188,25 +217,7 @@ fn handle_http_request(
 
             let uri = parts.uri.clone();
 
-            /*
-            let body = if parts.method == http::Method::POST
-                || parts.method == http::Method::PUT
-                || parts.method == http::Method::PATCH
-            {
-                let body = Full::new(Bytes::new());
-
-                let mut data = Vec::new();
-                while let Ok(Some(chunk)) = stream
-                    .recv_data()
-                    .await
-                {
-                    data.extend_from_slice(&[1, 2, 4]);
-                }
-                body
-            } else {
-                Full::new(Bytes::new())
-            };
-            */
+            // TODO: Implement body based on RequestStream
 
             let body = Full::new(Bytes::new());
 
@@ -226,7 +237,7 @@ fn handle_http_request(
                 let virtual_host = virtual_host.get(&(host.host().into(), port));
 
                 let response = if let Some(virtual_host) = virtual_host {
-                    let request = crate::Request::from_quic(request);
+                    let request = crate::server::http::Request::from_quic(request);
 
                     let vetis_response = virtual_host
                         .route(request)

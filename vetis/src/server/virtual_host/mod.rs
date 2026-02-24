@@ -3,7 +3,7 @@
 /// ```rust,ignore
 /// use vetis::{
 ///     config::VirtualHostConfig,
-///     server::virtual_host::{DefaultVirtualHost, VirtualHost, handler_fn},
+///     server::virtual_host::{VirtualHost, handler_fn},
 ///     Request, Response,
 /// };
 ///
@@ -13,7 +13,7 @@
 ///     .port(80)
 ///     .build()?;
 ///
-/// let mut vhost = DefaultVirtualHost::new(config);
+/// let mut vhost = VirtualHost::new(config);
 /// vhost.set_handler(handler_fn(|request: Request| async move {
 ///     let response = Response::builder()
 ///         .status(http::StatusCode::OK)
@@ -23,14 +23,19 @@
 /// ```
 use std::{future::Future, path::PathBuf, pin::Pin};
 
+use http::StatusCode;
+#[cfg(feature = "python")]
+use pyo3::Python;
 use radix_trie::Trie;
 use std::sync::Arc;
 
 use crate::{
-    config::VirtualHostConfig,
+    config::server::virtual_host::VirtualHostConfig,
     errors::{FileError, VetisError, VirtualHostError},
-    server::path::{HostPath, Path},
-    Request, Response, VetisBody, VetisBodyExt,
+    server::{
+        http::{Request, Response, VetisBody, VetisBodyExt},
+        virtual_host::path::{HostPath, Path},
+    },
 };
 
 #[cfg(feature = "smol-rt")]
@@ -39,10 +44,15 @@ use smol::fs::File;
 use tokio::fs::File;
 
 #[cfg(feature = "static-files")]
-use crate::server::path::StaticPath;
+use crate::server::virtual_host::path::static_files::StaticPath;
 
 #[cfg(feature = "reverse-proxy")]
-use crate::server::path::ProxyPath;
+use crate::server::virtual_host::path::proxy::ProxyPath;
+
+#[cfg(feature = "interface")]
+use crate::server::virtual_host::path::interface::InterfacePath;
+
+pub mod path;
 
 /// Type alias for boxed handler closures.
 ///
@@ -84,8 +94,8 @@ pub type BoxedHandlerClosure = Box<
 ///
 /// ```rust,ignore
 /// use vetis::{
-///     server::virtual_host::{handler_fn, VirtualHost, DefaultVirtualHost},
-///     config::VirtualHostConfig,
+///     server::virtual_host::{handler_fn, VirtualHost},
+///     config::server::virtual_host::VirtualHostConfig,
 ///     Request, Response,
 /// };
 ///
@@ -100,7 +110,7 @@ pub type BoxedHandlerClosure = Box<
 ///     .port(80)
 ///     .build()?;
 ///
-/// let mut vhost = DefaultVirtualHost::new(config);
+/// let mut vhost = VirtualHost::new(config);
 /// vhost.set_handler(handler_fn(hello_handler));
 /// ```
 pub fn handler_fn<F, Fut>(f: F) -> BoxedHandlerClosure
@@ -118,8 +128,20 @@ pub struct VirtualHost {
 }
 
 impl VirtualHost {
+    /// Create a new virtual host
+    ///
+    /// # Arguments
+    ///
+    /// * `host_config` - A `VirtualHostConfig` instance containing the virtual host configuration.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new `VirtualHost` instance.
     pub fn new(host_config: VirtualHostConfig) -> Self {
         let mut host = Self { config: host_config.clone(), paths: Trie::new() };
+
+        #[cfg(feature = "python")]
+        Python::initialize();
 
         #[cfg(feature = "static-files")]
         if let Some(static_paths) = &host_config.static_paths() {
@@ -135,9 +157,21 @@ impl VirtualHost {
             }
         }
 
+        #[cfg(feature = "interface")]
+        if let Some(interface_paths) = &host_config.interface_paths() {
+            for interface_path in interface_paths {
+                host.add_path(InterfacePath::new(interface_path.clone()));
+            }
+        }
+
         host
     }
 
+    /// Add a path to the virtual host
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - A `HostPath` instance containing the path configuration.
     pub fn add_path<P>(&mut self, path: P)
     where
         P: Into<HostPath>,
@@ -150,27 +184,55 @@ impl VirtualHost {
         );
     }
 
+    /// Returns virtual host configuration
+    ///
+    /// # Returns
+    ///
+    /// * `&VirtualHostConfig` - A reference to the virtual host configuration.
     pub fn config(&self) -> &VirtualHostConfig {
         &self.config
     }
 
+    /// Returns virtual host hostname
+    ///
+    /// # Returns
+    ///
+    /// * `&str` - A reference to the virtual host hostname.
     pub fn hostname(&self) -> &str {
         self.config
             .hostname()
     }
 
+    /// Returns virtual host port number
+    ///
+    /// # Returns
+    ///
+    /// * `u16` - The virtual host port number.
     pub fn port(&self) -> u16 {
         self.config.port()
     }
 
+    /// Returns virtual host security configuration
+    ///
+    /// # Returns
+    ///
+    /// * `bool` - Whether the virtual host is secure or not.
     pub fn is_secure(&self) -> bool {
         self.config
             .security()
             .is_some()
     }
 
-    pub async fn serve_status_page(&self, status: u16) -> Result<Response, VetisError> {
-        let status_code = http::StatusCode::from_u16(status).unwrap();
+    async fn serve_status_page(&self, status: u16) -> Result<Response, VetisError> {
+        let status_code = match StatusCode::from_u16(status) {
+            Ok(code) => code,
+            Err(_) => {
+                return Err(VetisError::VirtualHost(VirtualHostError::Interface(
+                    "Invalid status code".to_string(),
+                )))
+            }
+        };
+
         let static_status_response = Response::builder()
             .status(status_code)
             .text(
@@ -183,8 +245,12 @@ impl VirtualHost {
             .config
             .status_pages()
         {
+            let root_directory = PathBuf::from(
+                self.config
+                    .root_directory(),
+            );
             if let Some(page) = status_pages.get(&status) {
-                let file = PathBuf::from(page);
+                let file = root_directory.join(page);
                 if file.exists() {
                     let result = File::open(file).await;
                     if let Ok(data) = result {
@@ -198,6 +264,15 @@ impl VirtualHost {
         Ok(static_status_response)
     }
 
+    /// Route request to the appropriate handler
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - A `Request` instance containing the request information.
+    ///
+    /// # Returns
+    ///
+    /// * `Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>>` - A pinned box containing the future that will resolve to a `Result<Response, VetisError>`.
     pub fn route(
         &self,
         request: Request,

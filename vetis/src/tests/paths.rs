@@ -8,13 +8,12 @@ mod handler {
     use smol_macros::test;
 
     use crate::{
-        config::{ListenerConfig, SecurityConfig, ServerConfig, VirtualHostConfig},
-        default_protocol,
-        server::{
-            path::HandlerPath,
-            virtual_host::{handler_fn, VirtualHost},
+        config::server::{
+            virtual_host::{SecurityConfig, VirtualHostConfig},
+            ListenerConfig, ServerConfig,
         },
-        tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
+        server::virtual_host::{handler_fn, path::HandlerPath, VirtualHost},
+        tests::{default_protocol, CA_CERT, SERVER_CERT, SERVER_KEY},
     };
 
     async fn do_test_handler() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,6 +35,7 @@ mod handler {
 
         let localhost_config = VirtualHostConfig::builder()
             .hostname("localhost")
+            .root_directory("src/tests")
             .port(8082)
             .security(security_config)
             .build()?;
@@ -45,7 +45,7 @@ mod handler {
         let root_path = HandlerPath::builder()
             .uri("/hello")
             .handler(handler_fn(|_request| async move {
-                let response = crate::Response::builder()
+                let response = crate::server::http::Response::builder()
                     .status(StatusCode::OK)
                     .text("Hello from localhost");
                 Ok(response)
@@ -101,7 +101,7 @@ mod static_files {
     use http::StatusCode;
 
     #[cfg(feature = "auth")]
-    use crate::config::auth::{Auth, BasicAuthConfig};
+    use crate::config::server::virtual_host::path::auth::BasicAuthConfig;
 
     #[cfg(feature = "smol-rt")]
     use macro_rules_attribute::apply;
@@ -109,13 +109,15 @@ mod static_files {
     use smol_macros::test;
 
     use crate::{
-        config::{
-            ListenerConfig, SecurityConfig, ServerConfig, StaticPathConfig, VirtualHostConfig,
+        config::server::{
+            virtual_host::{
+                path::static_files::StaticPathConfig, SecurityConfig, VirtualHostConfig,
+            },
+            ListenerConfig, ServerConfig,
         },
-        default_protocol,
         errors::{ConfigError, VetisError},
-        server::{path::StaticPath, virtual_host::VirtualHost},
-        tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
+        server::virtual_host::{path::static_files::StaticPath, VirtualHost},
+        tests::{default_protocol, CA_CERT, SERVER_CERT, SERVER_KEY},
     };
 
     #[test]
@@ -195,6 +197,7 @@ mod static_files {
         let host_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(9100)
+            .root_directory("src/tests")
             .security(security_config.clone())
             .build()?;
 
@@ -271,6 +274,7 @@ mod static_files {
         let host_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(9000)
+            .root_directory("src/tests")
             .security(security_config.clone())
             .status_pages(status_pages)
             .build()?;
@@ -304,7 +308,7 @@ mod static_files {
             request.err(),
             Some(deboa::errors::DeboaError::Response(deboa::errors::ResponseError::Receive {
                 status_code: StatusCode::NOT_FOUND,
-                message: "Could not process request (404 Not Found): ".to_string()
+                message: "Could not process request (404 Not Found): Not Found".to_string()
             }))
         );
 
@@ -332,6 +336,8 @@ mod static_files {
         username: Option<String>,
         password: Option<String>,
     ) -> Result<(), Box<dyn Error>> {
+        use crate::server::virtual_host::path::auth::{basic_auth::BasicAuth, AuthType};
+
         let has_auth = username.is_some() && password.is_some();
 
         let port = if has_auth { 9200 } else { 9201 };
@@ -355,6 +361,7 @@ mod static_files {
         let host_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(port)
+            .root_directory("src/tests")
             .security(security_config.clone())
             .build()?;
 
@@ -369,7 +376,7 @@ mod static_files {
             StaticPathConfig::builder()
                 .uri("/")
                 .directory("src/tests/files")
-                .auth(Auth::Basic(auth_config))
+                .auth(AuthType::Basic(BasicAuth::new(auth_config)))
                 .build()?,
         ));
 
@@ -449,7 +456,9 @@ mod static_files {
 
 #[cfg(feature = "reverse-proxy")]
 mod reverse_proxy {
+    #[cfg(any(feature = "http1", feature = "http2"))]
     use deboa::{cert::Certificate, request};
+    #[cfg(any(feature = "http1", feature = "http2"))]
     use http::StatusCode;
     use std::error::Error;
 
@@ -458,20 +467,24 @@ mod reverse_proxy {
     #[cfg(feature = "smol-rt")]
     use smol_macros::test;
 
+    #[cfg(any(feature = "http1", feature = "http2"))]
     use crate::{
-        config::{
-            ListenerConfig, ProxyPathConfig, SecurityConfig, ServerConfig, VirtualHostConfig,
+        config::server::{
+            virtual_host::{SecurityConfig, VirtualHostConfig},
+            ListenerConfig, ServerConfig,
         },
-        default_protocol,
-        errors::{ConfigError, VetisError},
-        server::{
-            path::HandlerPath,
-            virtual_host::{handler_fn, VirtualHost},
+        server::virtual_host::{
+            handler_fn,
+            path::{proxy::ProxyPath, HandlerPath},
+            VirtualHost,
         },
         tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
     };
 
-    use crate::server::path::ProxyPath;
+    use crate::{
+        config::server::virtual_host::path::proxy::ProxyPathConfig,
+        errors::{ConfigError, VetisError},
+    };
 
     #[test]
     fn test_proxy_path() -> Result<(), Box<dyn Error>> {
@@ -520,6 +533,8 @@ mod reverse_proxy {
 
     #[cfg(any(feature = "http1", feature = "http2"))]
     async fn do_proxy_to_target() -> Result<(), Box<dyn Error>> {
+        use crate::tests::default_protocol;
+
         let source_listener = ListenerConfig::builder()
             .port(8084)
             .protocol(default_protocol())
@@ -546,6 +561,7 @@ mod reverse_proxy {
         let source_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8084)
+            .root_directory("src/tests")
             .security(security_config.clone())
             .build()?;
 
@@ -560,6 +576,7 @@ mod reverse_proxy {
         let target_config = VirtualHostConfig::builder()
             .hostname("localhost")
             .port(8085)
+            .root_directory("src/tests")
             .build()?;
 
         let mut target_virtual_host = VirtualHost::new(target_config);
@@ -567,7 +584,7 @@ mod reverse_proxy {
             HandlerPath::builder()
                 .uri("/")
                 .handler(handler_fn(|_request| async move {
-                    Ok(crate::Response::builder()
+                    Ok(crate::server::http::Response::builder()
                         .status(StatusCode::OK)
                         .text("Hello, world!"))
                 }))
@@ -626,5 +643,115 @@ mod reverse_proxy {
     #[apply(test!)]
     async fn test_proxy_to_target() -> Result<(), Box<dyn Error>> {
         do_proxy_to_target().await
+    }
+}
+
+#[cfg(all(feature = "interface", feature = "python", feature = "wsgi"))]
+mod wsgi_interface_tests {
+    use std::error::Error;
+
+    use deboa::{cert::Certificate, request};
+    use http::StatusCode;
+    #[cfg(feature = "smol-rt")]
+    use macro_rules_attribute::apply;
+    #[cfg(feature = "smol-rt")]
+    use smol_macros::test;
+
+    use crate::{
+        config::server::{
+            virtual_host::{
+                path::interface::InterfacePathConfig, SecurityConfig, VirtualHostConfig,
+            },
+            ListenerConfig,
+        },
+        server::virtual_host::{path::interface::InterfacePath, VirtualHost},
+        tests::default_protocol,
+        ServerConfig,
+    };
+
+    async fn do_wsgi_to_target() -> Result<(), Box<dyn Error>> {
+        use crate::tests::{CA_CERT, SERVER_CERT, SERVER_KEY};
+
+        let listener = ListenerConfig::builder()
+            .port(8088)
+            .protocol(default_protocol())
+            .interface("0.0.0.0")
+            .build()?;
+
+        let config = ServerConfig::builder()
+            .add_listener(listener)
+            .build()?;
+
+        let security_config = SecurityConfig::builder()
+            .ca_cert_from_bytes(CA_CERT.to_vec())
+            .cert_from_bytes(SERVER_CERT.to_vec())
+            .key_from_bytes(SERVER_KEY.to_vec())
+            .build()?;
+
+        let host_config = VirtualHostConfig::builder()
+            .hostname("localhost")
+            .port(8088)
+            .root_directory("src/tests")
+            .security(security_config.clone())
+            .build()?;
+
+        let mut virtual_host = VirtualHost::new(host_config);
+        virtual_host.add_path(InterfacePath::new(
+            InterfacePathConfig::builder()
+                .uri("/")
+                .directory("src/tests/files/python")
+                .target("main:app")
+                .build()?,
+        ));
+
+        assert_eq!(
+            virtual_host
+                .config()
+                .hostname(),
+            "localhost"
+        );
+
+        let mut server = crate::Vetis::new(config);
+        server
+            .add_virtual_host(virtual_host)
+            .await;
+
+        server
+            .start()
+            .await?;
+
+        let client = deboa::Client::builder()
+            .certificate(Certificate::from_slice(CA_CERT, deboa::cert::ContentEncoding::DER))
+            .build();
+
+        let request = request::get("https://localhost:8088/")?
+            .send_with(&client)
+            .await?;
+
+        assert_eq!(request.status(), StatusCode::OK);
+        assert_eq!(
+            request
+                .text()
+                .await?,
+            "Hello, World!"
+        );
+
+        server
+            .stop()
+            .await?;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "tokio-rt")]
+    #[tokio::test]
+    async fn test_wsgi_to_target() -> Result<(), Box<dyn Error>> {
+        do_wsgi_to_target().await
+    }
+
+    #[cfg(feature = "smol-rt")]
+    #[apply(test!)]
+    async fn test_wsgi_to_target() -> Result<(), Box<dyn Error>> {
+        do_wsgi_to_target().await
     }
 }

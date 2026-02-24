@@ -1,7 +1,10 @@
 use std::error::Error;
 
 use crate::{
-    config::{ListenerConfig, Protocol, SecurityConfig, ServerConfig, VirtualHostConfig},
+    config::server::{
+        virtual_host::{SecurityConfig, VirtualHostConfig},
+        ListenerConfig, Protocol, ServerConfig,
+    },
     errors::{ConfigError, VetisError},
 };
 
@@ -16,12 +19,10 @@ fn test_listener_config() -> Result<(), Box<dyn Error>> {
 
     let listener_config = ListenerConfig::builder()
         .port(8080)
-        .ssl(false)
         .protocol(protocol.clone())
         .interface("127.0.0.1")
         .build()?;
     assert_eq!(listener_config.port(), 8080);
-    assert!(!listener_config.ssl());
     assert_eq!(listener_config.protocol(), &protocol);
     assert_eq!(listener_config.interface(), "127.0.0.1");
 
@@ -57,7 +58,7 @@ fn test_security_config() -> Result<(), Box<dyn Error>> {
 
     assert_eq!(
         security_config.err(),
-        Some(VetisError::Config(ConfigError::Security("Certificate is empty".to_string())))
+        Some(VetisError::Config(ConfigError::Security("Missing certificate".to_string())))
     );
 
     Ok(())
@@ -68,6 +69,7 @@ fn test_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
     let virtual_host_config = VirtualHostConfig::builder()
         .hostname("localhost")
         .port(8080)
+        .root_directory("src/tests")
         .build()?;
     assert_eq!(virtual_host_config.hostname(), "localhost");
     assert_eq!(virtual_host_config.port(), 8080);
@@ -77,9 +79,13 @@ fn test_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_default_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
-    let virtual_host_config = VirtualHostConfig::builder().build()?;
-    assert_eq!(virtual_host_config.hostname(), "localhost");
-    assert_eq!(virtual_host_config.port(), 80);
+    let virtual_host_config = VirtualHostConfig::builder().build();
+    assert_eq!(
+        virtual_host_config.err(),
+        Some(VetisError::Config(ConfigError::VirtualHost(
+            "root_directory does not exist: /var/vetis/www".to_string()
+        )))
+    );
     Ok(())
 }
 
@@ -87,30 +93,31 @@ fn test_default_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> 
 fn test_invalid_virtual_host_config() -> Result<(), Box<dyn std::error::Error>> {
     let virtual_host_config = VirtualHostConfig::builder()
         .hostname("")
+        .root_directory("src/tests")
         .build();
 
     assert_eq!(
         virtual_host_config.err(),
-        Some(VetisError::Config(ConfigError::VirtualHost("hostname is empty".to_string())))
+        Some(VetisError::Config(ConfigError::VirtualHost("Missing hostname".to_string())))
     );
     Ok(())
 }
 
 #[cfg(feature = "static-files")]
 mod static_files_tests {
-    use crate::config::StaticPathConfig;
+    use crate::config::server::virtual_host::path::static_files::StaticPathConfig;
 
     #[test]
     fn test_static_files_config() -> Result<(), Box<dyn std::error::Error>> {
         let static_files_config = StaticPathConfig::builder()
             .uri("/static")
             .extensions("html,css,js")
-            .directory("/var/www")
+            .directory("/var/vetis/www")
             .index_files(vec!["index.html".to_string(), "index.htm".to_string()])
             .build()?;
         assert_eq!(static_files_config.uri(), "/static");
         assert_eq!(static_files_config.extensions(), "html,css,js");
-        assert_eq!(static_files_config.directory(), "/var/www");
+        assert_eq!(static_files_config.directory(), "/var/vetis/www");
         assert_eq!(
             static_files_config.index_files(),
             &Some(vec!["index.html".to_string(), "index.htm".to_string()])
@@ -121,7 +128,7 @@ mod static_files_tests {
 
 #[cfg(feature = "reverse-proxy")]
 mod reverse_proxy_tests {
-    use crate::config::ProxyPathConfig;
+    use crate::config::server::virtual_host::path::proxy::ProxyPathConfig;
 
     #[test]
     fn test_reverse_proxy_config() -> Result<(), Box<dyn std::error::Error>> {
@@ -137,7 +144,7 @@ mod reverse_proxy_tests {
 
 #[cfg(feature = "auth")]
 mod auth_tests {
-    use crate::config::auth::{Algorithm, BasicAuthConfig};
+    use crate::config::server::virtual_host::path::auth::{Algorithm, BasicAuthConfig};
 
     #[test]
     fn test_auth_config() -> Result<(), Box<dyn std::error::Error>> {
