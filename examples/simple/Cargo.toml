@@ -10,7 +10,7 @@ smol = ["smol-macros"]
 
 [dependencies]
 bytes = "1.11.1"
-clap = { version = "4.5.59", features = ["derive"] }
+clap = { version = "4.5.60", features = ["derive"] }
 deboa = { version = "0.1.0-beta.2", features = [
   "tokio-rt",
   "tokio-rust-tls",
