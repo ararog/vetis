@@ -25,7 +25,7 @@ use vetis::{
 #[derive(Deserialize)]
 pub struct VetisServerConfig {
     log_level: String,
-    workers: usize,
+    worker_threads: usize,
     max_blocking_threads: usize,
     server: ServerConfig,
     virtual_hosts: Vec<VirtualHostConfig>,
@@ -100,7 +100,7 @@ fn init_runtime() -> Result<(), Box<dyn Error>> {
                     {
                         let rt = tokio::runtime::Builder::new_multi_thread()
                             .enable_all()
-                            .worker_threads(config.workers)
+                            .worker_threads(config.worker_threads)
                             .max_blocking_threads(config.max_blocking_threads)
                             .build()?;
                         rt.block_on(async { run(config.server, config.virtual_hosts).await })?;

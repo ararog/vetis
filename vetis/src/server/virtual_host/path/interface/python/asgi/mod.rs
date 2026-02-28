@@ -1,22 +1,19 @@
 use std::{collections::HashMap, ffi::CString, fs, future::Future, pin::Pin, sync::Arc};
 
 use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
+use hyper_body_utils::HttpBody;
 use log::error;
 use pyo3::{
     types::{PyAnyMethods, PyIterator, PyModule, PyModuleMethods},
     Bound, PyAny, PyErr, PyResult, Python,
 };
 
-#[cfg(feature = "tokio-rt")]
-use tokio::sync::oneshot;
-
-#[cfg(feature = "smol-rt")]
-use smol::oneshot;
+use crossfire::oneshot;
 
 use crate::{
     errors::{VetisError, VirtualHostError},
     server::{
-        http::{Request, Response, VetisBody, VetisBodyExt},
+        http::{Request, Response},
         virtual_host::path::interface::{
             python::wsgi::callback::StartResponse, Interface, InterfaceWorker,
         },
@@ -49,6 +46,14 @@ impl AsgiWorker {
     pub fn new(directory: String, target: String) -> AsgiWorker {
         AsgiWorker { directory, target }
     }
+
+    pub fn directory(&self) -> &String {
+        &self.directory
+    }
+
+    pub fn target(&self) -> &String {
+        &self.target
+    }
 }
 
 impl InterfaceWorker for AsgiWorker {
@@ -59,7 +64,7 @@ impl InterfaceWorker for AsgiWorker {
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
         let mut response_body: Option<Vec<u8>> = None;
 
-        let (tx, rx) = oneshot::channel::<(String, Vec<(String, String)>)>();
+        let (tx, rx) = oneshot::oneshot::<(String, Vec<(String, String)>)>();
         let code = fs::read_to_string(&self.target);
         let code = match code {
             Ok(code) => code,
@@ -223,7 +228,7 @@ impl InterfaceWorker for AsgiWorker {
                     Ok(Response::builder()
                         .status(status_code)
                         .headers(headers)
-                        .body(VetisBody::body_from_bytes(&response_body.unwrap())))
+                        .body(HttpBody::from_bytes(&response_body.unwrap())))
                 }
                 Err(e) => {
                     error!("Failed to run script: {}", e);

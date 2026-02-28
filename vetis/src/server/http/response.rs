@@ -1,4 +1,4 @@
-use crate::server::http::{VetisBody, VetisBodyExt};
+use hyper_body_utils::HttpBody;
 
 /// Builder for creating HTTP responses.
 ///
@@ -133,7 +133,7 @@ impl ResponseBuilder {
     ///     .text("Hello, World!");
     /// ```    
     pub fn text(self, text: &str) -> Response {
-        self.body(VetisBody::body_from_text(text))
+        self.body(HttpBody::from_text(text))
     }
 
     /// Sets the body with bytes and creates the final `Response`.
@@ -151,7 +151,7 @@ impl ResponseBuilder {
     ///     .bytes(b"Hello, World!");
     /// ```
     pub fn bytes(self, bytes: &[u8]) -> Response {
-        self.body(VetisBody::body_from_bytes(bytes))
+        self.body(HttpBody::from_bytes(bytes))
     }
 
     /// Sets the body and creates the final `Response`.
@@ -168,7 +168,7 @@ impl ResponseBuilder {
     /// let response = Response::builder()
     ///     .body(b"Hello, World!");
     /// ```
-    pub fn body(self, body: VetisBody) -> Response {
+    pub fn body(self, body: HttpBody) -> Response {
         let response = http::Response::new(body);
 
         let (mut parts, body) = response.into_parts();
@@ -206,7 +206,7 @@ impl ResponseBuilder {
 /// let inner_response = response.into_inner();
 /// ```
 pub struct Response {
-    pub(crate) inner: http::Response<VetisBody>,
+    pub(crate) inner: http::Response<HttpBody>,
 }
 
 impl Response {
@@ -247,7 +247,7 @@ impl Response {
     ///     .text("Hello");
     /// let inner = response.into_inner();
     /// ```
-    pub fn into_inner(self) -> http::Response<VetisBody> {
+    pub fn into_inner(self) -> http::Response<HttpBody> {
         self.inner
     }
 }

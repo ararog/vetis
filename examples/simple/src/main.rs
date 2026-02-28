@@ -72,7 +72,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let root_path = HandlerPath::builder()
         .uri("/hello")
-        .handler(handler_fn(|request| async move {
+        .handler(handler_fn(|_request| async move {
             let response = vetis::server::http::Response::builder()
                 .status(StatusCode::OK)
                 .text("Hello from localhost");
@@ -84,7 +84,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let health_path = HandlerPath::builder()
         .uri("/health")
-        .handler(handler_fn(|request| async move {
+        .handler(handler_fn(|_request| async move {
             let response = vetis::server::http::Response::builder()
                 .status(StatusCode::OK)
                 .text("Health check");

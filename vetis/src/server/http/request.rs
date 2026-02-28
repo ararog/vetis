@@ -1,6 +1,4 @@
-use bytes::Bytes;
-use http_body_util::Full;
-use hyper::body::Incoming;
+use hyper_body_utils::HttpBody;
 
 /// HTTP request wrapper supporting multiple protocols.
 ///
@@ -27,23 +25,15 @@ use hyper::body::Incoming;
 /// }
 /// ```
 pub struct Request {
-    pub(crate) inner_http: Option<http::Request<Incoming>>,
-    pub(crate) inner_quic: Option<http::Request<Full<Bytes>>>,
+    pub(crate) inner: Option<http::Request<HttpBody>>,
 }
 
 impl Request {
     /// Creates a `Request` from an HTTP/1 or HTTP/2 request.
     ///
     /// This is used internally by the server to wrap incoming HTTP requests.
-    pub fn from_http(req: http::Request<Incoming>) -> Self {
-        Self { inner_http: Some(req), inner_quic: None }
-    }
-
-    /// Creates a `Request` from an HTTP/3 (QUIC) request.
-    ///
-    /// This is used internally by the server to wrap incoming QUIC requests.
-    pub fn from_quic(req: http::Request<Full<Bytes>>) -> Self {
-        Self { inner_http: None, inner_quic: Some(req) }
+    pub fn from_parts(parts: http::request::Parts, body: HttpBody) -> Self {
+        Self { inner: Some(http::Request::from_parts(parts, body)) }
     }
 
     /// Returns the request URI.
@@ -60,12 +50,9 @@ impl Request {
     /// }
     /// ```
     pub fn uri(&self) -> &http::Uri {
-        match &self.inner_http {
+        match &self.inner {
             Some(req) => req.uri(),
-            None => match &self.inner_quic {
-                Some(req) => req.uri(),
-                None => panic!("No request"),
-            },
+            None => panic!("No request"),
         }
     }
 
@@ -83,12 +70,9 @@ impl Request {
     /// }
     /// ```
     pub fn headers(&self) -> &http::HeaderMap {
-        match &self.inner_http {
+        match &self.inner {
             Some(req) => req.headers(),
-            None => match &self.inner_quic {
-                Some(req) => req.headers(),
-                None => panic!("No request"),
-            },
+            None => panic!("No request"),
         }
     }
 
@@ -106,12 +90,9 @@ impl Request {
     /// }
     /// ```
     pub fn headers_mut(&mut self) -> &mut http::HeaderMap {
-        match &mut self.inner_http {
+        match &mut self.inner {
             Some(req) => req.headers_mut(),
-            None => match &mut self.inner_quic {
-                Some(req) => req.headers_mut(),
-                None => panic!("No request"),
-            },
+            None => panic!("No request"),
         }
     }
 
@@ -132,29 +113,14 @@ impl Request {
     /// }
     /// ```
     pub fn method(&self) -> &http::Method {
-        match &self.inner_http {
+        match &self.inner {
             Some(req) => req.method(),
-            None => match &self.inner_quic {
-                Some(req) => req.method(),
-                None => panic!("No request"),
-            },
+            None => panic!("No request"),
         }
     }
 
-    pub fn into_http_parts(self) -> (http::request::Parts, hyper::body::Incoming) {
-        match self.inner_http {
-            Some(req) => {
-                let (parts, body) = req.into_parts();
-                (parts, body)
-            }
-            None => {
-                panic!("No request");
-            }
-        }
-    }
-
-    pub fn into_quic_parts(self) -> (http::request::Parts, Full<Bytes>) {
-        match self.inner_quic {
+    pub fn into_parts(self) -> (http::request::Parts, HttpBody) {
+        match self.inner {
             Some(req) => {
                 let (parts, body) = req.into_parts();
                 (parts, body)

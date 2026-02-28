@@ -24,6 +24,7 @@
 use std::{future::Future, path::PathBuf, pin::Pin};
 
 use http::StatusCode;
+use hyper_body_utils::HttpBody;
 #[cfg(feature = "python")]
 use pyo3::Python;
 use radix_trie::Trie;
@@ -33,7 +34,7 @@ use crate::{
     config::server::virtual_host::VirtualHostConfig,
     errors::{FileError, VetisError, VirtualHostError},
     server::{
-        http::{Request, Response, VetisBody, VetisBodyExt},
+        http::{Request, Response},
         virtual_host::path::{HostPath, Path},
     },
 };
@@ -256,7 +257,7 @@ impl VirtualHost {
                     if let Ok(data) = result {
                         return Ok(Response::builder()
                             .status(status_code)
-                            .body(VetisBody::body_from_file(data)));
+                            .body(HttpBody::from_file(data)));
                     }
                 }
             }

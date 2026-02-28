@@ -147,6 +147,12 @@ use log::{error, info};
 use async_signal::Signals;
 #[cfg(feature = "smol-rt")]
 use futures_lite::prelude::*;
+
+#[cfg(feature = "smol-rt")]
+use smol::fs::File;
+#[cfg(feature = "tokio-rt")]
+use tokio::fs::File;
+
 #[cfg(feature = "smol-rt")]
 use signal_hook::low_level;
 
@@ -155,6 +161,8 @@ use smol::lock::RwLock;
 
 #[cfg(feature = "tokio-rt")]
 use tokio::sync::RwLock;
+
+pub(crate) type VetisFile = File;
 
 pub(crate) type VetisRwLock<T> = RwLock<T>;
 

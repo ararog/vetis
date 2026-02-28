@@ -1,11 +1,12 @@
 use std::{future::Future, pin::Pin, sync::Arc};
 
 use http::StatusCode;
+use hyper_body_utils::HttpBody;
 
 use crate::{
     errors::VetisError,
     server::{
-        http::{Request, Response, VetisBody, VetisBodyExt},
+        http::{Request, Response},
         virtual_host::path::interface::{Interface, InterfaceWorker},
     },
 };
@@ -36,6 +37,14 @@ impl RsgiWorker {
     pub fn new(directory: String, target: String) -> RsgiWorker {
         RsgiWorker { directory, target }
     }
+
+    pub fn directory(&self) -> &String {
+        &self.directory
+    }
+
+    pub fn target(&self) -> &String {
+        &self.target
+    }
 }
 
 impl InterfaceWorker for RsgiWorker {
@@ -47,7 +56,7 @@ impl InterfaceWorker for RsgiWorker {
         Box::pin(async move {
             Ok(Response::builder()
                 .status(StatusCode::OK)
-                .body(VetisBody::body_from_text("Ok!")))
+                .body(HttpBody::from_text("Ok!")))
         })
     }
 }

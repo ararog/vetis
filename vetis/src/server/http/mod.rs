@@ -1,21 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
-use bytes::Bytes;
 use http::HeaderMap;
-use http_body_util::{combinators::BoxBody, BodyExt, Either, StreamBody};
-use hyper::body::{Frame, Incoming};
 
-use futures_util::{stream, TryStreamExt};
-
-#[cfg(feature = "smol-rt")]
-use futures_lite::AsyncReadExt;
-#[cfg(feature = "smol-rt")]
-use smol::fs::File;
-
-#[cfg(feature = "tokio-rt")]
-use tokio::fs::File;
-#[cfg(feature = "tokio-rt")]
-use tokio_util::io::ReaderStream;
+use hyper_body_utils::HttpBody;
 
 use crate::{
     config::server::{Protocol, ServerConfig},
@@ -31,38 +18,6 @@ mod request;
 mod response;
 
 pub use crate::server::http::{request::Request, response::Response};
-
-pub type VetisBody = Either<Incoming, BoxBody<Bytes, std::io::Error>>;
-
-pub trait VetisBodyExt {
-    fn body_from_text(text: &str) -> VetisBody;
-    fn body_from_bytes(bytes: &[u8]) -> VetisBody;
-    fn body_from_file(file: File) -> VetisBody;
-}
-
-impl VetisBodyExt for VetisBody {
-    fn body_from_text(text: &str) -> VetisBody {
-        Self::body_from_bytes(text.as_bytes())
-    }
-
-    fn body_from_bytes(bytes: &[u8]) -> VetisBody {
-        let all_bytes = Bytes::copy_from_slice(bytes);
-        let content = stream::iter(vec![Ok(all_bytes)]).map_ok(Frame::data);
-        let body = StreamBody::new(content);
-        Either::Right(BodyExt::boxed(body))
-    }
-
-    fn body_from_file(file: File) -> VetisBody {
-        #[cfg(feature = "tokio-rt")]
-        let content = ReaderStream::new(file).map_ok(Frame::data);
-        #[cfg(feature = "smol-rt")]
-        let content = file
-            .bytes()
-            .map_ok(|data| Frame::data(bytes::Bytes::copy_from_slice(&[data])));
-        let body = StreamBody::new(content);
-        Either::Right(BodyExt::boxed(body))
-    }
-}
 
 pub struct HttpServer {
     config: ServerConfig,
@@ -175,10 +130,10 @@ pub fn static_response(
     status: http::StatusCode,
     headers: Option<HeaderMap>,
     body: String,
-) -> http::Response<VetisBody> {
+) -> http::Response<HttpBody> {
     let mut response = http::Response::builder()
         .status(status)
-        .body(VetisBody::body_from_text(&body))
+        .body(HttpBody::from_bytes(body.as_bytes()))
         .unwrap();
 
     if let Some(headers) = headers {
