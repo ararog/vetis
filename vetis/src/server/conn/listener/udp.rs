@@ -4,7 +4,6 @@ use std::{
     sync::Arc,
 };
 
-use ::http::{Request, Response};
 use bytes::Bytes;
 use h3::server::{Connection, RequestResolver};
 use h3_quinn::{
@@ -12,8 +11,9 @@ use h3_quinn::{
     Connection as QuinnConnection,
 };
 
-use http_body_util::{BodyExt, Full};
+use http_body_util::BodyExt;
 
+use hyper_body_utils::HttpBody;
 use log::{debug, error, info};
 use rt_gate::{spawn_server, spawn_worker, GateTask};
 
@@ -22,7 +22,7 @@ use crate::{
     errors::{StartError::Tls, VetisError},
     server::{
         conn::listener::{Listener, ListenerResult},
-        http::static_response,
+        http::{static_response, Request, Response},
         tls::TlsFactory,
     },
     VetisRwLock, VetisVirtualHosts,
@@ -210,18 +210,13 @@ fn handle_http_request(
         let result = resolver
             .resolve_request()
             .await;
-        if let Ok((req, mut stream)) = result {
+        if let Ok((req, stream)) = result {
+            let (mut send_stream, recv_stream) = stream.split();
             let (parts, _) = req.into_parts();
-
             let method = parts.method.clone();
-
             let uri = parts.uri.clone();
-
-            // TODO: Implement body based on RequestStream
-
-            let body = Full::new(Bytes::new());
-
-            let request = Request::from_parts(parts, body);
+            let body = HttpBody::from_quic_server(recv_stream);
+            let request = http::Request::from_parts(parts, body);
 
             let host = request
                 .uri()
@@ -237,7 +232,8 @@ fn handle_http_request(
                 let virtual_host = virtual_host.get(&(host.host().into(), port));
 
                 let response = if let Some(virtual_host) = virtual_host {
-                    let request = crate::server::http::Request::from_quic(request);
+                    let (parts, body) = request.into_parts();
+                    let request = Request::from_parts(parts, body);
 
                     let vetis_response = virtual_host
                         .route(request)
@@ -314,7 +310,7 @@ fn handle_http_request(
             if let Ok(response) = response {
                 let (parts, body) = response.into_parts();
 
-                let mut resp = Response::builder()
+                let mut resp = http::Response::builder()
                     .status(parts.status)
                     .version(parts.version)
                     .extension(parts.extensions)
@@ -324,7 +320,7 @@ fn handle_http_request(
                 resp.headers_mut()
                     .extend(parts.headers);
 
-                match stream
+                match send_stream
                     .send_response(resp)
                     .await
                 {
@@ -345,11 +341,11 @@ fn handle_http_request(
                         .to_vec(),
                 );
 
-                let _ = stream
+                let _ = send_stream
                     .send_data(buf)
                     .await;
 
-                let _ = stream
+                let _ = send_stream
                     .finish()
                     .await;
             } else {

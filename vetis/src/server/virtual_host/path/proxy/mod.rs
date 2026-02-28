@@ -75,7 +75,7 @@ impl Path for ProxyPath {
         request: Request,
         uri: Arc<String>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + '_>> {
-        let (request_parts, _request_body) = request.into_http_parts();
+        let (request_parts, request_body) = request.into_parts();
 
         let target = self.config.target();
 
@@ -90,7 +90,7 @@ impl Path for ProxyPath {
 
             let deboa_request = match deboa_request
                 .headers(request_parts.headers)
-                // TODO: Set body
+                .body(request_body)
                 .build()
             {
                 Ok(request) => request,

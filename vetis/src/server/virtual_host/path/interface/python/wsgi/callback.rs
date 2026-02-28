@@ -4,9 +4,9 @@ use pyo3::{
     Bound, PyResult,
 };
 
-use tokio::sync::oneshot;
+use crossfire::oneshot;
 
-pub(crate) type WsgiMessageSender = oneshot::Sender<(String, Vec<(String, String)>)>;
+pub(crate) type WsgiMessageSender = oneshot::TxOneshot<(String, Vec<(String, String)>)>;
 
 #[pyclass]
 pub(crate) struct Write {
@@ -37,7 +37,7 @@ impl StartResponse {
 impl StartResponse {
     fn __call__(&mut self, status: String, headers: Vec<(String, String)>) -> PyResult<()> {
         if let Some(sender) = self.sender.take() {
-            sender.send((status, headers));
+            let _ = sender.send((status, headers));
         }
         Ok(())
     }

@@ -1,6 +1,7 @@
 use std::{ffi::CString, fs, future::Future, path::Path, pin::Pin, sync::Arc};
 
 use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
+use hyper_body_utils::HttpBody;
 use log::error;
 use pyo3::{
     intern,
@@ -13,14 +14,14 @@ use smol::unblock as spawn_blocking;
 #[cfg(feature = "tokio-rt")]
 use tokio::task::spawn_blocking;
 
-use tokio::sync::oneshot;
+use crossfire::oneshot;
 
 pub mod callback;
 
 use crate::{
     errors::{VetisError, VirtualHostError},
     server::{
-        http::{Request, Response, VetisBody, VetisBodyExt},
+        http::{Request, Response},
         virtual_host::path::interface::{
             python::wsgi::callback::StartResponse, Interface, InterfaceWorker,
         },
@@ -99,7 +100,7 @@ impl InterfaceWorker for WsgiWorker {
         request: Arc<Request>,
         _uri: Arc<String>,
     ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>> {
-        let (tx, rx) = oneshot::channel::<(String, Vec<(String, String)>)>();
+        let (tx, rx) = oneshot::oneshot::<(String, Vec<(String, String)>)>();
         let request = request.clone();
         let func = self.func.clone();
         let env = self.env.clone();
@@ -225,7 +226,7 @@ impl InterfaceWorker for WsgiWorker {
                 Ok(body) => Ok(Response::builder()
                     .status(status_code)
                     .headers(headers)
-                    .body(VetisBody::body_from_bytes(&body))),
+                    .body(HttpBody::from_bytes(&body))),
                 Err(e) => {
                     error!("Failed to run script: {}", e);
                     Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string())))

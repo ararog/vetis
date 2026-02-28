@@ -1,7 +1,8 @@
 mod virtual_host_tests {
-    use bytes::Bytes;
+
     use http::StatusCode;
-    use http_body_util::{BodyExt, Full};
+    use http_body_util::BodyExt;
+    use hyper_body_utils::HttpBody;
     #[cfg(feature = "smol-rt")]
     use macro_rules_attribute::apply;
     #[cfg(feature = "smol-rt")]
@@ -9,7 +10,10 @@ mod virtual_host_tests {
 
     use crate::{
         config::server::virtual_host::VirtualHostConfig,
-        server::virtual_host::{handler_fn, path::HandlerPath, VirtualHost},
+        server::{
+            http::Request,
+            virtual_host::{handler_fn, path::HandlerPath, VirtualHost},
+        },
     };
 
     async fn do_add_virtual_host() -> Result<(), Box<dyn std::error::Error>> {
@@ -81,12 +85,16 @@ mod virtual_host_tests {
             "localhost"
         );
 
+        let body = HttpBody::from_text("Hello, world!");
+
         let request = http::Request::builder()
             .uri("/")
-            .body(Full::new(Bytes::from(b"Test".to_vec())))
+            .body(body)
             .unwrap();
 
-        let request = crate::server::http::Request::from_quic(request);
+        let (parts, body) = request.into_parts();
+
+        let request = Request::from_parts(parts, body);
 
         let response = virtual_host
             .route(request)
