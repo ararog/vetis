@@ -757,49 +757,9 @@ checksum = "d7a1e2f27636f116493b8b860f5546edb47c8d8f8ea73e1d2a20be88e28d1fea"
 
 [[package]]
 name = "deboa"
-version = "0.1.0-beta.2"
+version = "0.1.0-beta.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6830e9703458dd84dccc664e29b0e2b0bafe20f1803aebb6f9757f9cf94e70fe"
-dependencies = [
- "async-std-resolver",
- "async-trait",
- "base64",
- "bytes",
- "cfg-if",
- "cookie",
- "futures",
- "futures-rustls",
- "http",
- "http-body",
- "http-body-util",
- "hyper",
- "hyper-util",
- "indexmap",
- "log",
- "minimime",
- "mockall",
- "quinn",
- "rand 0.9.2",
- "regex",
- "rt-gate",
- "rustls",
- "rustls-native-certs",
- "rustls-pki-types",
- "serde",
- "thiserror 2.0.18",
- "time 0.2.27",
- "tokio",
- "tokio-rustls",
- "tokio-util",
- "trust-dns-resolver",
- "url",
- "urlencoding",
- "webpki-roots",
-]
-
-[[package]]
-name = "deboa"
-version = "0.1.0-beta.3"
+checksum = "2a1d7b6d2728fa72f0e04fda15ab68a5c92c2f2ee287fd8f2b3e95841670dc36"
 dependencies = [
  "async-executor",
  "async-std-resolver",
@@ -1484,7 +1444,9 @@ dependencies = [
 
 [[package]]
 name = "hyper-body-utils"
-version = "0.1.4"
+version = "0.1.6-beta.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67ecd14d884f04e2ef7eb52532ae237f8b15b6974116e7b7d6b18837118cbf5f"
 dependencies = [
  "bytes",
  "futures",
@@ -1492,7 +1454,10 @@ dependencies = [
  "h3-quinn",
  "http-body-util",
  "hyper",
+ "macro_rules_attribute",
+ "pin-project-lite",
  "smol",
+ "smol-macros",
  "tokio",
  "tokio-util",
 ]
@@ -2236,9 +2201,9 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.16"
+version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b3cff922bd51709b605d9ead9aa71031d81447142d828eb4a6eba76fe619f9b"
+checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "pin-utils"
@@ -3184,7 +3149,7 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "clap",
- "deboa 0.1.0-beta.2",
+ "deboa",
  "env_logger",
  "http-body-util",
  "hyper",
@@ -3803,7 +3768,7 @@ dependencies = [
  "cfg-if",
  "clap",
  "crossfire",
- "deboa 0.1.0-beta.3",
+ "deboa",
  "env_logger",
  "filedescriptor",
  "futures-lite",
@@ -3853,7 +3818,7 @@ dependencies = [
 name = "vetis-macros"
 version = "0.1.1-beta.1"
 dependencies = [
- "deboa 0.1.0-beta.2",
+ "deboa",
  "http",
  "http-body-util",
  "tokio",
