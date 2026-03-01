@@ -227,10 +227,12 @@ mod static_files {
             .send_with(&client)
             .await?;
 
-        assert!(request
+        assert_eq!(request.status(), http::StatusCode::OK);
+
+        assert_eq!(request
             .text()
-            .await?
-            .contains("Tested!"));
+            .await?,
+            "<html>\n<head>\n  <title>\n    Tested!\n  </title>\n</head>\n<body>\n  <p>\n    Tested!\n  </p>\n</body>\n</html>");
 
         server
             .stop()

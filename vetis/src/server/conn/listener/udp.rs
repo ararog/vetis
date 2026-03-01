@@ -5,13 +5,12 @@ use std::{
 };
 
 use bytes::Bytes;
+use futures_util::StreamExt;
 use h3::server::{Connection, RequestResolver};
 use h3_quinn::{
     quinn::{self, crypto::rustls::QuicServerConfig},
     Connection as QuinnConnection,
 };
-
-use http_body_util::BodyExt;
 
 use hyper_body_utils::HttpBody;
 use log::{debug, error, info};
@@ -22,7 +21,7 @@ use crate::{
     errors::{StartError::Tls, VetisError},
     server::{
         conn::listener::{Listener, ListenerResult},
-        http::{static_response, Request, Response},
+        http::{static_response, Request},
         tls::TlsFactory,
     },
     VetisRwLock, VetisVirtualHosts,
@@ -308,7 +307,7 @@ fn handle_http_request(
             };
 
             if let Ok(response) = response {
-                let (parts, body) = response.into_parts();
+                let (parts, mut body) = response.into_parts();
 
                 let mut resp = http::Response::builder()
                     .status(parts.status)
@@ -328,22 +327,19 @@ fn handle_http_request(
                         debug!("Successfully respond to connection");
                     }
                     Err(err) => {
-                        error!("Unable to send response to connection peer: {:?}", err);
+                        error!("Unable to send response to connection: {:?}", err);
                     }
                 }
 
-                let collected = body.collect().await;
-
-                let buf = Bytes::from(
-                    collected
-                        .expect("HttpServer - Failed to collect response")
-                        .to_bytes()
-                        .to_vec(),
-                );
-
-                let _ = send_stream
-                    .send_data(buf)
-                    .await;
+                while let Some(buf) = body.next().await {
+                    if let Ok(buf) = buf {
+                        if let Ok(bytes) = buf.into_data() {
+                            let _ = send_stream
+                                .send_data(bytes)
+                                .await;
+                        }
+                    }
+                }
 
                 let _ = send_stream
                     .finish()
