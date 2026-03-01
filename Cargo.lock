@@ -3893,6 +3893,7 @@ dependencies = [
  "quinn",
  "radix_trie",
  "rand 0.9.2",
+ "rb-sys",
  "regex",
  "ripht-php-sapi",
  "rt-gate",
