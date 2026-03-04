@@ -37,7 +37,7 @@ hyper = "1.8.1"
 macro_rules_attribute = "0.2.2"
 maplit = "1.0.2"
 smol-macros = { version = "0.1.1", optional = true }
-tokio = { version = "1.49.0", default-features = false, optional = true}
+tokio = { version = "1.50.0", default-features = false, optional = true}
 vetis = { version = "0.1.4-beta.1", path = "../../vetis", features = [
   "http1",
   "tokio-rt",

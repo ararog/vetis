@@ -20,5 +20,5 @@ deboa = { version = "0.1.0-beta.5", features = [
 ], default-features = false }
 http = "1.4.0"
 http-body-util = "0.1.3"
-tokio = "1.49.0"
+tokio = "1.50.0"
 vetis = { version = "0.1.4-beta.4", path = "../vetis" }
