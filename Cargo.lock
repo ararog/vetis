@@ -763,9 +763,9 @@ checksum = "d7a1e2f27636f116493b8b860f5546edb47c8d8f8ea73e1d2a20be88e28d1fea"
 
 [[package]]
 name = "deboa"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a1d7b6d2728fa72f0e04fda15ab68a5c92c2f2ee287fd8f2b3e95841670dc36"
+checksum = "d0c068f5fe3216b90e6281a36770d4f709042ccf797ad6f52a903c4ea74135f4"
 dependencies = [
  "async-executor",
  "async-std-resolver",
@@ -1409,6 +1409,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "hotpath"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51462b35dc551217e1d1dd3f8c5eebbb5df7103370b1e55d24c19a3411d290f7"
+dependencies = [
+ "hotpath-macros",
+]
+
+[[package]]
+name = "hotpath-macros"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f022365c90cc04455f17a2b9ba5fe0e661cde1ab27434d382f1f8693fe124e7d"
+
+[[package]]
 name = "http"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1478,14 +1493,16 @@ dependencies = [
 
 [[package]]
 name = "hyper-body-utils"
-version = "0.1.6-beta.2"
+version = "0.1.6-beta.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67ecd14d884f04e2ef7eb52532ae237f8b15b6974116e7b7d6b18837118cbf5f"
+checksum = "7f1ed770f3b3b9530be49001899778e77365fb0878db2d0ffd31fb32d91456f4"
 dependencies = [
  "bytes",
  "futures",
+ "futures-util",
  "h3",
  "h3-quinn",
+ "hotpath",
  "http-body-util",
  "hyper",
  "macro_rules_attribute",

@@ -13,7 +13,7 @@ publish = true
 rust-version = "1.75.0"
 
 [dependencies]
-deboa = { version = "0.1.0-beta.5", features = [
+deboa = { version = "0.1.0-beta.6", features = [
   "http1",
   "tokio-rt",
   "tokio-rust-tls",
