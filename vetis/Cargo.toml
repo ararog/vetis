@@ -84,7 +84,7 @@ php = ["dep:ripht-php-sapi"]
 # TODO: Implemet Ruby support
 ruby = ["dep:magnus"]
 
-static-files = ["dep:mime", "dep:minimime", "dep:regex", "dep:lru", "dep:filedescriptor"]
+static-files = ["dep:mime", "dep:minimime", "dep:regex", "moka/future"]
 
 reverse-proxy = []
 __deboa_tokio = ["deboa/tokio-rt", "deboa/tokio-rust-tls"]
@@ -119,6 +119,9 @@ http3 = [
   "hyper-body-utils/http3"
 ]
 
+hotpath = ["hotpath/hotpath"]
+hotpath-alloc = ["hotpath/hotpath-alloc"]
+
 [dependencies]
 argon2 = { version = "0.5.3", optional = true }
 async-signal = { version = "0.2.12", optional = true }
@@ -134,23 +137,24 @@ clap = { version = "4.5.60", features = [
 crossfire = { version = "3.1.4", optional = true, default-features = false }
 deboa = { version = "0.1.0-beta.6", default-features = false, optional = true }
 env_logger = "0.11.9"
-filedescriptor = { version = "0.8.3", optional = true }
 futures-lite = { version = "2.6.1", optional = true }
 futures-rustls = { version = "0.26.0", optional = true }
 futures-util = "0.3.32"
 h3 = { version = "0.0.8", optional = true }
 h3-quinn = { version = "0.0.10", optional = true }
+hotpath = "0.13.0"
 http = "1.3.1"
 http-body-util = { version = "0.1.3" }
 hyper = { version = "1.8.1", default-features = false, optional = true }
-hyper-body-utils = { version = "0.1.6-beta.2", optional = true, default-features = false}
+hyper-body-utils = { version = "0.1.6-beta.3", optional = true, default-features = false}
 hyper-util = { version = "0.1.20", default-features = false, optional = true }
 log = "0.4.28"
-lru = { version = "0.16.3", optional = true, default-features = false}
 macro_rules_attribute = { version = "0.2.2", optional = true }
 magnus = { version = "0.8.2", optional = true, features = ["embed"] }
+mimalloc = "0.1.48"
 mime = { version = "0.3.17", optional = true }
 minimime = { version = "1.0.0", optional = true }
+moka = { version = "0.12.14", optional = true, default-features = false}
 peekable = { version = "0.4.1", optional = true, default-features = false }
 pyo3 = { version = "0.27.2", default-features = false, optional = true }
 pyo3-async-runtimes = { version = "0.27.0", default-features = false, optional = true }
