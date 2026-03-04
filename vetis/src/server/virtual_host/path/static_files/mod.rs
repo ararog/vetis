@@ -1,6 +1,6 @@
 use hyper_body_utils::HttpBody;
 use log::error;
-use moka::future::Cache;
+use moka::future::{Cache, CacheBuilder};
 
 #[cfg(feature = "smol-rt")]
 use futures_lite::AsyncSeekExt;
@@ -144,7 +144,14 @@ impl StaticPath {
     ///
     /// * `StaticPath` - The static path
     pub fn new(config: StaticPathConfig) -> StaticPath {
-        let file_cache = Cache::new(100);
+        let file_cache = CacheBuilder::new(
+            config
+                .cache()
+                .capacity(),
+        )
+        .time_to_idle(config.cache().tti())
+        .time_to_live(config.cache().ttl())
+        .build();
         if let Some(index_files) = config.index_files() {
             let directory = PathBuf::from(config.directory());
             if let Some(index_file) = index_files
@@ -217,7 +224,12 @@ impl StaticPath {
                         etag: None,
                     };
 
-                    let static_file = if metadata.size() < 1024 * 1024 {
+                    let static_file = if metadata.size()
+                        < self
+                            .config
+                            .cache()
+                            .max_file_size() as u64
+                    {
                         #[cfg(feature = "tokio-rt")]
                         let data = tokio::fs::read(file_path).await;
                         #[cfg(not(feature = "tokio-rt"))]
