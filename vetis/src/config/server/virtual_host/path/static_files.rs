@@ -1,9 +1,96 @@
+use std::time::Duration;
+
 use serde::Deserialize;
 
 use crate::errors::{ConfigError, VetisError};
 
 #[cfg(feature = "auth")]
 use crate::server::virtual_host::path::auth::AuthType;
+
+#[derive(Debug, Clone)]
+pub struct StaticPathCacheBuilder {
+    max_file_size: usize,
+    ttl: Duration,
+    tti: Duration,
+    capacity: u64,
+}
+
+impl StaticPathCacheBuilder {
+    pub fn max_file_size(mut self, max_file_size: usize) -> Self {
+        self.max_file_size = max_file_size;
+        self
+    }
+
+    pub fn ttl(mut self, ttl: Duration) -> Self {
+        self.ttl = ttl;
+        self
+    }
+
+    pub fn tti(mut self, tti: Duration) -> Self {
+        self.tti = tti;
+        self
+    }
+
+    pub fn capacity(mut self, capacity: u64) -> Self {
+        self.capacity = capacity;
+        self
+    }
+
+    pub fn build(self) -> StaticPathCache {
+        StaticPathCache {
+            max_file_size: self.max_file_size,
+            ttl: self.ttl,
+            tti: self.tti,
+            capacity: self.capacity,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct StaticPathCache {
+    max_file_size: usize,
+    ttl: Duration,
+    tti: Duration,
+    capacity: u64,
+}
+
+impl Default for StaticPathCache {
+    fn default() -> Self {
+        Self {
+            max_file_size: 10 * 1024 * 1024, // 10MB
+            ttl: Duration::from_secs(60),
+            tti: Duration::from_secs(10),
+            capacity: 1000,
+        }
+    }
+}
+
+impl StaticPathCache {
+    pub fn builder() -> StaticPathCacheBuilder {
+        StaticPathCacheBuilder {
+            max_file_size: 10 * 1024 * 1024, // 10MB
+            ttl: Duration::from_secs(60),
+            tti: Duration::from_secs(10),
+            capacity: 1000,
+        }
+    }
+
+    pub fn max_file_size(&self) -> usize {
+        self.max_file_size
+    }
+
+    pub fn ttl(&self) -> Duration {
+        self.ttl
+    }
+
+    pub fn tti(&self) -> Duration {
+        self.tti
+    }
+
+    pub fn capacity(&self) -> u64 {
+        self.capacity
+    }
+}
 
 pub struct StaticPathConfigBuilder {
     uri: String,
@@ -12,6 +99,7 @@ pub struct StaticPathConfigBuilder {
     index_files: Option<Vec<String>>,
     #[cfg(feature = "auth")]
     auth: Option<AuthType>,
+    cache: StaticPathCache,
 }
 
 impl StaticPathConfigBuilder {
@@ -66,6 +154,16 @@ impl StaticPathConfigBuilder {
         self
     }
 
+    /// Allow set the cache of the static path.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The builder.
+    pub fn cache(mut self, cache: StaticPathCache) -> Self {
+        self.cache = cache;
+        self
+    }
+
     /// Build the `StaticPathConfig` with the configured settings.
     ///
     /// # Returns
@@ -99,6 +197,7 @@ impl StaticPathConfigBuilder {
             index_files: self.index_files,
             #[cfg(feature = "auth")]
             auth: self.auth,
+            cache: self.cache,
         })
     }
 }
@@ -112,6 +211,7 @@ pub struct StaticPathConfig {
     index_files: Option<Vec<String>>,
     #[cfg(feature = "auth")]
     auth: Option<AuthType>,
+    cache: StaticPathCache,
 }
 
 #[cfg(feature = "static-files")]
@@ -129,6 +229,7 @@ impl StaticPathConfig {
             index_files: None,
             #[cfg(feature = "auth")]
             auth: None,
+            cache: StaticPathCache::default(),
         }
     }
 
@@ -176,5 +277,14 @@ impl StaticPathConfig {
     /// * `&Option<Auth>` - The auth.
     pub fn auth(&self) -> &Option<AuthType> {
         &self.auth
+    }
+
+    /// Returns cache
+    ///
+    /// # Returns
+    ///
+    /// * `&StaticPathCache` - The cache.
+    pub fn cache(&self) -> &StaticPathCache {
+        &self.cache
     }
 }
