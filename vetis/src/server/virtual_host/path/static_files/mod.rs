@@ -17,7 +17,9 @@ use crate::{
     VetisFile,
 };
 use http::{HeaderMap, HeaderValue};
-use std::{future::Future, os::unix::fs::MetadataExt, path::PathBuf, pin::Pin, sync::Arc};
+use std::{
+    future::Future, os::unix::fs::MetadataExt, path::PathBuf, pin::Pin, sync::Arc, time::Duration,
+};
 
 #[cfg(feature = "auth")]
 use crate::server::virtual_host::path::auth::Auth;
@@ -144,14 +146,17 @@ impl StaticPath {
     ///
     /// * `StaticPath` - The static path
     pub fn new(config: StaticPathConfig) -> StaticPath {
-        let file_cache = CacheBuilder::new(
-            config
-                .cache()
-                .capacity(),
-        )
-        .time_to_idle(config.cache().tti())
-        .time_to_live(config.cache().ttl())
+        let file_cache = if let Some(cache) = config.cache() {
+            CacheBuilder::new(cache.capacity())
+                .time_to_idle(cache.tti())
+                .time_to_live(cache.ttl())
+        } else {
+            CacheBuilder::new(1000)
+                .time_to_idle(Duration::from_secs(60))
+                .time_to_live(Duration::from_secs(60))
+        }
         .build();
+
         if let Some(index_files) = config.index_files() {
             let directory = PathBuf::from(config.directory());
             if let Some(index_file) = index_files
@@ -224,12 +229,13 @@ impl StaticPath {
                         etag: None,
                     };
 
-                    let static_file = if metadata.size()
-                        < self
-                            .config
-                            .cache()
-                            .max_file_size() as u64
-                    {
+                    let max_file_size = if let Some(cache) = self.config.cache() {
+                        cache.max_file_size() as u64
+                    } else {
+                        1024 * 1024 // 1MB default
+                    };
+
+                    let static_file = if metadata.size() < max_file_size {
                         #[cfg(feature = "tokio-rt")]
                         let data = tokio::fs::read(file_path).await;
                         #[cfg(not(feature = "tokio-rt"))]
@@ -326,7 +332,7 @@ impl StaticPath {
                     .parse()
                     .unwrap(),
             )
-            //.header(http::header::CONTENT_LENGTH, HeaderValue::from(filesize))
+            .header(http::header::CONTENT_LENGTH, HeaderValue::from(filesize))
             .body(HttpBody::from_bytes(file.data().unwrap())))
     }
 
@@ -462,9 +468,9 @@ impl Path for StaticPath {
                 if !file.exists() {
                     if let Ok(ext_regex) = ext_regex {
                         if !ext_regex.is_match(uri.as_ref()) {
-                            return self
-                                .serve_index_file(&directory)
-                                .await;
+                            return Err(VetisError::VirtualHost(VirtualHostError::File(
+                                FileError::NotFound,
+                            )));
                         }
                     }
                 } else if file.is_dir() {
