@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 
 use crate::errors::{ConfigError, VetisError};
 
@@ -49,7 +49,9 @@ impl StaticPathCacheBuilder {
 #[derive(Debug, Clone, Deserialize)]
 pub struct StaticPathCache {
     max_file_size: usize,
+    #[serde(deserialize_with = "deserialize_duration")]
     ttl: Duration,
+    #[serde(deserialize_with = "deserialize_duration")]
     tti: Duration,
     capacity: u64,
 }
@@ -99,7 +101,7 @@ pub struct StaticPathConfigBuilder {
     index_files: Option<Vec<String>>,
     #[cfg(feature = "auth")]
     auth: Option<AuthType>,
-    cache: StaticPathCache,
+    cache: Option<StaticPathCache>,
 }
 
 impl StaticPathConfigBuilder {
@@ -160,7 +162,7 @@ impl StaticPathConfigBuilder {
     ///
     /// * `Self` - The builder.
     pub fn cache(mut self, cache: StaticPathCache) -> Self {
-        self.cache = cache;
+        self.cache = Some(cache);
         self
     }
 
@@ -211,7 +213,7 @@ pub struct StaticPathConfig {
     index_files: Option<Vec<String>>,
     #[cfg(feature = "auth")]
     auth: Option<AuthType>,
-    cache: StaticPathCache,
+    cache: Option<StaticPathCache>,
 }
 
 #[cfg(feature = "static-files")]
@@ -229,7 +231,7 @@ impl StaticPathConfig {
             index_files: None,
             #[cfg(feature = "auth")]
             auth: None,
-            cache: StaticPathCache::default(),
+            cache: Some(StaticPathCache::default()),
         }
     }
 
@@ -283,8 +285,16 @@ impl StaticPathConfig {
     ///
     /// # Returns
     ///
-    /// * `&StaticPathCache` - The cache.
-    pub fn cache(&self) -> &StaticPathCache {
+    /// * `&Option<StaticPathCache>` - The cache.
+    pub fn cache(&self) -> &Option<StaticPathCache> {
         &self.cache
     }
+}
+
+fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    parse_duration::parse(&s).map_err(serde::de::Error::custom)
 }
