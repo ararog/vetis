@@ -130,7 +130,7 @@ clap = { version = "4.5.60", features = [
   "derive",
   "std",
 ], default-features = false }
-crossfire = { version = "3.1.4", optional = true, default-features = false }
+crossfire = { version = "3.1.5", optional = true, default-features = false }
 deboa = { version = "0.1.0-beta.6", default-features = false, optional = true }
 env_logger = "0.11.9"
 filedescriptor = { version = "0.8.3", optional = true }
@@ -167,7 +167,7 @@ signal-hook = { version = "0.4.3", optional = true }
 smol = { version = "2.0.2", optional = true }
 smol-hyper = { version = "0.1.1", optional = true }
 smol-macros = { version = "0.1.1", optional = true }
-socket2 = "0.6.2"
+socket2 = "0.6.3"
 thiserror = "2.0.17"
 time = { version = "0.3.41", features = ["formatting"] }
 tokio = { version = "1.50.0", default-features = false, optional = true }
