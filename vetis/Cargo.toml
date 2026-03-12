@@ -72,6 +72,8 @@ auth = ["argon2", "bcrypt", "base64"]
 
 interface = ["python", "php"]
 __interface_python_wsgi = ["interface", "python", "wsgi"]
+__interface_php = ["interface", "php"]
+__interface_ruby = ["interface", "ruby"]
 
 # TODO: Implement ASGI/WSGI support
 python = ["asgi", "rsgi", "wsgi"]

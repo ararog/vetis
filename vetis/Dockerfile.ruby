@@ -9,7 +9,8 @@ RUN apk update && \
 WORKDIR /docker
 COPY . ./
 RUN cd /docker/vetis && \
-    RUSTFLAGS="-C target-feature=-crt-static" cargo build --release --features="tokio-rt http1 tokio-rust-tls ruby" \
+    RUSTFLAGS="-C target-feature=-crt-static" cargo build --release \
+    --features="tokio-rt http1 tokio-rust-tls __interface_ruby" \
     --no-default-features --target=x86_64-unknown-linux-musl
 
 
