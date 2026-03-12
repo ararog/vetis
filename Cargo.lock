@@ -4170,6 +4170,7 @@ dependencies = [
  "async-signal",
  "base64",
  "bcrypt",
+ "bindgen",
  "blocking",
  "bytes",
  "cfg-if",
