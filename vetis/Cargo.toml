@@ -12,6 +12,9 @@ keywords = ["http", "networking", "server", "rest-server"]
 publish = true
 rust-version = "1.75.0"
 
+[package.metadata.docs.rs]
+all-features = true
+
 [package.metadata.wix]
 upgrade-guid = "76DF79DF-E1F9-40A7-89D1-3190562C7851"
 path-guid = "FEA82F70-7E57-447F-A361-76FB5E25BA5F"

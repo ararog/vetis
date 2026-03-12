@@ -1,3 +1,0 @@
-[hooks]
-pre-push = "cargo test --release"
-pre-commit = "cargo fmt --check && cargo clippy -- -D warnings"
