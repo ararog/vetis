@@ -15,7 +15,8 @@ RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/s
 WORKDIR /docker
 COPY . ./
 RUN cd /docker/vetis && \
-    RUSTFLAGS="-L native=/usr/lib/python3.12/config-3.12-x86_64-linux-musl" \
+    LIBCLANG_STATIC=1 \
+    RUSTFLAGS="-Ctarget-feature=-crt-static" \
     RIPHT_PHP_SAPI_PREFIX="//buildroot" \
     LLVM_CONFIG_PATH="/usr/bin/llvm-config-21" \
     cargo build --release --features="tokio-rt http1 tokio-rust-tls __interface_php" \
