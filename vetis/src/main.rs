@@ -13,7 +13,7 @@ use mimalloc::MiMalloc;
 
 #[global_allocator]
 #[cfg(target_env = "musl")]
-static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+static GLOBAL: MiMalloc = MiMalloc;
 
 use std::{error::Error, fs::read_to_string, path::Path};
 use vetis::{

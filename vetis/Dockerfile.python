@@ -10,7 +10,7 @@ WORKDIR /docker
 COPY . ./
 RUN cd /docker/vetis && \
     RUSTFLAGS="-L native=/usr/lib/python3.12/config-3.12-x86_64-linux-musl" \
-    cargo build --release --features="tokio-rt http1 tokio-rust-tls python" \
+    cargo build --release --features="tokio-rt http1 tokio-rust-tls __interface_python_wsgi" \
     --no-default-features --target=x86_64-unknown-linux-musl
 
 

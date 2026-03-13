@@ -2,7 +2,7 @@ FROM rust:alpine AS build
 
 RUN apk update && \
     apk upgrade --no-cache && \
-    apk add --no-cache lld mold musl musl-dev libc-dev cmake clang-static llvm-static openssl file \
+    apk add --no-cache lld mold musl musl-dev libc-dev cmake clang21-static llvm21-static llvm21-dev openssl file \
         libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd pkgconfig \
         binutils ca-certificates upx
 
@@ -15,9 +15,11 @@ RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/s
 WORKDIR /docker
 COPY . ./
 RUN cd /docker/vetis && \
-    RUSTFLAGS="-L native=/usr/lib/python3.12/config-3.12-x86_64-linux-musl" \
+    LIBCLANG_STATIC=1 \
+    RUSTFLAGS="-Ctarget-feature=-crt-static" \
     RIPHT_PHP_SAPI_PREFIX="//buildroot" \
-    cargo build --release --features="tokio-rt http1 tokio-rust-tls php" \
+    LLVM_CONFIG_PATH="/usr/bin/llvm-config-21" \
+    cargo build --release --features="tokio-rt http1 tokio-rust-tls __interface_php" \
     --no-default-features --target=x86_64-unknown-linux-musl
 
 
