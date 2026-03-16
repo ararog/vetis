@@ -203,8 +203,10 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 ### Languages
 
 - **Python** - Support for ASGI/WSGI/RSGI applications
-- **PHP** - Support for PHP applications
-- **Ruby** - Support for Ruby applications
+- **PHP** - Support for FastCGI compatible applications
+- **Ruby** - Support for FastCGI compatible applications
+- **Java** - Support for FastCGI compatible applications
+- **Perl** - Support for FastCGI compatible applications
 
 See [LANGUAGE_SUPPORT.md](LANGUAGE_SUPPORT.md) for detailed language support information.
 
