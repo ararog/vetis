@@ -13,7 +13,7 @@ use crate::{
 
 pub mod callback;
 
-impl From<RubyWorker> for Interface {
+impl From<RackWorker> for Interface {
     /// Convert static path to host path
     ///
     /// # Arguments
@@ -23,19 +23,19 @@ impl From<RubyWorker> for Interface {
     /// # Returns
     ///
     /// * `Interface` - The interface
-    fn from(value: RubyWorker) -> Self {
-        Interface::Ruby(value)
+    fn from(value: RackWorker) -> Self {
+        Interface::Rack(value)
     }
 }
 
-pub struct RubyWorker {
+pub struct RackWorker {
     directory: String,
     target: String,
 }
 
-impl RubyWorker {
-    pub fn new(directory: String, target: String) -> RubyWorker {
-        RubyWorker { directory, target }
+impl RackWorker {
+    pub fn new(directory: String, target: String) -> RackWorker {
+        RackWorker { directory, target }
     }
 
     pub fn directory(&self) -> &String {
@@ -47,7 +47,7 @@ impl RubyWorker {
     }
 }
 
-impl InterfaceWorker for RubyWorker {
+impl InterfaceWorker for RackWorker {
     fn handle(
         &self,
         _request: Arc<Request>,

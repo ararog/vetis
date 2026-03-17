@@ -15,7 +15,7 @@ use crate::{
     server::{
         http::{Request, Response},
         virtual_host::path::interface::{
-            python::wsgi::callback::StartResponse, Interface, InterfaceWorker,
+            wsgi::callback::StartResponse, Interface, InterfaceWorker,
         },
     },
 };

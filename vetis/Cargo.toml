@@ -28,9 +28,9 @@ default = [
   "static-files",
   "reverse-proxy",
   "auth",
-  "__interface_python_wsgi",
-  "__interface_php",
-  "__interface_ruby",
+  "__interface_wsgi",
+  "__interface_fcgi",
+  "__interface_rack",
 ]
 
 tokio-rt = [
@@ -77,11 +77,12 @@ smol-rust-tls = ["futures-rustls", "rustls", "rustls-provider"]
 auth = ["argon2", "bcrypt", "base64"]
 
 interface = []
-__interface_python_wsgi = ["interface", "python", "wsgi"]
-__interface_python_asgi = ["interface", "python", "asgi"]
-__interface_python_rsgi = ["interface", "python", "rsgi"]
-__interface_php = ["interface", "php"]
-__interface_ruby = ["interface", "ruby"]
+__interface_wsgi = ["interface", "wsgi"]
+__interface_asgi = ["interface", "asgi"]
+__interface_rsgi = ["interface", "rsgi"]
+__interface_fcgi = ["interface", "fcgi"]
+__interface_scgi = ["interface", "scgi"]
+__interface_rack = ["interface", "rack"]
 
 # TODO: Implement ASGI/WSGI support
 python = ["asgi", "rsgi", "wsgi"]
@@ -92,9 +93,10 @@ __pyo3_tokio_async = ["pyo3-async-runtimes/tokio-runtime"]
 __pyo3_smol_async = ["pyo3-async-runtimes/async-std-runtime"]
 
 # TODO: Implement PHP support
-php = ["fcgi"]
 sapi = ["dep:bindgen", "dep:ripht-php-sapi"]
 fcgi = ["dep:fastcgi-client"]
+scgi = []
+rack = []
 
 # TODO: Implemet Ruby support
 ruby = ["dep:bindgen", "dep:magnus", "dep:rb-sys"]

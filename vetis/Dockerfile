@@ -17,7 +17,7 @@ COPY . ./
 RUN cd /docker/vetis && \
     RUSTFLAGS="-L native=/usr/lib/python3.12/config-3.12-x86_64-linux-musl" \
     RIPHT_PHP_SAPI_PREFIX="//buildroot" \
-    cargo build --release --features="tokio-rt http1 tokio-rust-tls static-files reverse-proxy auth interface" \
+    cargo build --release --features="tokio-rt http1 tokio-rust-tls static-files reverse-proxy auth __interface_wsgi __interface_fcgi __interface_rack" \
     --no-default-features --target=x86_64-unknown-linux-musl
 
 

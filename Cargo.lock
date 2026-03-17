@@ -349,7 +349,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
- "syn 2.0.117",
 ]
 
 [[package]]
@@ -432,7 +431,7 @@ dependencies = [
  "bitflags",
  "cexpr",
  "clang-sys",
- "itertools",
+ "itertools 0.12.1",
  "lazy_static",
  "lazycell",
  "log",
@@ -444,6 +443,24 @@ dependencies = [
  "shlex",
  "syn 2.0.117",
  "which",
+]
+
+[[package]]
+name = "bindgen"
+version = "0.72.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "993776b509cfb49c750f11b8f07a46fa23e0a1386ffc01fb1e7d343efc387895"
+dependencies = [
+ "bitflags",
+ "cexpr",
+ "clang-sys",
+ "itertools 0.13.0",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "rustc-hash 2.1.1",
+ "shlex",
+ "syn 2.0.117",
 ]
 
 [[package]]
@@ -656,7 +673,6 @@ name = "colorchoice"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
-checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
 name = "colored"
@@ -1535,9 +1551,9 @@ dependencies = [
 
 [[package]]
 name = "hotpath"
-version = "0.14.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fde50be006a0fe95cc2fd6d25d884aa6932218e4055d7df2fa0d95c386acf8d"
+checksum = "51462b35dc551217e1d1dd3f8c5eebbb5df7103370b1e55d24c19a3411d290f7"
 dependencies = [
  "arc-swap",
  "cfg-if",
@@ -1547,7 +1563,7 @@ dependencies = [
  "eyre",
  "futures-util",
  "hdrhistogram",
- "hotpath-macros",
+ "hotpath-macros 0.13.0",
  "libc",
  "mach2",
  "pin-project-lite",
@@ -1561,16 +1577,30 @@ dependencies = [
 ]
 
 [[package]]
-name = "hotpath-macros"
+name = "hotpath"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd884cee056e269e41e1127549458e1c4e309f31897ebbc1416982a74d40a5b5"
+checksum = "2fde50be006a0fe95cc2fd6d25d884aa6932218e4055d7df2fa0d95c386acf8d"
+dependencies = [
+ "hotpath-macros 0.14.0",
+]
+
+[[package]]
+name = "hotpath-macros"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f022365c90cc04455f17a2b9ba5fe0e661cde1ab27434d382f1f8693fe124e7d"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
 ]
+
+[[package]]
+name = "hotpath-macros"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd884cee056e269e41e1127549458e1c4e309f31897ebbc1416982a74d40a5b5"
 
 [[package]]
 name = "http"
@@ -1650,7 +1680,7 @@ dependencies = [
  "futures",
  "h3",
  "h3-quinn",
- "hotpath",
+ "hotpath 0.14.0",
  "http-body-util",
  "hyper",
  "macro_rules_attribute",
@@ -1911,6 +1941,15 @@ name = "itertools"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -2975,7 +3014,7 @@ version = "0.9.124"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "568068db4102230882e6d4ae8de6632e224ca75fe5970f6e026a04e91ed635d3"
 dependencies = [
- "bindgen",
+ "bindgen 0.69.5",
  "lazy_static",
  "proc-macro2",
  "quote",
@@ -3075,7 +3114,7 @@ version = "0.1.0-rc.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e6e25518eb92d82b8be5c8896f0090344c1b4d92b5b1b6025dc48034086184a"
 dependencies = [
- "bindgen",
+ "bindgen 0.69.5",
  "http",
  "libc",
  "memchr",
@@ -4185,7 +4224,7 @@ dependencies = [
  "async-signal",
  "base64",
  "bcrypt",
- "bindgen",
+ "bindgen 0.72.1",
  "blocking",
  "bytes",
  "cfg-if",
@@ -4199,7 +4238,7 @@ dependencies = [
  "futures-util",
  "h3",
  "h3-quinn",
- "hotpath",
+ "hotpath 0.13.0",
  "http",
  "http-body-util",
  "hyper",

@@ -13,8 +13,12 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build:    
+    name: Build and Test
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
 
@@ -33,23 +37,6 @@ jobs:
         name: php-binary
         path: buildroot/
 
-    - name: Build Static PHP
-      id: build-php
-      if: steps.download-php.outputs.download-success != 'true'
-      run: |
-          curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/spc-linux-x86_64
-          chmod +x spc
-          ./spc doctor --auto-fix
-          ./spc download php-src --with-php=8.3 --for-extensions="phar,posix,readline"
-          ./spc build phar,posix,readline --build-embed
-
-    - uses: actions/upload-artifact@v7
-      if: steps.build-php.outcome == 'success'
-      with:
-        name: php-binary
-        path: buildroot/
-        retention-days: 1
-
     - uses: Swatinem/rust-cache@v2
 
     - name: Run vetis tests
@@ -57,13 +44,13 @@ jobs:
         export RIPHT_PHP_SAPI_PREFIX="${{github.workspace}}/buildroot"
         cd vetis
 
-        cargo test --features "http1 tokio-rt tokio-rust-tls static-files reverse-proxy auth __interface_python_wsgi" --no-default-features
-        cargo test --features "http2 tokio-rt tokio-rust-tls static-files reverse-proxy auth __interface_python_wsgi" --no-default-features
-        cargo test --features "http3 tokio-rt tokio-rust-tls static-files reverse-proxy auth __interface_python_wsgi" --no-default-features
+        cargo test --features "http1 tokio-rt tokio-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
+        cargo test --features "http2 tokio-rt tokio-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
+        cargo test --features "http3 tokio-rt tokio-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
 
-        cargo test --features "http1 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_python_wsgi" --no-default-features
-        cargo test --features "http2 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_python_wsgi" --no-default-features
-        cargo test --features "http3 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_python_wsgi" --no-default-features
+        cargo test --features "http1 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
+        cargo test --features "http2 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
+        cargo test --features "http3 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
 
         cd ..
 
