@@ -1,0 +1,45 @@
+name: Build and Push Docker Image (PHP)
+
+permissions:
+  contents: read
+  
+on:
+  workflow_dispatch:
+    inputs:
+      php_version:
+        description: 'PHP Version'
+        required: true
+        default: '8.3'
+        type: choice
+        options:
+        - "8.3"
+        - "8.4"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:alpine
+    steps:
+    - uses: actions/checkout@v6
+
+
+    - name: Install dependencies
+      run: |
+        apk update
+        apk upgrade --no-cache
+        apk add --no-cache lld mold musl musl-dev libc-dev cmake clang21-static llvm21-static llvm21-dev openssl file libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd pkgconfig binutils ca-certificates upx
+
+    - name: Install SPC
+      run: |
+        curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/spc-linux-x86_64
+        chmod +x spc
+        ./spc doctor --auto-fix
+        ./spc download php-src --with-php=${{ github.event.inputs.php_version }} --for-extensions="apcu,bcmath,calendar,ctype,curl,dba,dom,exif,fileinfo,filter,gd,iconv,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,readline,redis,session,simplexml,sockets,sodium,sqlite3,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib"
+        ./spc build apcu,bcmath,calendar,ctype,curl,dba,dom,exif,fileinfo,filter,gd,iconv,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,readline,redis,session,simplexml,sockets,sodium,sqlite3,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib --build-embed
+
+    - name: Upload application binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: php-${{ github.event.inputs.php_version }}-static-alpine-3.23
+        path: /buildroot    
