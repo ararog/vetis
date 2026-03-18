@@ -92,6 +92,11 @@ echo "Run vetis-sapi tests (tokio)"
 cd vetis-sapi
 cargo test --features "tokio-rt" --no-default-features
 cd ..
+
+echo "Run vetis-sapi tests (smol)"
+cd vetis-sapi
+cargo test --features "smol-rt" --no-default-features
+cd ..
         
 echo "Run vetis-wsgi tests (tokio)"
 cd vetis-wsgi

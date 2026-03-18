@@ -146,6 +146,11 @@ jobs:
         cargo test --features "tokio-rt" --no-default-features
         cd ..
         
+    - name: Run vetis-sapi tests (smol)
+      run: |
+        cd vetis-sapi
+        cargo test --features "smol-rt" --no-default-features
+        cd ..        
     - name: Run vetis-wsgi tests (tokio)
       run: |
         cd vetis-wsgi

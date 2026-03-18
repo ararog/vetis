@@ -15,6 +15,8 @@ use vetis_core::{
     interface::InterfaceWorker,
 };
 
+mod tests;
+
 pub struct AsgiWorker {
     directory: String,
     target: String,

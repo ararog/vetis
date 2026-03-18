@@ -8,6 +8,8 @@ use vetis_core::{
     interface::InterfaceWorker,
 };
 
+mod tests;
+
 pub struct RackWorker {
     directory: String,
     target: String,

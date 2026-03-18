@@ -25,6 +25,7 @@ use vetis_core::{
 use crate::callback::StartResponse;
 
 pub mod callback;
+mod tests;
 
 pub struct WsgiWorker {
     func: Arc<Py<PyAny>>,

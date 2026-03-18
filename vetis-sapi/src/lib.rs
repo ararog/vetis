@@ -15,6 +15,8 @@ use vetis_core::{
     interface::InterfaceWorker,
 };
 
+mod tests;
+
 pub struct SapiWorker {
     php: Arc<RiphtSapi>,
     code: Arc<String>,

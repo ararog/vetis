@@ -8,6 +8,8 @@ use vetis_core::{
     interface::InterfaceWorker,
 };
 
+mod tests;
+
 pub struct ScgiWorker {
     directory: String,
     target: String,

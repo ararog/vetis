@@ -14,6 +14,8 @@ use smol::unblock as spawn_blocking;
 #[cfg(feature = "tokio-rt")]
 use tokio::task::spawn_blocking;
 
+mod tests;
+
 pub struct FcgiWorker {
     params: Arc<HashMap<String, String>>,
     script: Arc<String>,
