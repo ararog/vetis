@@ -709,9 +709,9 @@ checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
 
 [[package]]
 name = "crossfire"
-version = "3.1.5"
+version = "3.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf877d485f079160883c76912869ac04132035f7ea787712264d422793f808df"
+checksum = "45c93b03ce6b0c57c0c37a1a347fc51e4a7d4eca4ea97e06a456093df88376e8"
 dependencies = [
  "async-std",
  "crossbeam-utils",
@@ -787,9 +787,9 @@ checksum = "d7a1e2f27636f116493b8b860f5546edb47c8d8f8ea73e1d2a20be88e28d1fea"
 
 [[package]]
 name = "deboa"
-version = "0.1.0-beta.8"
+version = "0.1.0-beta.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50be6634c0a9b555d01bb0246173de96492a4ae3e2d9c3f86e9696aa509acc0d"
+checksum = "f6350e6d582813b061aff007ffeca894a421f4ccd58c03d289062a7a4f86f868"
 dependencies = [
  "async-executor",
  "async-std-resolver",
