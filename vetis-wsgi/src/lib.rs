@@ -4,8 +4,9 @@ use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use hyper_body_utils::HttpBody;
 use log::error;
 use pyo3::{
-    Py, PyAny, PyErr, PyResult, Python, intern,
+    intern,
     types::{PyAnyMethods, PyDict, PyDictMethods, PyIterator, PyModule, PyModuleMethods},
+    Py, PyAny, PyErr, PyResult, Python,
 };
 
 #[cfg(feature = "smol-rt")]

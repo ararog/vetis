@@ -4,8 +4,8 @@ use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use hyper_body_utils::HttpBody;
 use log::error;
 use pyo3::{
-    Bound, PyAny, PyErr, PyResult, Python,
     types::{PyAnyMethods, PyIterator, PyModule, PyModuleMethods},
+    Bound, PyAny, PyErr, PyResult, Python,
 };
 
 use crossfire::oneshot;
