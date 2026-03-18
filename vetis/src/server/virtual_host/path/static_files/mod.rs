@@ -228,7 +228,10 @@ impl StaticPath {
 
                     let metadata = StaticFileMetadata {
                         mime: mime_type,
+                        #[cfg(unix)]
                         size: metadata.size(),
+                        #[cfg(windows)]
+                        size: metadata.file_size(),
                         modified,
                         etag: None,
                     };
