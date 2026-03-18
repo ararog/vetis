@@ -4,6 +4,8 @@ use std::{future::Future, pin::Pin};
 
 use std::sync::Arc;
 
+use vetis_core::errors::{HandlerError, VetisError, VirtualHostError};
+
 #[cfg(feature = "interface")]
 use crate::server::virtual_host::path::interface::InterfacePath;
 #[cfg(feature = "reverse-proxy")]
@@ -11,12 +13,9 @@ use crate::server::virtual_host::path::proxy::ProxyPath;
 #[cfg(feature = "static-files")]
 use crate::server::virtual_host::path::static_files::StaticPath;
 
-use crate::{
-    errors::{HandlerError, VetisError, VirtualHostError},
-    server::{
-        http::{Request, Response},
-        virtual_host::BoxedHandlerClosure,
-    },
+use crate::server::{
+    http::{Request, Response},
+    virtual_host::BoxedHandlerClosure,
 };
 
 #[cfg(feature = "auth")]

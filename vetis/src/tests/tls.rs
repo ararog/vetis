@@ -12,10 +12,10 @@ mod tls_tests {
 
     #[cfg(feature = "tokio-rt")]
     use tokio::sync::RwLock;
+    use vetis_core::errors::{StartError, VetisError};
 
     use crate::{
         config::server::virtual_host::{SecurityConfig, VirtualHostConfig},
-        errors::VetisError,
         server::{
             tls::TlsFactory,
             virtual_host::{handler_fn, path::HandlerPath, VirtualHost},
@@ -187,7 +187,7 @@ mod tls_tests {
 
         assert!(result.is_err(), "TLS config creation should fail with invalid key");
         match result.unwrap_err() {
-            VetisError::Start(crate::errors::StartError::Tls(msg)) => {
+            VetisError::Tls(msg) => {
                 assert!(msg.contains("Failed to parse private key"));
             }
             _ => panic!("Expected Tls error"),

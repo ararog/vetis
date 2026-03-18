@@ -6,11 +6,10 @@ use std::{
 
 use http::header;
 use hyper::{body::Incoming, service::service_fn};
-
 use hyper_body_utils::HttpBody;
 use log::{debug, error, info};
-
 use rt_gate::{spawn_server, spawn_worker, GateTask};
+use vetis_core::{errors::VetisError, http::Request};
 
 #[cfg(feature = "smol-rt")]
 use peekable::future::AsyncPeekable;
@@ -45,10 +44,9 @@ use smol_hyper::rt::FuturesIo;
 
 use crate::{
     config::server::{ListenerConfig, Protocol},
-    errors::VetisError,
     server::{
         conn::listener::{Listener, ListenerResult},
-        http::{static_response, Request},
+        http::static_response,
         tls::TlsFactory,
     },
     VetisRwLock, VetisVirtualHosts,

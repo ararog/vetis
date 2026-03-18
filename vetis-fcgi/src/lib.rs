@@ -3,34 +3,16 @@ use std::{collections::HashMap, fs, future::Future, path::Path, pin::Pin, sync::
 use http::StatusCode;
 use hyper_body_utils::HttpBody;
 use log::error;
-
-use crate::{
+use vetis_core::{
     errors::{VetisError, VirtualHostError},
-    server::{
-        http::{Request, Response},
-        virtual_host::path::interface::{Interface, InterfaceWorker},
-    },
+    http::{Request, Response},
+    interface::InterfaceWorker,
 };
 
 #[cfg(feature = "smol-rt")]
 use smol::unblock as spawn_blocking;
 #[cfg(feature = "tokio-rt")]
 use tokio::task::spawn_blocking;
-
-impl From<FcgiWorker> for Interface {
-    /// Convert static path to host path
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The static path to convert
-    ///
-    /// # Returns
-    ///
-    /// * `Interface` - The interface
-    fn from(value: FcgiWorker) -> Self {
-        Interface::Fcgi(value)
-    }
-}
 
 pub struct FcgiWorker {
     params: Arc<HashMap<String, String>>,

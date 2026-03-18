@@ -1,5 +1,7 @@
 use std::{future::Future, pin::Pin};
 
+use vetis_core::errors::VetisError;
+
 #[cfg(any(feature = "http1", feature = "http2"))]
 use crate::server::conn::listener::tcp::TcpListener;
 #[cfg(feature = "http3")]
@@ -7,7 +9,6 @@ use crate::server::conn::listener::udp::UdpListener;
 
 use crate::{
     config::server::{ListenerConfig, Protocol},
-    errors::VetisError,
     VetisVirtualHosts,
 };
 

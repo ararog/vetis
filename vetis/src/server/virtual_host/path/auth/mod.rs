@@ -1,10 +1,11 @@
 use std::future::Future;
 
-use crate::{errors::VetisError, server::virtual_host::path::auth::basic_auth::BasicAuth};
+use crate::server::virtual_host::path::auth::basic_auth::BasicAuth;
 
 use http::HeaderMap;
 
 use serde::Deserialize;
+use vetis_core::errors::VetisError;
 
 pub mod basic_auth;
 

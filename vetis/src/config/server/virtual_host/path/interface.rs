@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::errors::{ConfigError, VetisError};
+use vetis_core::errors::{ConfigError, VetisError};
 
 use std::{collections::HashMap, path::Path};
 

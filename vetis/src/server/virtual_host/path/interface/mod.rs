@@ -1,63 +1,158 @@
 use std::{future::Future, pin::Pin, sync::Arc};
 
-#[cfg(feature = "asgi")]
-use crate::server::virtual_host::path::interface::asgi::AsgiWorker;
-#[cfg(feature = "fcgi")]
-use crate::server::virtual_host::path::interface::fcgi::FcgiWorker;
-#[cfg(feature = "rack")]
-use crate::server::virtual_host::path::interface::rack::RackWorker;
-#[cfg(feature = "rsgi")]
-use crate::server::virtual_host::path::interface::rsgi::RsgiWorker;
-#[cfg(feature = "sapi")]
-use crate::server::virtual_host::path::interface::sapi::SapiWorker;
-#[cfg(feature = "wsgi")]
-use crate::server::virtual_host::path::interface::wsgi::WsgiWorker;
-
-use crate::{
-    config::server::virtual_host::path::interface::{InterfacePathConfig, InterfaceType},
+use vetis_core::{
     errors::VetisError,
-    server::{
-        http::{Request, Response},
-        virtual_host::path::{HostPath, Path},
-    },
+    http::{Request, Response},
+    interface::InterfaceWorker,
 };
 
 #[cfg(feature = "asgi")]
-pub mod asgi;
+use vetis_asgi::AsgiWorker;
 #[cfg(feature = "fcgi")]
-pub mod fcgi;
+use vetis_fcgi::FcgiWorker;
 #[cfg(feature = "rack")]
-pub mod rack;
+use vetis_rack::RackWorker;
 #[cfg(feature = "rsgi")]
-pub mod rsgi;
+use vetis_rsgi::RsgiWorker;
+#[cfg(feature = "sapi")]
+use vetis_sapi::SapiWorker;
 #[cfg(feature = "scgi")]
-pub mod scgi;
+use vetis_scgi::ScgiWorker;
 #[cfg(feature = "wsgi")]
-pub mod wsgi;
+use vetis_wsgi::WsgiWorker;
 
-pub trait InterfaceWorker {
-    fn handle(
-        &self,
-        request: Arc<Request>,
-        uri: Arc<String>,
-    ) -> Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + 'static>>;
-}
+use crate::{
+    config::server::virtual_host::path::interface::{InterfacePathConfig, InterfaceType},
+    server::virtual_host::path::{HostPath, Path},
+};
 
 pub enum Interface {
     #[cfg(feature = "asgi")]
     Asgi(AsgiWorker),
-    #[cfg(feature = "wsgi")]
-    Wsgi(WsgiWorker),
+    #[cfg(feature = "fcgi")]
+    Fcgi(FcgiWorker),
+    #[cfg(feature = "rack")]
+    Rack(RackWorker),
     #[cfg(feature = "rsgi")]
     Rsgi(RsgiWorker),
     #[cfg(feature = "sapi")]
     Sapi(SapiWorker),
-    #[cfg(feature = "fcgi")]
-    Fcgi(FcgiWorker),
     #[cfg(feature = "scgi")]
     Scgi(ScgiWorker),
-    #[cfg(feature = "rack")]
-    Rack(RackWorker),
+    #[cfg(feature = "wsgi")]
+    Wsgi(WsgiWorker),
+}
+
+#[cfg(feature = "asgi")]
+impl From<AsgiWorker> for Interface {
+    /// Convert static path to host path
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The static path to convert
+    ///
+    /// # Returns
+    ///
+    /// * `Interface` - The interface
+    fn from(value: AsgiWorker) -> Self {
+        Interface::Asgi(value)
+    }
+}
+
+#[cfg(feature = "fcgi")]
+impl From<FcgiWorker> for Interface {
+    /// Convert static path to host path
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The static path to convert
+    ///
+    /// # Returns
+    ///
+    /// * `Interface` - The interface
+    fn from(value: FcgiWorker) -> Self {
+        Interface::Fcgi(value)
+    }
+}
+
+#[cfg(feature = "scgi")]
+impl From<ScgiWorker> for Interface {
+    /// Convert static path to host path
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The static path to convert
+    ///
+    /// # Returns
+    ///
+    /// * `Interface` - The interface
+    fn from(value: ScgiWorker) -> Self {
+        Interface::Scgi(value)
+    }
+}
+
+#[cfg(feature = "sapi")]
+impl From<SapiWorker> for Interface {
+    /// Convert static path to host path
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The static path to convert
+    ///
+    /// # Returns
+    ///
+    /// * `Interface` - The interface
+    fn from(value: SapiWorker) -> Self {
+        Interface::Sapi(value)
+    }
+}
+
+#[cfg(feature = "rack")]
+impl From<RackWorker> for Interface {
+    /// Convert static path to host path
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The static path to convert
+    ///
+    /// # Returns
+    ///
+    /// * `Interface` - The interface
+    fn from(value: RackWorker) -> Self {
+        Interface::Rack(value)
+    }
+}
+
+#[cfg(feature = "rsgi")]
+impl From<RsgiWorker> for Interface {
+    /// Convert static path to host path
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The static path to convert
+    ///
+    /// # Returns
+    ///
+    /// * `Interface` - The interface
+    fn from(value: RsgiWorker) -> Self {
+        Interface::Rsgi(value)
+    }
+}
+
+#[cfg(feature = "wsgi")]
+impl From<WsgiWorker> for Interface {
+    /// Convert static path to host path
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The static path to convert
+    ///
+    /// # Returns
+    ///
+    /// * `Interface` - The interface
+    fn from(value: WsgiWorker) -> Self {
+        Interface::Wsgi(value)
+    }
 }
 
 impl InterfaceWorker for Interface {
@@ -79,18 +174,18 @@ impl InterfaceWorker for Interface {
         match self {
             #[cfg(feature = "asgi")]
             Interface::Asgi(handler) => handler.handle(request, uri),
-            #[cfg(feature = "wsgi")]
-            Interface::Wsgi(handler) => handler.handle(request, uri),
+            #[cfg(feature = "fcgi")]
+            Interface::Fcgi(handler) => handler.handle(request, uri),
+            #[cfg(feature = "rack")]
+            Interface::Rack(handler) => handler.handle(request, uri),
             #[cfg(feature = "rsgi")]
             Interface::Rsgi(handler) => handler.handle(request, uri),
             #[cfg(feature = "sapi")]
             Interface::Sapi(handler) => handler.handle(request, uri),
-            #[cfg(feature = "fcgi")]
-            Interface::Fcgi(handler) => handler.handle(request, uri),
             #[cfg(feature = "scgi")]
             Interface::Scgi(handler) => handler.handle(request, uri),
-            #[cfg(feature = "rack")]
-            Interface::Rack(handler) => handler.handle(request, uri),
+            #[cfg(feature = "wsgi")]
+            Interface::Wsgi(handler) => handler.handle(request, uri),
             _ => {
                 panic!("Unsupported interface type");
             }
@@ -122,29 +217,9 @@ impl InterfacePath {
             .target()
             .to_string();
 
-        // Initialize Python interpreter if target has python syntax (e.g., "module:app")
-        #[cfg(any(feature = "asgi", feature = "wsgi", feature = "rsgi"))]
-        if target.contains(":") {
-            pyo3::Python::initialize();
-        }
-
         let interface = match config.interface_type() {
             #[cfg(feature = "asgi")]
             InterfaceType::Asgi => Interface::Asgi(AsgiWorker::new(directory, target)),
-            #[cfg(feature = "wsgi")]
-            InterfaceType::Wsgi => {
-                let worker = WsgiWorker::new(directory, target);
-                match worker {
-                    Ok(worker) => Interface::Wsgi(worker),
-                    Err(e) => {
-                        panic!("Could not initialize wsgi worker: {}", e);
-                    }
-                }
-            }
-            #[cfg(feature = "rsgi")]
-            InterfaceType::Rsgi => Interface::Rsgi(RsgiWorker::new(directory, target)),
-            #[cfg(feature = "sapi")]
-            InterfaceType::Sapi => Interface::Sapi(SapiWorker::new(directory, target)),
             #[cfg(feature = "fcgi")]
             InterfaceType::Fcgi => {
                 let worker = FcgiWorker::new(directory, target);
@@ -155,10 +230,24 @@ impl InterfacePath {
                     }
                 }
             }
-            #[cfg(feature = "scgi")]
-            InterfaceType::Scgi => Interface::Scgi(ScgiWorker::new(directory, target)),
             #[cfg(feature = "rack")]
             InterfaceType::Rack => Interface::Rack(RackWorker::new(directory, target)),
+            #[cfg(feature = "rsgi")]
+            InterfaceType::Rsgi => Interface::Rsgi(RsgiWorker::new(directory, target)),
+            #[cfg(feature = "sapi")]
+            InterfaceType::Sapi => Interface::Sapi(SapiWorker::new(directory, target)),
+            #[cfg(feature = "scgi")]
+            InterfaceType::Scgi => Interface::Scgi(ScgiWorker::new(directory, target)),
+            #[cfg(feature = "wsgi")]
+            InterfaceType::Wsgi => {
+                let worker = WsgiWorker::new(directory, target);
+                match worker {
+                    Ok(worker) => Interface::Wsgi(worker),
+                    Err(e) => {
+                        panic!("Could not initialize wsgi worker: {}", e);
+                    }
+                }
+            }
             _ => {
                 panic!("Unsupported interface type");
             }
@@ -219,8 +308,12 @@ impl Path for InterfacePath {
                 InterfaceType::Asgi => self
                     .interface
                     .handle(request.clone(), uri),
-                #[cfg(feature = "wsgi")]
-                InterfaceType::Wsgi => self
+                #[cfg(feature = "fcgi")]
+                InterfaceType::Fcgi => self
+                    .interface
+                    .handle(request.clone(), uri),
+                #[cfg(feature = "rack")]
+                InterfaceType::Rack => self
                     .interface
                     .handle(request.clone(), uri),
                 #[cfg(feature = "rsgi")]
@@ -231,16 +324,12 @@ impl Path for InterfacePath {
                 InterfaceType::Sapi => self
                     .interface
                     .handle(request.clone(), uri),
-                #[cfg(feature = "fcgi")]
-                InterfaceType::Fcgi => self
-                    .interface
-                    .handle(request.clone(), uri),
                 #[cfg(feature = "scgi")]
                 InterfaceType::Scgi => self
                     .interface
                     .handle(request.clone(), uri),
-                #[cfg(feature = "rack")]
-                InterfaceType::Rack => self
+                #[cfg(feature = "wsgi")]
+                InterfaceType::Wsgi => self
                     .interface
                     .handle(request.clone(), uri),
                 _ => {

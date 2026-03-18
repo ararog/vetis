@@ -3,10 +3,10 @@ use std::{collections::HashMap, sync::Arc};
 use http::HeaderMap;
 
 use hyper_body_utils::HttpBody;
+use vetis_core::errors::VetisError;
 
 use crate::{
     config::server::{Protocol, ServerConfig},
-    errors::VetisError,
     server::{
         conn::listener::{Listener, ServerListener},
         Server,
@@ -14,10 +14,7 @@ use crate::{
     VetisRwLock, VetisVirtualHosts,
 };
 
-mod request;
-mod response;
-
-pub use crate::server::http::{request::Request, response::Response};
+pub use vetis_core::http::{Request, Response};
 
 pub struct HttpServer {
     config: ServerConfig,

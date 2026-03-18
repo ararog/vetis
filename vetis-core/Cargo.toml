@@ -1,0 +1,16 @@
+[package]
+name = "vetis-core"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["tokio-rt"]
+smol-rt = ["dep:smol", "hyper-body-utils/smol-rt"]
+tokio-rt = ["dep:tokio", "hyper-body-utils/tokio-rt"]
+
+[dependencies]
+http = "1.4.0"
+hyper-body-utils = { version = "0.1.6-beta.6", default-features = false, optional = true }
+thiserror = "2.0.18"
+smol = { version = "2.0.2", default-features = false, optional = true }
+tokio = { version = "1.50.0", default-features = false, optional = true }

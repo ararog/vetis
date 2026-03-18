@@ -1,0 +1,19 @@
+[package]
+name = "vetis-asgi"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["tokio-rt"]
+smol-rt = ["dep:smol", "hyper-body-utils/smol-rt", "vetis-core/smol-rt"]
+tokio-rt = ["dep:tokio", "hyper-body-utils/tokio-rt", "vetis-core/tokio-rt"]
+
+[dependencies]
+crossfire = "3.1.6"
+http = "1.4.0"
+hyper-body-utils = { version = "0.1.6-beta.6", default-features = false, optional = true }
+log = "0.4.29"
+pyo3 = { version = "0.27.2", features = ["auto-initialize"] }
+smol = { version = "2.0.2", default-features = false, optional = true }
+tokio = { version = "1.50.0", default-features = false, optional = true }
+vetis-core = { version = "0.1.0", path = "../vetis-core", default-features = false, optional = true }

@@ -12,13 +12,36 @@ keywords = ["http", "networking", "server", "rest-server"]
 publish = true
 rust-version = "1.75.0"
 
+[features]
+default = ["tokio-rt"]
+tokio-rt = [
+  "deboa/tokio-rt",
+  "deboa/tokio-rust-tls",
+  "vetis/tokio-rt",
+  "vetis/tokio-rust-tls",
+  "vetis-core/tokio-rt",
+  "dep:tokio",
+]
+smol-rt = [
+  "deboa/smol-rt",
+  "deboa/smol-rust-tls",
+  "vetis/smol-rt",
+  "vetis/smol-rust-tls",
+  "vetis-core/smol-rt",
+  "dep:smol",
+  "dep:smol-macros",
+  "dep:macro_rules_attribute",
+]
+
 [dependencies]
 deboa = { version = "0.1.0-beta.9", features = [
   "http1",
-  "tokio-rt",
-  "tokio-rust-tls",
-], default-features = false }
+], default-features = false, optional = true }
 http = "1.4.0"
-http-body-util = "0.1.3"
-tokio = "1.50.0"
-vetis = { version = "0.1.4-beta.4", path = "../vetis" }
+http-body-util = { version = "0.1.3", default-features = false, optional = true }
+macro_rules_attribute = { version = "0.2.2", optional = true }
+smol = { version = "2.0.2", default-features = false, optional = true }
+smol-macros = { version = "0.1.1", default-features = false, optional = true }
+tokio = { version = "1.50.0", default-features = false, optional = true }
+vetis = { version = "0.1.4-beta.4", path = "../vetis", default-features = false, optional = true }
+vetis-core = { version = "0.1.0", path = "../vetis-core", default-features = false, optional = true }

@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
-    errors::{StartError::Tls, VetisError},
-    VetisVirtualHosts,
-};
+use crate::VetisVirtualHosts;
 
 use rustls::{
     pki_types::{CertificateDer, PrivateKeyDer},
@@ -11,6 +8,7 @@ use rustls::{
     sign::CertifiedKey,
     ServerConfig,
 };
+use vetis_core::errors::{StartError, VetisError};
 
 pub struct TlsFactory {}
 
@@ -46,21 +44,22 @@ impl TlsFactory {
                 }
 
                 let key = PrivateKeyDer::try_from(key.to_vec())
-                    .map_err(|_| Tls("Failed to parse private key".to_string()))?;
-                let certified_key = CertifiedKey::from_der(chain, key, &provider)
-                    .map_err(|e| Tls(format!("Failed to create certified key: {}", e)))?;
+                    .map_err(|_| VetisError::Tls("Failed to parse private key".to_string()))?;
+                let certified_key = CertifiedKey::from_der(chain, key, &provider).map_err(|e| {
+                    VetisError::Tls(format!("Failed to create certified key: {}", e))
+                })?;
 
                 let hostname = hostname.0.clone();
 
                 resolver
                     .add(&hostname, certified_key)
-                    .map_err(|e| Tls(e.to_string()))?;
+                    .map_err(|e| VetisError::Tls(e.to_string()))?;
             }
         }
 
         let builder = rustls::ServerConfig::builder_with_provider(Arc::new(provider))
             .with_protocol_versions(&[&rustls::version::TLS13])
-            .map_err(|e| VetisError::Start(Tls(e.to_string())))?;
+            .map_err(|e| VetisError::Start(StartError::Tls(e.to_string())))?;
 
         let mut tls_config = builder
             .with_no_client_auth()

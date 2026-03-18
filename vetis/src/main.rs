@@ -3,11 +3,6 @@ use log::error;
 
 use serde::Deserialize;
 
-#[cfg(feature = "smol-rt")]
-use macro_rules_attribute::apply;
-#[cfg(feature = "smol-rt")]
-use smol_macros::main;
-
 #[cfg(target_env = "musl")]
 use mimalloc::MiMalloc;
 

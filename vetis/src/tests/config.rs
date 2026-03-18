@@ -1,11 +1,10 @@
 use std::error::Error;
 
-use crate::{
-    config::server::{
-        virtual_host::{SecurityConfig, VirtualHostConfig},
-        ListenerConfig, Protocol, ServerConfig,
-    },
-    errors::{ConfigError, VetisError},
+use vetis_core::errors::{ConfigError, VetisError};
+
+use crate::config::server::{
+    virtual_host::{SecurityConfig, VirtualHostConfig},
+    ListenerConfig, Protocol, ServerConfig,
 };
 
 #[test]

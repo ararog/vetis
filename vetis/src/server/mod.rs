@@ -35,7 +35,9 @@
 
 use std::future::Future;
 
-use crate::{config::server::ServerConfig, errors::VetisError, VetisVirtualHosts};
+use vetis_core::errors::VetisError;
+
+use crate::{config::server::ServerConfig, VetisVirtualHosts};
 
 pub mod conn;
 pub mod http;

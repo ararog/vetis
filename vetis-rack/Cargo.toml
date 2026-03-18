@@ -1,0 +1,36 @@
+[package]
+name = "vetis-rack"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["tokio-rt"]
+smol-rt = ["dep:smol", "hyper-body-utils/smol-rt", "vetis-core/smol-rt"]
+tokio-rt = ["dep:tokio", "hyper-body-utils/tokio-rt", "vetis-core/tokio-rt"]
+
+[dependencies]
+http = "1.4.0"
+hyper-body-utils = { version = "0.1.6-beta.6", default-features = false, optional = true }
+log = "0.4.29"
+magnus = { version = "0.8.2", optional = true, features = ["embed"] }
+smol = { version = "2.0.2", default-features = false, optional = true }
+tokio = { version = "1.50.0", default-features = false, optional = true }
+vetis-core = { version = "0.1.0", path = "../vetis-core", default-features = false, optional = true }
+
+[target.'cfg(target_env = "musl")'.dependencies]
+bindgen = { version = "*", optional = true, default-features = false, features = [
+  "static",
+] }
+mimalloc = { version = "0.1.48", features = ["v3"] }
+rb-sys = { version = "*", optional = true, default-features = false, features = [
+  "ruby-static",
+] }
+
+[target.'cfg(not(target_env = "musl"))'.dependencies]
+bindgen = { version = "*", optional = true, default-features = false, features = [
+  "runtime",
+] }
+mimalloc = { version = "0.1.48", features = ["v3"] }
+rb-sys = { version = "*", optional = true, default-features = false, features = [
+  "link-ruby",
+] }

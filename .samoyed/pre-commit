@@ -6,18 +6,99 @@ cargo fmt --check
 
 cd vetis
 
+echo "Run vetis tests (tokio)"
 cargo test --features "http1 tokio-rt tokio-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
 cargo test --features "http2 tokio-rt tokio-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
 cargo test --features "http3 tokio-rt tokio-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
 
-cargo test --features "http1 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
-cargo test --features "http2 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
-cargo test --features "http3 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_wsgi" --no-default-features
+echo "Run vetis tests (smol)"
+cargo test --features "http1 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_wsgi_smol" --no-default-features
+cargo test --features "http2 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_wsgi_smol" --no-default-features
+cargo test --features "http3 smol-rt smol-rust-tls static-files reverse-proxy auth __interface_wsgi_smol" --no-default-features
 
 cd ..
 
+echo "Run vetis-macros tests (tokio)"
 cd vetis-macros
+cargo test --features "tokio-rt" --no-default-features
+cd ..
+        
+echo "Run vetis-macros tests (smol)"
+cd vetis-macros
+cargo test --features "smol-rt" --no-default-features
+cd ..
+        
+echo "Run vetis-core tests (tokio)"
+cd vetis-core
+cargo test --features "tokio-rt" --no-default-features
+cd .. 
 
-cargo test
+echo "Run vetis-core tests (smol)"
+cd vetis-core
+cargo test --features "smol-rt" --no-default-features
+cd .. 
+        
+echo "Run vetis-asgi tests (tokio)"
+cd vetis-asgi
+cargo test --features "tokio-rt" --no-default-features
+cd ..
 
+echo "Run vetis-asgi tests (smol)"
+cd vetis-asgi
+cargo test --features "smol-rt" --no-default-features
+cd ..
+
+echo "Run vetis-fcgi tests (tokio)"
+cd vetis-fcgi
+cargo test --features "tokio-rt" --no-default-features
+cd ..
+        
+echo "Run vetis-fcgi tests (smol)"
+cd vetis-fcgi
+cargo test --features "smol-rt" --no-default-features
+cd ..        
+    
+echo "Run vetis-rack tests (tokio)"
+cd vetis-rack
+cargo test --features "tokio-rt" --no-default-features
+cd ..
+
+echo "Run vetis-rack tests (smol)"
+cd vetis-rack
+cargo test --features "smol-rt" --no-default-features
+cd ..
+        
+echo "Run vetis-rsgi tests (tokio)"
+cd vetis-rsgi
+cargo test --features "tokio-rt" --no-default-features
+cd ..
+
+echo "Run vetis-rsgi tests (smol)"
+cd vetis-rsgi
+cargo test --features "smol-rt" --no-default-features
+cd ..
+
+echo "Run vetis-scgi tests (tokio)"
+cd vetis-scgi
+cargo test --features "tokio-rt" --no-default-features
+cd ..
+        
+echo "Run vetis-scgi tests (smol)"
+cd vetis-scgi
+cargo test --features "smol-rt" --no-default-features
+cd ..
+        
+echo "Run vetis-sapi tests (tokio)"
+cd vetis-sapi
+cargo test --features "tokio-rt" --no-default-features
+cd ..
+        
+echo "Run vetis-wsgi tests (tokio)"
+cd vetis-wsgi
+cargo test --features "tokio-rt" --no-default-features
+cd ..
+  
+echo "Run vetis-wsgi tests (smol)"
+cd vetis-wsgi
+cargo test --features "smol-rt" --no-default-features
 cd ..

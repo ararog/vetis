@@ -1,7 +1,6 @@
 use pyo3::{
-    pyclass, pymethods,
+    Bound, PyResult, pyclass, pymethods,
     types::{PyBytes, PyBytesMethods},
-    Bound, PyResult,
 };
 
 use crossfire::oneshot;

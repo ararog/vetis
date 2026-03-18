@@ -2,8 +2,12 @@ use deboa::request::get;
 use vetis::server::virtual_host::handler_fn;
 use vetis_macros::http;
 
-#[tokio::test]
-async fn test_http() -> Result<(), Box<dyn std::error::Error>> {
+#[cfg(feature = "smol-rt")]
+use macro_rules_attribute::apply;
+#[cfg(feature = "smol-rt")]
+use smol_macros::test;
+
+async fn do_test_http() -> Result<(), Box<dyn std::error::Error>> {
     let handler = handler_fn(|_req| async move {
         Ok(vetis::server::http::Response::builder().text("Hello, World!"))
     });
@@ -40,4 +44,16 @@ async fn test_http() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     Ok(())
+}
+
+#[cfg(feature = "tokio-rt")]
+#[tokio::test]
+async fn test_http() -> Result<(), Box<dyn std::error::Error>> {
+    do_test_http().await
+}
+
+#[cfg(feature = "smol-rt")]
+#[apply(test!)]
+async fn test_http_smol() -> Result<(), Box<dyn std::error::Error>> {
+    do_test_http().await
 }

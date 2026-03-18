@@ -4,9 +4,8 @@ use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use hyper_body_utils::HttpBody;
 use log::error;
 use pyo3::{
-    intern,
+    Py, PyAny, PyErr, PyResult, Python, intern,
     types::{PyAnyMethods, PyDict, PyDictMethods, PyIterator, PyModule, PyModuleMethods},
-    Py, PyAny, PyErr, PyResult, Python,
 };
 
 #[cfg(feature = "smol-rt")]
@@ -16,32 +15,15 @@ use tokio::task::spawn_blocking;
 
 use crossfire::oneshot;
 
-pub mod callback;
-
-use crate::{
+use vetis_core::{
     errors::{VetisError, VirtualHostError},
-    server::{
-        http::{Request, Response},
-        virtual_host::path::interface::{
-            wsgi::callback::StartResponse, Interface, InterfaceWorker,
-        },
-    },
+    http::{Request, Response},
+    interface::InterfaceWorker,
 };
 
-impl From<WsgiWorker> for Interface {
-    /// Convert static path to host path
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The static path to convert
-    ///
-    /// # Returns
-    ///
-    /// * `Interface` - The interface
-    fn from(value: WsgiWorker) -> Self {
-        Interface::Wsgi(value)
-    }
-}
+use crate::callback::StartResponse;
+
+pub mod callback;
 
 pub struct WsgiWorker {
     func: Arc<Py<PyAny>>,
@@ -198,7 +180,7 @@ impl InterfaceWorker for WsgiWorker {
                 None => {
                     return Err(VetisError::VirtualHost(VirtualHostError::Interface(
                         "Invalid status message".to_string(),
-                    )))
+                    )));
                 }
             };
 
@@ -207,7 +189,7 @@ impl InterfaceWorker for WsgiWorker {
                 Err(_) => {
                     return Err(VetisError::VirtualHost(VirtualHostError::Interface(
                         "Invalid status code".to_string(),
-                    )))
+                    )));
                 }
             };
 

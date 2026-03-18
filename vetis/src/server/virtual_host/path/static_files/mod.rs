@@ -6,14 +6,14 @@ use moka::future::{Cache, CacheBuilder};
 use futures_lite::AsyncSeekExt;
 #[cfg(feature = "tokio-rt")]
 use tokio::io::AsyncSeekExt;
+use vetis_core::{
+    errors::{FileError, VetisError, VirtualHostError},
+    http::{Request, Response},
+};
 
 use crate::{
     config::server::virtual_host::path::static_files::StaticPathConfig,
-    errors::{FileError, VetisError, VirtualHostError},
-    server::{
-        http::{static_response, Request, Response},
-        virtual_host::path::{HostPath, Path},
-    },
+    server::virtual_host::path::{HostPath, Path},
     VetisFile,
 };
 use http::{HeaderMap, HeaderValue};
@@ -378,7 +378,12 @@ impl StaticPath {
             );
         }
 
-        Ok(Response { inner: static_response(http::StatusCode::OK, Some(headers), String::new()) })
+        let response = Response::builder()
+            .status(http::StatusCode::OK)
+            .headers(headers)
+            .text("");
+
+        Ok(response)
     }
 
     async fn serve_index_file(&self, directory: &std::path::Path) -> Result<Response, VetisError> {

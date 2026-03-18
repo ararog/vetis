@@ -4,14 +4,12 @@ use argon2::{PasswordHash, PasswordVerifier};
 use base64::Engine;
 use http::HeaderMap;
 use serde::Deserialize;
+use vetis_core::errors::{VetisError, VirtualHostError};
 
 #[cfg(feature = "auth")]
 use crate::config::server::virtual_host::path::auth::{Algorithm, BasicAuthConfig};
 
-use crate::{
-    errors::{VetisError, VirtualHostError},
-    server::virtual_host::path::auth::Auth,
-};
+use crate::server::virtual_host::path::auth::Auth;
 
 /// Basic authentication
 #[derive(Clone, Deserialize)]

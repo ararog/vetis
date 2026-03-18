@@ -10,7 +10,7 @@ use crate::config::server::virtual_host::path::proxy::ProxyPathConfig;
 #[cfg(feature = "static-files")]
 use crate::config::server::virtual_host::path::static_files::StaticPathConfig;
 
-use crate::errors::{ConfigError, VetisError};
+use vetis_core::errors::{ConfigError, VetisError};
 
 pub mod path;
 

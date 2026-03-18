@@ -2,38 +2,20 @@ use std::{future::Future, pin::Pin, sync::Arc};
 
 use http::StatusCode;
 use hyper_body_utils::HttpBody;
-
-use crate::{
+use vetis_core::{
     errors::VetisError,
-    server::{
-        http::{Request, Response},
-        virtual_host::path::interface::{Interface, InterfaceWorker},
-    },
+    http::{Request, Response},
+    interface::InterfaceWorker,
 };
 
-impl From<ScgiWorker> for Interface {
-    /// Convert static path to host path
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The static path to convert
-    ///
-    /// # Returns
-    ///
-    /// * `Interface` - The interface
-    fn from(value: ScgiWorker) -> Self {
-        Interface::Scgi(value)
-    }
-}
-
-pub struct ScgiWorker {
+pub struct RackWorker {
     directory: String,
     target: String,
 }
 
-impl ScgiWorker {
-    pub fn new(directory: String, target: String) -> ScgiWorker {
-        ScgiWorker { directory, target }
+impl RackWorker {
+    pub fn new(directory: String, target: String) -> RackWorker {
+        RackWorker { directory, target }
     }
 
     pub fn directory(&self) -> &String {
@@ -45,7 +27,7 @@ impl ScgiWorker {
     }
 }
 
-impl InterfaceWorker for ScgiWorker {
+impl InterfaceWorker for RackWorker {
     fn handle(
         &self,
         _request: Arc<Request>,

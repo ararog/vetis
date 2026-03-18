@@ -161,6 +161,7 @@ use smol::lock::RwLock;
 
 #[cfg(feature = "tokio-rt")]
 use tokio::sync::RwLock;
+use vetis_core::errors::{VetisError, VirtualHostError};
 
 pub(crate) type VetisFile = File;
 
@@ -170,12 +171,10 @@ pub(crate) type VetisVirtualHosts = Arc<VetisRwLock<HashMap<(Arc<str>, u16), Vir
 
 use crate::{
     config::server::ServerConfig,
-    errors::{VetisError, VirtualHostError},
     server::{virtual_host::VirtualHost, Server},
 };
 
 pub mod config;
-pub mod errors;
 mod rt;
 pub mod server;
 mod tests;

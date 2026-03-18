@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Deserializer};
 
-use crate::errors::{ConfigError, VetisError};
+use vetis_core::errors::{ConfigError, VetisError};
 
 #[cfg(feature = "auth")]
 use crate::server::virtual_host::path::auth::AuthType;

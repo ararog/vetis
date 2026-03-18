@@ -1,6 +1,5 @@
 use crate::{
     config::server::virtual_host::path::proxy::ProxyPathConfig,
-    errors::{VetisError, VirtualHostError},
     server::{
         http::{Request, Response},
         virtual_host::path::{HostPath, Path},
@@ -12,6 +11,7 @@ use std::{
     pin::Pin,
     sync::{Arc, OnceLock},
 };
+use vetis_core::errors::{VetisError, VirtualHostError};
 
 static CLIENT: OnceLock<Client> = OnceLock::new();
 

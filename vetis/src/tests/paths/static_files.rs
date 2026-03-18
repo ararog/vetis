@@ -2,6 +2,7 @@ use std::{collections::HashMap, error::Error};
 
 use deboa::{cert::Certificate, request};
 use http::StatusCode;
+use vetis_core::errors::{ConfigError, VetisError};
 
 #[cfg(feature = "auth")]
 use crate::config::server::virtual_host::path::auth::BasicAuthConfig;
@@ -16,7 +17,6 @@ use crate::{
         virtual_host::{path::static_files::StaticPathConfig, SecurityConfig, VirtualHostConfig},
         ListenerConfig, ServerConfig,
     },
-    errors::{ConfigError, VetisError},
     server::virtual_host::{path::static_files::StaticPath, VirtualHost},
     tests::{default_protocol, CA_CERT, SERVER_CERT, SERVER_KEY},
 };

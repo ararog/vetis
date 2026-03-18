@@ -46,6 +46,7 @@ tokio-rt = [
   "dep:tokio-util",
   "hyper-body-utils/tokio-rt",
   "crossfire/tokio",
+  "vetis-core/tokio-rt"
 ]
 
 smol-rt = [
@@ -63,6 +64,7 @@ smol-rt = [
   "dep:blocking",
   "hyper-body-utils/smol-rt",
   "crossfire/async_std",
+  "vetis-core/smol-rt",
 ]
 
 # compio-rt = [
@@ -77,29 +79,31 @@ smol-rust-tls = ["futures-rustls", "rustls", "rustls-provider"]
 auth = ["argon2", "bcrypt", "base64"]
 
 interface = []
-__interface_wsgi = ["interface", "wsgi"]
-__interface_asgi = ["interface", "asgi"]
-__interface_rsgi = ["interface", "rsgi"]
-__interface_fcgi = ["interface", "fcgi"]
-__interface_scgi = ["interface", "scgi"]
-__interface_rack = ["interface", "rack"]
+__interface_asgi = ["interface", "asgi", "vetis-asgi/tokio-rt"]
+__interface_fcgi = ["interface", "fcgi", "vetis-fcgi/tokio-rt"]
+__interface_sapi = ["interface", "sapi", "vetis-sapi/tokio-rt"]
+__interface_scgi = ["interface", "scgi", "vetis-scgi/tokio-rt"]
+__interface_rack = ["interface", "rack", "vetis-rack/tokio-rt"]
+__interface_rsgi = ["interface", "rsgi", "vetis-rsgi/tokio-rt"]
+__interface_wsgi = ["interface", "wsgi", "vetis-wsgi/tokio-rt"]
 
-# TODO: Implement ASGI/WSGI support
-python = ["asgi", "rsgi", "wsgi"]
-asgi = ["dep:pyo3", "__pyo3_tokio_async"]
-rsgi = []
-wsgi = ["dep:pyo3", "__pyo3_tokio_async"]
-__pyo3_tokio_async = ["pyo3-async-runtimes/tokio-runtime"]
-__pyo3_smol_async = ["pyo3-async-runtimes/async-std-runtime"]
-
-# TODO: Implement PHP support
-sapi = ["dep:bindgen", "dep:ripht-php-sapi"]
-fcgi = ["dep:fastcgi-client"]
-scgi = []
+asgi = []
+fcgi = []
 rack = []
+rsgi = []
+sapi = []
+scgi = []
+wsgi = []
 
-# TODO: Implemet Ruby support
-ruby = ["dep:bindgen", "dep:magnus", "dep:rb-sys"]
+# For smol testing purposes
+__interface_asgi_smol = ["interface", "asgi", "vetis-asgi/smol-rt"]
+__interface_fcgi_smol = ["interface", "fcgi", "vetis-fcgi/smol-rt"]
+__interface_rack_smol = ["interface", "rack", "vetis-rack/smol-rt"]
+__interface_rsgi_smol = ["interface", "rsgi", "vetis-rsgi/smol-rt"]
+__interface_sapi_smol = ["interface", "sapi", "vetis-sapi/smol-rt"]
+__interface_scgi_smol = ["interface", "scgi", "vetis-scgi/smol-rt"]
+__interface_wsgi_smol = ["interface", "wsgi", "vetis-wsgi/smol-rt"]
+
 
 static-files = [
   "dep:mime",
@@ -160,7 +164,6 @@ clap = { version = "4.5.61", features = [
 crossfire = { version = "3.1.6", optional = true, default-features = false }
 deboa = { version = "0.1.0-beta.9", default-features = false, optional = true }
 env_logger = "0.11.9"
-fastcgi-client = { version = "0.10.0", optional = true }
 futures-lite = { version = "2.6.1", optional = true }
 futures-rustls = { version = "0.26.0", optional = true }
 futures-util = "0.3.32"
@@ -169,27 +172,23 @@ h3-quinn = { version = "0.0.10", optional = true }
 hotpath = "0.13.0"
 http = "1.3.1"
 http-body-util = { version = "0.1.3" }
-hyper = { version = "1.8.1", default-features = false, optional = true }
-hyper-body-utils = { version = "0.1.6-beta.3", optional = true, default-features = false }
-hyper-util = { version = "0.1.20", default-features = false, optional = true }
+hyper = { version = "1.8.1", optional = true, default-features = false }
+hyper-body-utils = { version = "0.1.6-beta.6", optional = true, default-features = false }
+hyper-util = { version = "0.1.20", optional = true, default-features = false }
 log = "0.4.28"
 macro_rules_attribute = { version = "0.2.2", optional = true }
-magnus = { version = "0.8.2", optional = true, features = ["embed"] }
 mimalloc = "0.1.48"
 mime = { version = "0.3.17", optional = true }
 minimime = { version = "1.0.0", optional = true }
 moka = { version = "0.12.14", optional = true, default-features = false }
 parse_duration = { version = "2.1.1", optional = true, default-features = false }
 peekable = { version = "0.4.1", optional = true, default-features = false }
-pyo3 = { version = "0.27.2", default-features = false, optional = true }
-pyo3-async-runtimes = { version = "0.27.0", default-features = false, optional = true }
-quinn = { version = "0.11.7", default-features = false, optional = true }
+quinn = { version = "0.11.7", optional = true, default-features = false }
 radix_trie = "0.3.0"
 rand = "0.9.2"
 regex = { version = "1.12.3", optional = true }
-ripht-php-sapi = { version = "0.1.0-rc.7", optional = true }
 rt-gate = { version = "0.1.3", optional = true, default-features = false }
-rustls = { version = "0.23.37", default-features = false, optional = true }
+rustls = { version = "0.23.37", optional = true, default-features = false }
 rustls-rustcrypto = { version = "0.0.2-alpha", optional = true }
 serde = { version = "1.0.226", features = ["derive"] }
 serde_yaml_ng = "0.10.0"
@@ -200,28 +199,18 @@ smol-macros = { version = "0.1.1", optional = true }
 socket2 = "0.6.3"
 thiserror = "2.0.17"
 time = { version = "0.3.41", features = ["formatting"] }
-tokio = { version = "1.50.0", default-features = false, optional = true }
+tokio = { version = "1.50.0", optional = true, default-features = false }
 tokio-rustls = { version = "0.26.0", optional = true }
 tokio-util = { version = "0.7.18", optional = true }
 url = "2.5.7"
-
-[target.'cfg(target_env = "musl")'.dependencies]
-bindgen = { version = "*", optional = true, default-features = false, features = [
-  "static",
-] }
-mimalloc = { version = "0.1.48", features = ["v3"] }
-rb-sys = { version = "*", optional = true, default-features = false, features = [
-  "ruby-static",
-] }
-
-[target.'cfg(not(target_env = "musl"))'.dependencies]
-bindgen = { version = "*", optional = true, default-features = false, features = [
-  "runtime",
-] }
-mimalloc = { version = "0.1.48", features = ["v3"] }
-rb-sys = { version = "*", optional = true, default-features = false, features = [
-  "link-ruby",
-] }
+vetis-core = { version = "0.1.0", path = "../vetis-core", optional = true, default-features = false }
+vetis-asgi = { version = "0.1.0", path = "../vetis-asgi", optional = true, default-features = false }
+vetis-fcgi = { version = "0.1.0", path = "../vetis-fcgi", optional = true, default-features = false }
+vetis-rack = { version = "0.1.0", path = "../vetis-rack", optional = true, default-features = false }
+vetis-rsgi = { version = "0.1.0", path = "../vetis-rsgi", optional = true, default-features = false }
+vetis-sapi = { version = "0.1.0", path = "../vetis-sapi", optional = true, default-features = false }
+vetis-scgi = { version = "0.1.0", path = "../vetis-scgi", optional = true, default-features = false }
+vetis-wsgi = { version = "0.1.0", path = "../vetis-wsgi", optional = true, default-features = false }
 
 [dev-dependencies]
 tokio = { version = "1.50.0", default-features = false, features = ["macros"] }

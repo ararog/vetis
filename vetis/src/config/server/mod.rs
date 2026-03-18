@@ -40,7 +40,7 @@
 
 use serde::Deserialize;
 
-use crate::errors::ConfigError;
+use vetis_core::errors::ConfigError;
 
 pub mod virtual_host;
 

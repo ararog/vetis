@@ -4,10 +4,10 @@ macro_rules! http {
         async move {
             use vetis::{
                 config::server::{virtual_host::VirtualHostConfig, ListenerConfig, ServerConfig},
-                errors::{ConfigError, VetisError},
                 server::virtual_host::{path::HandlerPath, VirtualHost},
                 Vetis,
             };
+            use vetis_core::errors::{ConfigError, VetisError};
 
             let listener = ListenerConfig::builder()
                 .port($port)
@@ -47,10 +47,10 @@ macro_rules! http {
         async move {
             use vetis::{
                 config::server::{virtual_host::VirtualHostConfig, ListenerConfig, ServerConfig},
-                errors::{ConfigError, VetisError},
                 server::{path::HandlerPath, virtual_host::VirtualHost},
                 Vetis,
             };
+            use vetis_core::errors::{ConfigError, VetisError};
 
             let listener = ListenerConfig::builder()
                 .port($port)
@@ -91,10 +91,10 @@ macro_rules! https {
     (hostname => &$hostname:ident, port => &$port:ident, interface => &$interface:ident, &cert => &$cert:ident, &key => &$key:ident) => {
         use vetis::{
             config::{ListenerConfig, ServerConfig, VirtualHostConfig},
-            errors::{ConfigError, VetisError},
             server::{path::HandlerPath, virtual_host::VirtualHost},
             Vetis,
         };
+        use vetis_core::errors::{ConfigError, VetisError};
 
         let listener = ListenerConfig::builder()
             .port($port)

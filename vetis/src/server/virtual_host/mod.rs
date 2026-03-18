@@ -25,18 +25,16 @@ use std::{future::Future, path::PathBuf, pin::Pin};
 
 use http::StatusCode;
 use hyper_body_utils::HttpBody;
-#[cfg(feature = "python")]
-use pyo3::Python;
 use radix_trie::Trie;
 use std::sync::Arc;
+use vetis_core::{
+    errors::{FileError, VetisError, VirtualHostError},
+    http::{Request, Response},
+};
 
 use crate::{
     config::server::virtual_host::VirtualHostConfig,
-    errors::{FileError, VetisError, VirtualHostError},
-    server::{
-        http::{Request, Response},
-        virtual_host::path::{HostPath, Path},
-    },
+    server::virtual_host::path::{HostPath, Path},
 };
 
 #[cfg(feature = "smol-rt")]
@@ -140,9 +138,6 @@ impl VirtualHost {
     /// * `Self` - A new `VirtualHost` instance.
     pub fn new(host_config: VirtualHostConfig) -> Self {
         let mut host = Self { config: host_config.clone(), paths: Trie::new() };
-
-        #[cfg(feature = "python")]
-        Python::initialize();
 
         #[cfg(feature = "static-files")]
         if let Some(static_paths) = &host_config.static_paths() {

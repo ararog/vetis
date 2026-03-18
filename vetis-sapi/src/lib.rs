@@ -1,34 +1,19 @@
-use std::{clone, fs, future::Future, path::Path, pin::Pin, sync::Arc};
+use std::{fs, future::Future, path::Path, pin::Pin, sync::Arc};
 
 use http::StatusCode;
+use hyper_body_utils::HttpBody;
 use log::error;
 use ripht_php_sapi::{RiphtSapi, WebRequest};
-
-use crate::{
-    errors::{VetisError, VirtualHostError},
-    server::virtual_host::path::interface::{Interface, InterfaceWorker},
-    Request, Response, VetisBody, VetisBodyExt,
-};
 
 #[cfg(feature = "smol-rt")]
 use smol::unblock as spawn_blocking;
 #[cfg(feature = "tokio-rt")]
 use tokio::task::spawn_blocking;
-
-impl From<SapiWorker> for Interface {
-    /// Convert static path to host path
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The static path to convert
-    ///
-    /// # Returns
-    ///
-    /// * `Interface` - The interface
-    fn from(value: SapiWorker) -> Self {
-        Interface::Sapi(value)
-    }
-}
+use vetis_core::{
+    errors::{VetisError, VirtualHostError},
+    http::{Request, Response},
+    interface::InterfaceWorker,
+};
 
 pub struct SapiWorker {
     php: Arc<RiphtSapi>,
@@ -60,6 +45,7 @@ impl InterfaceWorker for SapiWorker {
         let code = self.code.clone();
         let php = self.php.clone();
         let request = request.clone();
+        /*
         Box::pin(async move {
             let result = spawn_blocking(move || {
                 let mut php_request = match request.method() {
@@ -87,7 +73,7 @@ impl InterfaceWorker for SapiWorker {
                         match status {
                             Ok(status) => Ok(Response::builder()
                                 .status(status)
-                                .body(VetisBody::body_from_bytes(&body))),
+                                .body(HttpBody::from_bytes(&body))),
                             Err(e) => Err(VetisError::VirtualHost(VirtualHostError::Interface(
                                 e.to_string(),
                             ))),
@@ -104,6 +90,13 @@ impl InterfaceWorker for SapiWorker {
                 Ok(result) => result,
                 Err(e) => Err(VetisError::VirtualHost(VirtualHostError::Interface(e.to_string()))),
             }
+        })
+        */
+
+        Box::pin(async move {
+            Ok(Response::builder()
+                .status(StatusCode::OK)
+                .body(HttpBody::from_text("Ok!")))
         })
     }
 }

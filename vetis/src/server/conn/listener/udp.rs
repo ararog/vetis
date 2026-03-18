@@ -15,13 +15,16 @@ use h3_quinn::{
 use hyper_body_utils::HttpBody;
 use log::{debug, error, info};
 use rt_gate::{spawn_server, spawn_worker, GateTask};
+use vetis_core::{
+    errors::{StartError, VetisError},
+    http::Request,
+};
 
 use crate::{
     config::server::ListenerConfig,
-    errors::{StartError::Tls, VetisError},
     server::{
         conn::listener::{Listener, ListenerResult},
-        http::{static_response, Request},
+        http::static_response,
         tls::TlsFactory,
     },
     VetisRwLock, VetisVirtualHosts,
@@ -91,7 +94,7 @@ impl Listener for UdpListener {
 
             if let Some(tls_config) = tls_config {
                 let quic_config = QuicServerConfig::try_from(tls_config)
-                    .map_err(|e| VetisError::Start(Tls(e.to_string())))?;
+                    .map_err(|e| VetisError::Start(StartError::Tls(e.to_string())))?;
 
                 let server_config = quinn::ServerConfig::with_crypto(Arc::new(quic_config));
 

@@ -11,6 +11,7 @@ use http_body_util::BodyExt;
 use macro_rules_attribute::apply;
 #[cfg(feature = "smol-rt")]
 use smol_macros::test;
+use vetis_core::errors::{ConfigError, VetisError};
 
 #[cfg(any(feature = "http1", feature = "http2"))]
 use crate::{
@@ -26,10 +27,7 @@ use crate::{
     tests::{CA_CERT, SERVER_CERT, SERVER_KEY},
 };
 
-use crate::{
-    config::server::virtual_host::path::proxy::ProxyPathConfig,
-    errors::{ConfigError, VetisError},
-};
+use crate::config::server::virtual_host::path::proxy::ProxyPathConfig;
 
 #[test]
 fn test_proxy_path() -> Result<(), Box<dyn Error>> {

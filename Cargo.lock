@@ -431,7 +431,7 @@ dependencies = [
  "bitflags",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools",
  "lazy_static",
  "lazycell",
  "log",
@@ -443,24 +443,6 @@ dependencies = [
  "shlex",
  "syn 2.0.117",
  "which",
-]
-
-[[package]]
-name = "bindgen"
-version = "0.72.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "993776b509cfb49c750f11b8f07a46fa23e0a1386ffc01fb1e7d343efc387895"
-dependencies = [
- "bitflags",
- "cexpr",
- "clang-sys",
- "itertools 0.13.0",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash 2.1.1",
- "shlex",
- "syn 2.0.117",
 ]
 
 [[package]]
@@ -1946,15 +1928,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "itertools"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
-dependencies = [
- "either",
-]
-
-[[package]]
 name = "itoa"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2767,20 +2740,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pyo3-async-runtimes"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57ddb5b570751e93cc6777e81fee8087e59cd53b5043292f2a6d59d5bd80fdfd"
-dependencies = [
- "async-std",
- "futures",
- "once_cell",
- "pin-project-lite",
- "pyo3",
- "tokio",
-]
-
-[[package]]
 name = "pyo3-build-config"
 version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3014,7 +2973,7 @@ version = "0.9.124"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "568068db4102230882e6d4ae8de6632e224ca75fe5970f6e026a04e91ed635d3"
 dependencies = [
- "bindgen 0.69.5",
+ "bindgen",
  "lazy_static",
  "proc-macro2",
  "quote",
@@ -3114,7 +3073,7 @@ version = "0.1.0-rc.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e6e25518eb92d82b8be5c8896f0090344c1b4d92b5b1b6025dc48034086184a"
 dependencies = [
- "bindgen 0.69.5",
+ "bindgen",
  "http",
  "libc",
  "memchr",
@@ -4224,7 +4183,6 @@ dependencies = [
  "async-signal",
  "base64",
  "bcrypt",
- "bindgen 0.72.1",
  "blocking",
  "bytes",
  "cfg-if",
@@ -4232,7 +4190,6 @@ dependencies = [
  "crossfire",
  "deboa",
  "env_logger",
- "fastcgi-client",
  "futures-lite",
  "futures-rustls",
  "futures-util",
@@ -4246,21 +4203,16 @@ dependencies = [
  "hyper-util",
  "log",
  "macro_rules_attribute",
- "magnus",
  "mimalloc",
  "mime",
  "minimime",
  "moka",
  "parse_duration",
  "peekable",
- "pyo3",
- "pyo3-async-runtimes",
  "quinn",
  "radix_trie",
  "rand 0.9.2",
- "rb-sys",
  "regex",
- "ripht-php-sapi",
  "rt-gate",
  "rustls",
  "rustls-rustcrypto",
@@ -4277,6 +4229,52 @@ dependencies = [
  "tokio-rustls",
  "tokio-util",
  "url",
+ "vetis-asgi",
+ "vetis-core",
+ "vetis-fcgi",
+ "vetis-rack",
+ "vetis-rsgi",
+ "vetis-sapi",
+ "vetis-scgi",
+ "vetis-wsgi",
+]
+
+[[package]]
+name = "vetis-asgi"
+version = "0.1.0"
+dependencies = [
+ "crossfire",
+ "http",
+ "hyper-body-utils",
+ "log",
+ "pyo3",
+ "smol",
+ "tokio",
+ "vetis-core",
+]
+
+[[package]]
+name = "vetis-core"
+version = "0.1.0"
+dependencies = [
+ "http",
+ "hyper-body-utils",
+ "smol",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "vetis-fcgi"
+version = "0.1.0"
+dependencies = [
+ "fastcgi-client",
+ "http",
+ "hyper-body-utils",
+ "log",
+ "smol",
+ "tokio",
+ "vetis-core",
 ]
 
 [[package]]
@@ -4286,8 +4284,78 @@ dependencies = [
  "deboa",
  "http",
  "http-body-util",
+ "macro_rules_attribute",
+ "smol",
+ "smol-macros",
  "tokio",
  "vetis",
+ "vetis-core",
+]
+
+[[package]]
+name = "vetis-rack"
+version = "0.1.0"
+dependencies = [
+ "bindgen",
+ "http",
+ "hyper-body-utils",
+ "log",
+ "magnus",
+ "mimalloc",
+ "rb-sys",
+ "smol",
+ "tokio",
+ "vetis-core",
+]
+
+[[package]]
+name = "vetis-rsgi"
+version = "0.1.0"
+dependencies = [
+ "http",
+ "hyper-body-utils",
+ "smol",
+ "tokio",
+ "vetis-core",
+]
+
+[[package]]
+name = "vetis-sapi"
+version = "0.1.0"
+dependencies = [
+ "http",
+ "hyper-body-utils",
+ "log",
+ "ripht-php-sapi",
+ "smol",
+ "tokio",
+ "vetis-core",
+]
+
+[[package]]
+name = "vetis-scgi"
+version = "0.1.0"
+dependencies = [
+ "http",
+ "hyper-body-utils",
+ "log",
+ "smol",
+ "tokio",
+ "vetis-core",
+]
+
+[[package]]
+name = "vetis-wsgi"
+version = "0.1.0"
+dependencies = [
+ "crossfire",
+ "http",
+ "hyper-body-utils",
+ "log",
+ "pyo3",
+ "smol",
+ "tokio",
+ "vetis-core",
 ]
 
 [[package]]

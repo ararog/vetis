@@ -3,14 +3,22 @@
 resolver = "3"
 # Include both parts of the library in the workspace
 members = [
-    "vetis",
-    "vetis-macros",
-    "examples/simple",
+  "vetis",
+  "vetis-asgi",
+  "vetis-core",
+  "vetis-fcgi",
+  "vetis-macros",
+  "vetis-rack",
+  "vetis-rsgi",
+  "vetis-sapi",
+  "vetis-scgi",
+  "vetis-wsgi",
+  "examples/simple", 
 ]
 
 [profile.release]
 strip = true
-opt-level = "z" 
+opt-level = "z"
 lto = true
 codegen-units = 1
 panic = "abort"
