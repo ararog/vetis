@@ -4,20 +4,14 @@ RUN apk update && \
     apk upgrade --no-cache && \
     apk add --no-cache lld mold musl musl-dev libc-dev cmake clang-static llvm-static openssl file \
         libressl-dev git make build-base bash curl wget zip gnupg coreutils gcc g++ zstd pkgconfig \
-        binutils ca-certificates upx python3 python3-dev ruby-full
-
-RUN curl -fsSL -o spc https://dl.static-php.dev/static-php-cli/spc-bin/nightly/spc-linux-x86_64 && \
-    chmod +x spc && \
-    ./spc doctor --auto-fix && \
-    ./spc download php-src --with-php=8.3 --for-extensions="apcu,bcmath,calendar,ctype,curl,dba,dom,exif,fileinfo,filter,gd,iconv,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,readline,redis,session,simplexml,sockets,sodium,sqlite3,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib" && \
-    ./spc build apcu,bcmath,calendar,ctype,curl,dba,dom,exif,fileinfo,filter,gd,iconv,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,readline,redis,session,simplexml,sockets,sodium,sqlite3,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib --build-embed
+        binutils ca-certificates upx python3 python3-dev ruby-full php83-fpm
 
 WORKDIR /docker
 COPY . ./
 RUN cd /docker/vetis && \
     RUSTFLAGS="-L native=/usr/lib/python3.12/config-3.12-x86_64-linux-musl" \
-    RIPHT_PHP_SAPI_PREFIX="//buildroot" \
-    cargo build --release --features="tokio-rt http1 tokio-rust-tls static-files reverse-proxy auth __interface_wsgi __interface_fcgi __interface_rack" \
+    cargo build --release --features="tokio-rt http1 tokio-rust-tls static-files reverse-proxy auth \
+    __interface_wsgi __interface_fcgi __interface_rack" \
     --no-default-features --target=x86_64-unknown-linux-musl
 
 
