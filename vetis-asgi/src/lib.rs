@@ -1,16 +1,10 @@
-use std::{collections::HashMap, ffi::CString, fs, future::Future, pin::Pin, sync::Arc};
+use std::{future::Future, pin::Pin, sync::Arc};
 
-use http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
+use http::StatusCode;
 use hyper_body_utils::HttpBody;
-use log::error;
-use pyo3::{
-    types::{PyAnyMethods, PyIterator, PyModule, PyModuleMethods},
-    Bound, PyAny, PyErr, PyResult, Python,
-};
 
-use crossfire::oneshot;
 use vetis_core::{
-    errors::{VetisError, VirtualHostError},
+    errors::VetisError,
     http::{Request, Response},
     interface::InterfaceWorker,
 };

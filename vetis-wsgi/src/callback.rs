@@ -37,7 +37,7 @@ impl StartResponse {
 impl StartResponse {
     fn __call__(&mut self, status: String, headers: Vec<(String, String)>) -> PyResult<()> {
         if let Some(sender) = self.sender.take() {
-            let _ = sender.send((status, headers));
+            sender.send((status, headers));
         }
         Ok(())
     }

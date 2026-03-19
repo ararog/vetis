@@ -12,7 +12,7 @@ mod tls_tests {
 
     #[cfg(feature = "tokio-rt")]
     use tokio::sync::RwLock;
-    use vetis_core::errors::{StartError, VetisError};
+    use vetis_core::errors::VetisError;
 
     use crate::{
         config::server::virtual_host::{SecurityConfig, VirtualHostConfig},
