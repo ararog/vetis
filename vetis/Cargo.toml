@@ -118,8 +118,8 @@ __deboa_tokio = ["deboa/tokio-rt", "deboa/tokio-rust-tls"]
 __deboa_smol = ["deboa/smol-rt", "deboa/smol-rust-tls"]
 
 rustls-provider = ["__rustls_awc_lc_rs"]
-__rustls_awc_lc_rs = ["futures-rustls/aws-lc-rs"]
-__rustls_ring = ["futures-rustls/ring"]
+__rustls_awc_lc_rs = ["futures-rustls/aws-lc-rs", "quinn/rustls-aws-lc-rs"]
+__rustls_ring = ["futures-rustls/ring", "quinn/rustls-ring"]
 __rustls_rustcrypto = ["dep:rustls-rustcrypto"]
 
 http1 = [
@@ -183,7 +183,7 @@ minimime = { version = "1.0.0", optional = true, default-features = false }
 moka = { version = "0.12.14", optional = true, default-features = false }
 parse_duration = { version = "2.1.1", optional = true, default-features = false }
 peekable = { version = "0.4.1", optional = true, default-features = false }
-quinn = { version = "0.11.7", optional = true, default-features = false }
+quinn = { version = "*", optional = true, default-features = false }
 radix_trie = "0.3.0"
 rand = "0.9.2"
 regex = { version = "1.12.3", optional = true, default-features = false }
