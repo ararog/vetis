@@ -47,7 +47,6 @@ COPY --from=files --chmod=444 \
 COPY --from=files --chmod=444 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=files --chmod=444 /usr/share/zoneinfo /usr/share/zoneinfo
 
-COPY --from=build /buildroot /usr
 COPY --from=build /usr/lib/python3.12/config-3.12-x86_64-linux-musl /usr/lib/python3.12/config-3.12-x86_64-linux-musl
 COPY --from=build /docker/target/x86_64-unknown-linux-musl/release/vetis /bin/vetis
 
