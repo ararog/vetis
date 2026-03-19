@@ -180,19 +180,6 @@ jobs:
             runs-on: ubuntu-24.04
             target: x86_64-unknown-linux-musl
             features: tokio-rt tokio-rust-tls http1            
-          - os-name: Linux-x86_64 (rustls-native-roots)
-            runs-on: ubuntu-24.04
-            target: x86_64-unknown-linux-musl
-            features: tokio-rt tokio-native-tls http1
-          - os-name: Linux-x86_64 (native-tls)
-            runs-on: ubuntu-24.04
-            # We need to use gnu or we cannot link against openssl.
-            target: x86_64-unknown-linux-gnu
-            features: tokio-rt tokio-native-tls http1
-          - os-name: Linux-x86_64 (native-tls-vendored)
-            runs-on: ubuntu-24.04
-            target: x86_64-unknown-linux-musl
-            features: tokio-rt tokio-native-tls http1
           - os-name: Linux-aarch64
             runs-on: ubuntu-24.04
             target: aarch64-unknown-linux-musl
@@ -287,9 +274,6 @@ jobs:
               echo "features=default" >> "$GITHUB_OUTPUT"
           fi
           cat "$GITHUB_OUTPUT"
-      - name: Maybe install SSL packages
-        run: sudo apt-get update --yes && sudo apt-get install --yes pkg-config openssl libssl-dev
-        if: matrix.platform.features == 'tokio-native-tls'
       - name: Build binary
         run: |
           cd vetis
