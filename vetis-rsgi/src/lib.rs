@@ -8,6 +8,7 @@ use vetis_core::{
     interface::InterfaceWorker,
 };
 
+mod callback;
 mod tests;
 
 pub struct RsgiWorker {

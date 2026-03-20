@@ -522,6 +522,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "cegla"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "254e7c7cdfe001a9343fd5e5601aa45ea1cdfd7d395de0baa873a75470c8d404"
+dependencies = [
+ "bytes",
+ "futures-util",
+ "hashlink",
+ "http",
+ "http-body",
+ "http-body-util",
+ "memchr",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
 name = "cexpr"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1169,6 +1186,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
+name = "foldhash"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
+
+[[package]]
 name = "form_urlencoded"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1444,7 +1467,7 @@ version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
 dependencies = [
- "foldhash",
+ "foldhash 0.1.5",
 ]
 
 [[package]]
@@ -1452,6 +1475,18 @@ name = "hashbrown"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
+dependencies = [
+ "foldhash 0.2.0",
+]
+
+[[package]]
+name = "hashlink"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea0b22561a9c04a7cb1a302c013e0259cd3b4bb619f145b32f72b8b4bcbed230"
+dependencies = [
+ "hashbrown 0.16.1",
+]
 
 [[package]]
 name = "hdrhistogram"
@@ -2674,6 +2709,18 @@ dependencies = [
  "pyo3-ffi",
  "pyo3-macros",
  "unindent",
+]
+
+[[package]]
+name = "pyo3-async-runtimes"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57ddb5b570751e93cc6777e81fee8087e59cd53b5043292f2a6d59d5bd80fdfd"
+dependencies = [
+ "futures",
+ "once_cell",
+ "pin-project-lite",
+ "pyo3",
 ]
 
 [[package]]
@@ -4131,6 +4178,7 @@ dependencies = [
  "hyper-body-utils",
  "log",
  "pyo3",
+ "pyo3-async-runtimes",
  "smol",
  "tokio",
  "vetis-core",
@@ -4197,6 +4245,7 @@ version = "0.1.0"
 dependencies = [
  "http",
  "hyper-body-utils",
+ "pyo3",
  "smol",
  "tokio",
  "vetis-core",
@@ -4219,6 +4268,7 @@ dependencies = [
 name = "vetis-scgi"
 version = "0.1.0"
 dependencies = [
+ "cegla",
  "http",
  "hyper-body-utils",
  "log",

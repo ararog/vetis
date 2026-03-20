@@ -57,7 +57,7 @@ impl WsgiWorker {
         };
 
         let app = Python::attach(|py| {
-            let script_module = PyModule::from_code(py, &code, c"", c"main")?;
+            let script_module = PyModule::from_code(py, &code, c"main.py", c"main")?;
             let app = script_module.getattr(app)?;
             script_module.add_class::<StartResponse>()?;
 

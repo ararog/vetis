@@ -23,6 +23,7 @@ http = "1.4.0"
 hyper-body-utils = { version = "0.1.6-beta.6", default-features = false, optional = true }
 log = "0.4.29"
 pyo3 = { version = "0.27.2", features = ["auto-initialize"] }
+pyo3-async-runtimes = "0.27.0"
 smol = { version = "2.0.2", default-features = false, optional = true }
 tokio = { version = "1.50.0", default-features = false, optional = true }
 vetis-core = { version = "0.1.0", path = "../vetis-core", default-features = false, optional = true }

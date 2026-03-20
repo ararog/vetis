@@ -18,6 +18,7 @@ smol-rt = ["dep:smol", "hyper-body-utils/smol-rt", "vetis-core/smol-rt"]
 tokio-rt = ["dep:tokio", "hyper-body-utils/tokio-rt", "vetis-core/tokio-rt"]
 
 [dependencies]
+cegla = "0.1.2"
 http = "1.4.0"
 hyper-body-utils = { version = "0.1.6-beta.6", default-features = false, optional = true }
 log = "0.4.29"
